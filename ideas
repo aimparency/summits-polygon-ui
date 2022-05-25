@@ -1,0 +1,8 @@
+- "public" optional machen (hardcode true von mir aus bis zum ico)
+  - nur wenn public auf blockchain veröffentlichen 
+- Datamodel
+  - connections sind selbstständige objekte
+  - goals haben eingänge und ausgänge
+  - connections gehören zum benefitting aim
+    - werden also auf der chain veröffentlicht, wenn das receiving aim öffentlich ist
+- 

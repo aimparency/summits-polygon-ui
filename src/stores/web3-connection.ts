@@ -4,20 +4,26 @@ import { Web3Provider, JsonRpcSigner } from '@ethersproject/providers'
 
 import Web3Modal from "web3modal";
 
-import { ethers } from "ethers";
+import { Contract, ethers } from "ethers";
 
-export const useWeb3Connection = defineStore('web3Connection', {
+import config from '../config'
+import Summits from '../Summits.json'
+
+export const useWeb3Connection = defineStore('web3-connection', {
   state() {
     return {
       provider: undefined as undefined | Web3Provider,
       signer: undefined as undefined | JsonRpcSigner, 
       connected: false, 
       network: "", 
-      address: ""
+      address: "", 
+      contract: undefined as undefined | Contract,  
     }
   }, 
   actions: {
-    async connect() {
+    async connect(
+      onConnect: () => void, 
+    ) {
       const providerOptions = {
         /* See Provider Options Section */
       };
@@ -29,19 +35,27 @@ export const useWeb3Connection = defineStore('web3Connection', {
 
       const instance = await web3Modal.connect()
 
-
       let provider = new ethers.providers.Web3Provider(instance)
       this.provider = markRaw(provider)
 
       let signer = provider.getSigner()
       this.signer = markRaw(signer)
 
-      console.log(provider)
       provider.getNetwork().then((network: ethers.providers.Network) => {
         this.network = network.name
       })
       this.address = await signer.getAddress()
 
+      console.log("abi", Summits.abi)
+      this.contract = new ethers.Contract(
+        config.contractAddress, 
+        Summits.abi, 
+        provider
+      );
+
+      console.log("contract", this.contract) 
+
+      onConnect()
     },
   }
 }) 
