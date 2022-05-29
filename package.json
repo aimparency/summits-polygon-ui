@@ -11,8 +11,12 @@
     "vue": "^3.2.25"
   },
   "devDependencies": {
+    "@types/gl-vec2": "^1.3.2",
     "@vitejs/plugin-vue": "^2.3.1",
+    "crypto": "^1.0.1",
     "ethers": "^5.6.5",
+    "gl-vec2": "^1.3.0",
+    "less": "^4.1.2",
     "pinia": "^2.0.14",
     "typescript": "^4.5.4",
     "url": "^0.11.0",

@@ -1,0 +1,31 @@
+@c1: #f5b; 
+@c2: #3ce; 
+
+@danger: #b31;
+
+@baseBg: #222; 
+
+@bg1: mix(@baseBg, @c1, 90%); 
+@bg2: mix(@baseBg, @c2, 80%); 
+
+@buttonround: 2rem; 
+@secondaryround: 0.3rem; 
+
+.clickable {
+  cursor: pointer; 
+  user-select: none; 
+}
+
+.button {
+  border-radius: @buttonround; 
+  .clickable();
+  display: inline-block; 
+  box-shadow: 0 0 1rem #0008; 
+  margin: 0.2rem; 
+  padding: 0.5rem 1rem; 
+  background-color: shade(@c1, 50%); 
+  &:focus, &:hover{
+    background-color: shade(@c1, 30%); 
+    outline: none; 
+  }
+}

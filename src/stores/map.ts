@@ -1,19 +1,14 @@
 import { defineStore } from 'pinia'
 
-export class AimAppearance {
-  public color: string | undefined
-
-  constructor(
-    public x: number, 
-    public y: number,
-    public r: number
-  ) {
-  }
-}
+import { Vector2 } from 'three'
 
 export const useMap = defineStore('map', {
   state() {
     return {
+      mouse: {
+        logical: new Vector2(0,0), 
+        physical: new Vector2(0,0)
+      }
     }
   }
 })
