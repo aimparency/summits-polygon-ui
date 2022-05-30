@@ -111,7 +111,7 @@ export default defineComponent({
       let r = (x - this.x0) / this.width
       r += this.dragOffset
       r = Math.min(1, Math.max(0, r))
-      return this.from + (this.to - this.from) * r
+      return Math.round(this.from + (this.to - this.from) * r)
     },
     beforeUnmount () {
       document.removeEventListener('mouseup', this.endDrag)
@@ -128,59 +128,6 @@ export default defineComponent({
 
 <style lang="less">
 @dotsize: 3rem;
+@import "./slider.scss";
 
-.slider {
-  position: relative; 
-  background-color: #0004;
-  border-radius: @secondaryradius;
-  height: 6.5rem; 
-  margin: 1rem; 
-  .value{
-    width: 100%; 
-    position: absolute; 
-    top: 0.7rem; 
-    text-align: center; 
-    input {
-      display: inline-block;
-      width: 4rem; 
-    }
-  }
-  .bar {
-    position: absolute;
-    top: 4rem; 
-    width: calc(100% - @dotsize - 1rem);
-    height: 0.35rem;
-    background: shade(@c2, 40%);
-    border-radius: 0.2rem;
-    left: calc(0.5rem + @dotsize * 0.5);
-    .dot {
-      left: 0; 
-      transition: left 0.15s ease-in-out; 
-      &.dragging{
-        transition: none; 
-      }
-      box-shadow: 0 0 0.5rem #0007;
-      position: absolute;
-      height: @dotsize;
-      width: @dotsize;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: @dotsize * 0.5;
-      background-color: @c2;
-      box-sizing: border-box;
-      border: 0.4rem solid shade(@c2, 20%);
-    }
-  }
-  .right, .left{
-    position: absolute;
-    top: 0.7rem;
-    color: #999;
-  }
-  .left {
-    left: 0.5rem;
-  }
-  .right {
-    right: 0.5rem;
-  }
-}
 </style>

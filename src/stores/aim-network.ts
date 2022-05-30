@@ -3,16 +3,11 @@ import { useWeb3Connection } from './web3-connection'
 
 import Effort from '../types/effort'
 
-export class AimAppearance {
-  public color: string | undefined
+import ColorHash from 'color-hash'; 
 
-  constructor(
-    public x: number, 
-    public y: number,
-    public r: number
-  ) {
-  }
-}
+import Vec2 from 'gl-vec2'
+
+const colorHash = new ColorHash({ lightness: 0.4 }); 
 
 export class AimOrigin {
   title?: string
@@ -28,13 +23,16 @@ export class Aim {
   state: string=""
   effort = new Effort('s', 0)
   shares = 0
+  importance = 100
 
+  pos = Vec2.create()
+
+  color: string
+  
   published = false
 
-  flows_from: Aim[] = []
-  flows_into: Aim[] = []
-
-  appearance = new AimAppearance(0,0,0)
+  flowsFrom: Aim[] = []
+  flowsInto: Aim[] = []
 
   origin = new AimOrigin()
 
@@ -45,29 +43,48 @@ export class Aim {
     public owner: string, 
     public subLevel: number
   ) {
+    this.color = colorHash.hex(id); 
   }
+}
+
+export class FlowOrigin {
+  detailsCid?: string
+  share?: number
 }
 
 export class Flow {
   detailsCid: string = ""
   share = 0
 
+  origin = new FlowOrigin()
+
   dx = 0
   dy = 0
+
+  constructor(
+    public from: string,
+    public into: string
+  ) {}
 }
 
 function idToBigInt(hex: string) {
   return BigInt('0x' + hex) 
 }
 
+type maybeAim = undefined | Aim
+
 export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
-      aims: {} as {[id: string]: Aim}, 
+      aims: {
+        "test": new Aim("test", "me", 0)
+      } as {[id: string]: Aim}, 
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
       home: undefined as string | undefined,
-      selectedAim: undefined as Aim | undefined,
+      selectedAim: undefined as maybeAim,
       selectedFlow: undefined as Flow | undefined, 
+      connectFrom: undefined as maybeAim,
+      dragCandidate: undefined as maybeAim, 
     }
   }, 
   actions: {
@@ -88,7 +105,7 @@ export const useAimNetwork = defineStore('aim-network', {
     async loadAim(aimId: BigInt) {
       console.log("load aim", aimId)  
     }, 
-    async createAim() {
+    async createAndSelectAim() {
       let owner = useWeb3Connection().address
       if(owner) {
         let bytes = new Uint8Array(16)
@@ -113,22 +130,44 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     async commitChanges(aim: Aim) {
-      // TBD
+      Object.getOwnPropertyNames(aim.origin).forEach((name: string) => {
+        if((aim.origin as any)[name] !== undefined) {
+          console.log("chaning property", name)
+        }
+      })
+      aim.origin = new AimOrigin()
+    }, 
+    resetChanges(aim: Aim) {
+      Object.entries(aim.origin).forEach(([key, value]) => {
+        if(value !== undefined) {
+          (aim as any)[key] = value
+        }
+      })
+      aim.origin = new AimOrigin()
     }, 
     selectFlow(flow: Flow) {
       this.selectedAim = undefined
       this.selectedFlow = flow
     }, 
     selectAim(aim: Aim) {
-      console.log("selecting aim", aim) 
       this.selectedFlow = undefined
       this.selectedAim = aim
+    },
+    deselect() {
+      this.selectedAim = undefined
+      this.selectedFlow = undefined
     },
     removeAim(aim: Aim) {
       if(this.selectedAim == aim) {
         this.selectedAim = undefined
       } 
       delete this.aims[aim.id]
+    },
+    startConnecting(aim: Aim) {
+      this.connectFrom = aim
+    }, 
+    startDragging(aim: Aim) {
+      this.dragCandidate = aim
     }
   }, 
 })

@@ -21,6 +21,7 @@
         :aim="aim"
         @click="selectAim(aim)"
         @keypress.space="selectAim(aim)"
+        @keypress.enter="selectAim(aim)"
         />
     </div>
   </div>
@@ -62,12 +63,10 @@ export default defineComponent({
       //TBD
     }, 
     addAim() {
-      this.aimNetwork.createAim()
-      this.ui.showAimDetails()
+      this.aimNetwork.createAndSelectAim()
     }, 
     selectAim(aim: Aim) {
       this.aimNetwork.selectAim(aim)
-      this.ui.showAimDetails()
     }
   }, 
   

@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 Summits.json
+efficient-node-layouting.xopp
 
 # Editor directories and files
 .vscode/*

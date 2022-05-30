@@ -7,7 +7,6 @@ export const useUi = defineStore('ui', {
     return {
       screenSize: Vec2.create(),
       sideMenuOpen: true,
-      view: 'localList' as 'localList' | 'aimDetails' | 'flowDetails'
     }
   }, 
   actions: {
@@ -17,16 +16,5 @@ export const useUi = defineStore('ui', {
     toggleSideMenu() {
       this.sideMenuOpen = !this.sideMenuOpen
     }, 
-    showAimDetails() {
-      this.view = 'aimDetails'
-    }, 
-    goBack() {
-      if(this.view == 'aimDetails') {
-        this.showLocalList()
-      }
-    }, 
-    showLocalList() {
-      this.view = 'localList'
-    }
   }
 })

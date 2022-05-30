@@ -13,15 +13,8 @@
         &gt; 
       </span>
     </div>
-    <div class="back"
-      v-if="ui.view != 'localList'"
-      tabindes="0"
-      @click.stop="goBack">
-      &lt;-
-      
-    </div>
     <aimDetails 
-      v-if="ui.view == 'aimDetails' && (aimNetwork.selectedAim !== undefined)"
+      v-if="showAimDetails"
       :aim="aimNetwork.selectedAim"
       />
     <LocalList v-else/>
@@ -56,6 +49,12 @@ export default defineComponent({
     return {}
   },
   computed: {
+    showAimDetails() {
+      return this.aimNetwork.selectedAim !== undefined
+    }, 
+    showBackButton() {
+      return this.showAimDetails
+    },
     style() {
       const screenSize = this.ui.$state.screenSize
       const portrait = screenSize[0] > screenSize[1]
@@ -77,9 +76,6 @@ export default defineComponent({
     toggle() {
       this.ui.toggleSideMenu()
     }, 
-    goBack() {
-      this.ui.goBack()
-    }
   }
 });
 </script>
@@ -116,22 +112,8 @@ export default defineComponent({
     text-align: center; 
     position: absolute; 
     top: 0; 
-    transition: left 0.3 ease-out; 
+    transition: left 0.3s ease-out; 
   }
-  .back{
-    .button();
-    margin:0; 
-    padding: 0; 
-    left: 0;
-    font-size: 1.8rem; 
-    width: @size; 
-    height: @size; 
-    line-height: @size; 
-    font-weight: bold; 
-    text-align: center; 
-    position: absolute; 
-    top: 0; 
-  }
-  transition: transform 0.15s ease-out;
+  transition: transform 0.3s ease-out;
 }
 </style>

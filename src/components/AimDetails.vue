@@ -1,16 +1,18 @@
 <template>
-  <div class="aim-details"> 
+  <div 
+    class="aim-details"> 
     <h2 class="sidebar-heading">aim details</h2>
-    <input 
+    <textarea
       ref='title'
       class='standard title' 
-      :value="aim.title" 
-      placeholder="<aim title>"
-      @input="updateTitle"/>
+      placeholder="aim title"
+      :value="aim.title"
+      @input="updateTitle"></textarea>
     <input 
       class='standard effort' 
       :value="effortString ?? aim.effort.humanize()" 
       @blur='parseAndUpdateEffort'
+      @keypress.enter='parseAndUpdateEffort'
       onfocus="this.select()" 
       @input="effortChange"/>
     <MultiSwitch
@@ -34,33 +36,35 @@
     </div>
     <div v-else>
       <span v-if='dirty'>
-        <div class='button' v-if='dirty' @click="reset">reset</div>
-        <div class='button' v-if='dirty' @click="commit">commit</div>
+        <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
+        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit</div>
       </span>
-      <div 
+      <div
+        tabindex="0"  
         class='button' 
         :class='{confirm: confirmRemove}'
         @blur='confirmRemove = false'
         @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
     </div>
-    <h3 v-if="flows_from.length > 0"> incoming flows </h3>
+    <h3 v-if="flowsFrom.length > 0"> incoming flows </h3>
     <div 
       class="flow" 
-      v-for="pair, i in flows_from" 
+      v-for="pair, i in flowsFrom" 
       @click="flowClick(pair.flow)" 
       :key="i">
       {{ pair.aim.title || "<unnamed>"}} <br/>
       share: {{ pair.flow.share }}
     </div>
-    <h3 v-if="flows_into.length > 0"> outgoing flows </h3>
+    <h3 v-if="flowsInto.length > 0"> outgoing flows </h3>
     <div 
       class="flow" 
-      v-for="pair, i in flows_into" 
+      v-for="pair, i in flowsInto" 
       @click="flowClick(pair.flow)" 
       :key="i">
       {{ pair.aim.title || "<unnamed>"}} <br/>
       share: {{ pair.flow.share }}
     </div>
+    <BackButton @click="aimNetwork.deselect"/>
   </div>
 </template>
 
@@ -74,13 +78,15 @@ import Effort from "../types/effort"
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
 import IntSlider from './IntSlider.vue'
+import BackButton from './SideBar/BackButton.vue'
 
 export default defineComponent({
   name: "AimDetails",
   components: {
     AimLi,
     MultiSwitch,
-    IntSlider: IntSlider, 
+    IntSlider, 
+    BackButton,
   },
   props: {
     aim: {
@@ -119,7 +125,7 @@ export default defineComponent({
   computed: {
     dirty() : boolean {
       return ( 
-        Object.keys(this.aim.origin).length > 0 
+        Object.values(this.aim.origin).filter((v: any) => v !== undefined).length > 0 
       ) 
     }, 
     sharesSliderMin(): number {
@@ -132,14 +138,14 @@ export default defineComponent({
         this.sharesSliderOrigin * 2 + 10
       )
     }, 
-    flows_from() : {flow: Flow, aim: Aim}[] {
-      return this.aim.flows_from.map((fromAim: Aim) => ({
+    flowsFrom() : {flow: Flow, aim: Aim}[] {
+      return this.aim.flowsFrom.map((fromAim: Aim) => ({
         flow: this.aimNetwork.$state.flows[fromAim.id][this.aim.id],
         aim: fromAim
       }))
     }, 
-    flows_into() : {flow: Flow, aim: Aim}[] {
-      return this.aim.flows_into.map((intoAim: Aim) => ({
+    flowsInto() : {flow: Flow, aim: Aim}[] {
+      return this.aim.flowsInto.map((intoAim: Aim) => ({
         flow: this.aimNetwork.$state.flows[this.aim.id][intoAim.id],
         aim: intoAim
       }))
@@ -155,22 +161,28 @@ export default defineComponent({
       this.sharesSliderOrigin = this.aim.shares
     }, 
     updateShares(v: number) {
-      if(this.aim.origin.shares === undefined && this.aim.shares !== v) {
+      if(v === this.aim.origin.shares) { 
+        this.aim.origin.shares = undefined
+      } else if(this.aim.origin.shares === undefined) {
         this.aim.origin.shares = this.aim.shares
-      } 
+      }
       this.aim.shares = v
     }, 
     updateState(v: string) {
-      if(this.aim.origin.state  === undefined && this.aim.state !== v) {
+      if(v === this.aim.origin.state) { 
+        this.aim.origin.state = undefined
+      } else if(this.aim.origin.state === undefined) {
         this.aim.origin.state = this.aim.state
-      } 
+      }
       this.aim.state = v
     }, 
     updateTitle(e: Event) {
-      let v = (<HTMLInputElement>e.target).value
-      if(this.aim.origin.title === undefined && this.aim.title !== v) {
-        this.aim.origin.title = this.aim.title 
-      } 
+      const v = (<HTMLTextAreaElement>e.target).value
+      if(v === this.aim.origin.title) { 
+        this.aim.origin.title = undefined
+      } else if(this.aim.origin.title === undefined) {
+        this.aim.origin.title = this.aim.title
+      }
       this.aim.title = v
     }, 
     effortChange(e: Event) {
@@ -179,15 +191,18 @@ export default defineComponent({
     parseAndUpdateEffort() {
       if(this.effortString !== undefined) {
         let v = Effort.fromString(this.effortString)
-        if(this.aim.origin.effort !== undefined && !this.aim.effort.eq(v)) {
+        if(v.eq(this.aim.origin.effort)) { 
+          this.aim.origin.effort = undefined
+        } else if(this.aim.origin.effort === undefined) {
           this.aim.origin.effort = this.aim.effort
-        } 
+        }
         this.aim.effort = v
         this.effortString = undefined
       }
     }, 
     reset() {
-      this.aim.origin = new AimOrigin()
+      this.aimNetwork.resetChanges(this.aim)
+      this.updateSharesSliderOrigin()
     }, 
     commit() {
       this.aimNetwork.commitChanges(this.aim) 
@@ -218,6 +233,9 @@ export default defineComponent({
     &.confirm {
       background-color: @danger; 
     }
+  }
+  textarea {
+    height: 10em; 
   }
 }
 

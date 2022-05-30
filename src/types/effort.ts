@@ -12,12 +12,9 @@ interface Factors {
 }
 
 export default class Effort {
-  unit: number = 'c'.charCodeAt(0)
-  amount: number = 0
-
   static fulls = ['century', 'year', 'month', 'week', 'day', 'hour', 'minute', 'second']
   static plural = ['centuries', 'years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds']
-  static unitInfo: Factors = {
+  static unitInfos: Factors = {
     c: {
       code: 'c'.charCodeAt(0), 
       factors: {
@@ -105,8 +102,8 @@ export default class Effort {
   static fromString(s: string) : Effort {
     let smallestUnit = 'c'
     let efforts: Effort[] = []
-    Object.keys(Effort.unitInfo).forEach(unitChar => {
-      let unit = Effort.unitInfo[unitChar]
+    Object.keys(Effort.unitInfos).forEach(unitChar => {
+      let unit = Effort.unitInfos[unitChar]
       let match = s.match(new RegExp('(\\d+\\.?\\d*)\\s*' + unit.beginning))
       if(match !== null) {
         console.log("match", match[1]) 
@@ -130,13 +127,13 @@ export default class Effort {
     )
   }
 
-  constructor(unitChar: string, amount: number) {
-    this.unit = unitChar.charCodeAt(0)
-    this.amount = amount
-  }
+  constructor(
+    public unit: string,
+    public amount: number
+  ) {}
 
   static getConversionFactor(biggerUnit: string, smallerUnit: string) : null | number {
-    let unitInfo = Effort.unitInfo[biggerUnit]
+    let unitInfo = Effort.unitInfos[biggerUnit]
     let factor = unitInfo.factors[smallerUnit]
     if(factor) {
       return factor
@@ -157,22 +154,21 @@ export default class Effort {
   }
 
   convert(targetUnit: string) {
-    let unit = String.fromCharCode(this.unit)
-    let factor = Effort.getConversionFactor(unit, targetUnit)
+    let factor = Effort.getConversionFactor(this.unit, targetUnit)
     if(factor) {
       this.amount *= factor
-      this.unit = targetUnit.charCodeAt(0)
+      this.unit = targetUnit
     }
   }
 
   humanize() : string {
-    let unit = Effort.unitInfo[String.fromCharCode(this.unit)]
+    let unitInfo = Effort.unitInfos[this.unit]
     return this.amount.toString() + " " + (
-      this.amount == 1 ? unit.singular : unit.plural
+      this.amount == 1 ? unitInfo.singular : unitInfo.plural
     )
   }
 
-  eq(other: Effort) : boolean {
-    return this.amount == other.amount && this.unit == other.unit
+  eq(other: Effort | undefined) : boolean {
+    return other !== undefined && this.amount == other.amount && this.unit == other.unit
   }
 }

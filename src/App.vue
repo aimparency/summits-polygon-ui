@@ -1,6 +1,6 @@
 <template>
   <ConnectionStatus/>
-  <AimMap/>
+  <Map/>
   <SideBar/>
 </template>
 
@@ -12,14 +12,14 @@ import { useWeb3Connection } from "./stores/web3-connection";
 import { useUi } from "./stores/ui";
 
 import ConnectionStatus from "./components/ConnectionStatus.vue";
-import AimMap from "./components/AimMap.vue";
+import Map from "./components/Map.vue";
 import SideBar from "./components/SideBar.vue";
 
 export default defineComponent({
   name: "App",
   components: {
     ConnectionStatus, 
-    AimMap,
+    Map,
     SideBar,
   },
   setup() {

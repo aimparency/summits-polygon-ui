@@ -1,6 +1,6 @@
 <template>
   <div class="aim-li"> 
-    {{ aim.title }} aim 
+    {{ aim.title || '<unnamed>' }}
   </div>
 </template>
 

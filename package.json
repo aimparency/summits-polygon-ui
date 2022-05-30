@@ -11,8 +11,10 @@
     "vue": "^3.2.25"
   },
   "devDependencies": {
+    "@types/color-hash": "^1.0.2",
     "@types/gl-vec2": "^1.3.2",
     "@vitejs/plugin-vue": "^2.3.1",
+    "color-hash": "^2.0.1",
     "crypto": "^1.0.1",
     "ethers": "^5.6.5",
     "gl-vec2": "^1.3.0",
