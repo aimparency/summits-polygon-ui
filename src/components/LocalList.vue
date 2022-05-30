@@ -1,10 +1,10 @@
 <template>
   <div class="local-list"> 
+    <h2 class="sidebar-heading">all aims</h2>
     <input type="text" placeholder="filter..."/>
     <div class="buttonList">
       <div tabindex="0" class="button" 
-        @keypress=""
-        @keyup.enter="addAim"
+        @keypress.enter="addAim"
         @click.stop="addAim">
         Add aim ...
       </div>
@@ -13,10 +13,15 @@
         @click.stop="switchToGlobalSearch">
         Search globally ...
       </div>
-    <AimLi tabindex="0"
-      v-for="aim in aims"
-      :key="aim.id"
-      :aim="aim"/>
+    </div>
+    <div class="results">
+      <AimLi tabindex="0"
+        v-for="aim in aims"
+        :key="aim.id"
+        :aim="aim"
+        @click="selectAim(aim)"
+        @keypress.space="selectAim(aim)"
+        />
     </div>
   </div>
 </template>
@@ -25,7 +30,7 @@
 import { defineComponent } from "vue"
 
 import { useUi } from "../stores/ui"
-import { useAimNetwork } from "../stores/aim-network"
+import { Aim, useAimNetwork } from "../stores/aim-network"
 
 import AimLi from "./AimLi.vue"
 
@@ -44,6 +49,7 @@ export default defineComponent({
     }
   }, 
   data() {
+    return {}
   }, 
   computed: {
     aims() {
@@ -58,6 +64,10 @@ export default defineComponent({
     addAim() {
       this.aimNetwork.createAim()
       this.ui.showAimDetails()
+    }, 
+    selectAim(aim: Aim) {
+      this.aimNetwork.selectAim(aim)
+      this.ui.showAimDetails()
     }
   }, 
   
@@ -69,6 +79,11 @@ export default defineComponent({
 .local-list {
   .buttonList {
     margin: 0.5rem; 
+  }
+  .results {
+    margin: 1rem 0.5rem; 
+    padding: 0; 
+    box-shadow: 0 0 1rem #0008; 
   }
 }
 </style>

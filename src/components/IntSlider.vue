@@ -1,6 +1,10 @@
 <template>
   <div class="slider">
-    <div class="value" tabindex="0">{{name}}: {{(value*factor).toFixed(decimalPlaces)}}{{unit}}</div>
+    <div class="value">
+      {{name}}:
+      <input :value="value" @change="setValue" tabindex="0"/> 
+      {{unit}}
+    </div>
     <div class="left">{{left}}</div>
     <div class="right">{{right}}</div>
     <div class="bar" ref="bar">
@@ -40,14 +44,6 @@ export default defineComponent({
     right: {
       type: String,
       default: 'high'
-    },
-    decimalPlaces: {
-      type: Number,
-      default: 2
-    },
-    factor: {
-      type: Number,
-      default: 1
     },
     unit: {
       type: String,
@@ -100,6 +96,11 @@ export default defineComponent({
         this.$emit('update', v)
       }
     },
+    setValue(e: Event) {
+      let v = parseInt((<HTMLInputElement>e.target).value)
+      this.$emit('update', v)
+      this.$emit('drag-end')
+    },
     getV (e: MouseEvent | TouchEvent) {
       let x = 0
       if (e instanceof MouseEvent) {
@@ -139,6 +140,10 @@ export default defineComponent({
     position: absolute; 
     top: 0.7rem; 
     text-align: center; 
+    input {
+      display: inline-block;
+      width: 4rem; 
+    }
   }
   .bar {
     position: absolute;

@@ -37,6 +37,7 @@ export default defineComponent({
     onResize()
   }, 
   data() {
+    return {}
   },
   methods: {
   },
@@ -58,7 +59,7 @@ input, textarea {
   margin: 0.5rem; 
   padding: 0.5rem; 
   border: none; 
-  border-radius: @secondaryround; 
+  border-radius: @secondaryradius; 
   &:focus {
     outline: 0.2rem solid #fff8; 
   }
@@ -68,5 +69,13 @@ input, textarea {
   background-color: #0004; 
 }
 
+.sidebar-heading {
+  text-align: center; 
+  line-height: 2rem; 
+  padding: 0.5rem 1rem; 
+  margin: 0; 
+  margin-bottom: 0.5rem; 
+  background-color: @mid2; 
+}
 
 </style>

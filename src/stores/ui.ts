@@ -19,6 +19,14 @@ export const useUi = defineStore('ui', {
     }, 
     showAimDetails() {
       this.view = 'aimDetails'
+    }, 
+    goBack() {
+      if(this.view == 'aimDetails') {
+        this.showLocalList()
+      }
+    }, 
+    showLocalList() {
+      this.view = 'localList'
     }
   }
 })

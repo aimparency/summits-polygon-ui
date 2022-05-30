@@ -4,9 +4,12 @@
     <div 
       v-for="option, i in options"
       :key="i"
+      tabindex="0"
       :style="{backgroundColor: option.color}"
       class="option"
       :class="{ selected: option.value == value}"
+      @keypress.space="select(i)"
+      @keypress.enter="select(i)"
       @click="select(i)">
       {{ option.value }}
     </div>
@@ -59,7 +62,7 @@ export default defineComponent({
     box-shadow: 0 0 0.5rem #0008; 
     &.selected {
       opacity: 1; 
-      outline: 0.2rem solid #fff6; 
+      outline: 0.2rem solid #fff8; 
     }
   }
 }

@@ -14,7 +14,7 @@ export class AimAppearance {
   }
 }
 
-export class AimChanges {
+export class AimOrigin {
   title?: string
   detailsCid?: string
   shares?: number
@@ -36,7 +36,7 @@ export class Aim {
 
   appearance = new AimAppearance(0,0,0)
 
-  changes = new AimChanges()
+  origin = new AimOrigin()
 
   pendingTransactions = false
 
@@ -120,6 +120,7 @@ export const useAimNetwork = defineStore('aim-network', {
       this.selectedFlow = flow
     }, 
     selectAim(aim: Aim) {
+      console.log("selecting aim", aim) 
       this.selectedFlow = undefined
       this.selectedAim = aim
     },

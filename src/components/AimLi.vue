@@ -1,6 +1,6 @@
 <template>
   <div class="aim-li"> 
-    {{ aim.title }}
+    {{ aim.title }} aim 
   </div>
 </template>
 
@@ -25,13 +25,24 @@ export default defineComponent({
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
 .aim-li{
-  padding: 0.3rem; 
-  margin: 0 0.5rem; 
-  border-top: 0.2rem solid #fff6; 
-  background-color: #fff2; 
+  .clickable();
+  padding: 0.3rem 1rem; 
+  margin: 0 ;
+  border-top: 0.2rem solid @mid1; 
+  background-color: @bg1;  
   &:focus{
     outline: none; 
-  background-color: #fff6; 
+    background-color: @mid1; 
+  }
+  @r: @secondaryradius; 
+  &:first-child{
+    border-top-left-radius: @r; 
+    border-top-right-radius: @r;
+    border: none; 
+  }
+  &:last-child{
+    border-bottom-left-radius: @r;
+    border-bottom-right-radius: @r;
   }
 }
 </style>

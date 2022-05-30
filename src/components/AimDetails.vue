@@ -1,32 +1,32 @@
 <template>
   <div class="aim-details"> 
-    <h3>aim details</h3>
+    <h2 class="sidebar-heading">aim details</h2>
     <input 
       ref='title'
       class='standard title' 
-      :value="title" 
+      :value="aim.title" 
       placeholder="<aim title>"
       @input="updateTitle"/>
     <input 
       class='standard effort' 
-      :value="effortString ?? effort" 
+      :value="effortString ?? aim.effort.humanize()" 
       @blur='parseAndUpdateEffort'
       onfocus="this.select()" 
       @input="effortChange"/>
     <MultiSwitch
       class='state'
       label="state"
-      :value="state"
+      :value="aim.state"
       :options="stateOptions" 
       @change='updateState'
       />
-    <Slider 
+    <IntSlider 
       name='shares'
-      :left='sharesSliderMin.toFixed(2)'
-      :right='sharesSliderMax.toFixed(2)'
+      :left='sharesSliderMin.toString()'
+      :right='sharesSliderMax.toString()'
       :from='sharesSliderMin'
       :to='sharesSliderMax'
-      :value='shares'
+      :value='aim.shares'
       @drag-end='updateSharesSliderOrigin'
       @update='updateShares'/>
     <div v-if="aim.pendingTransactions"> 
@@ -68,19 +68,19 @@
 import { defineComponent, PropType } from "vue"
 
 import { useUi } from "../stores/ui"
-import { Aim, AimChanges, Flow, useAimNetwork } from "../stores/aim-network"
+import { Aim, AimOrigin, Flow, useAimNetwork } from "../stores/aim-network"
 import Effort from "../types/effort"
 
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
-import Slider from './Slider.vue'
+import IntSlider from './IntSlider.vue'
 
 export default defineComponent({
   name: "AimDetails",
   components: {
     AimLi,
     MultiSwitch,
-    Slider, 
+    IntSlider: IntSlider, 
   },
   props: {
     aim: {
@@ -119,30 +119,18 @@ export default defineComponent({
   computed: {
     dirty() : boolean {
       return ( 
-        Object.keys(this.aim.changes).length > 0 
+        Object.keys(this.aim.origin).length > 0 
       ) 
     }, 
-    effort() : string {
-      if(this.aim.changes.effort) {
-        return this.aim.changes.effort.humanize()
-      } else {
-        return this.aim.effort.humanize()
-      }
-    }, 
-    title() : string {
-      return this.aim.changes.title ?? this.aim.title
-    }, 
-    state() : string {
-      return this.aim.changes.state ?? this.aim.state
-    }, 
     sharesSliderMin(): number {
-      return Math.max(0, this.sharesSliderOrigin / 2 - 10)
+      return Math.round(
+        Math.max(0, this.sharesSliderOrigin / 2 - 10)
+      )
     }, 
     sharesSliderMax(): number {
-      return this.sharesSliderOrigin * 2 + 10
-    }, 
-    shares() : number {
-      return this.aim.changes.shares ?? this.aim.shares
+      return Math.round(
+        this.sharesSliderOrigin * 2 + 10
+      )
     }, 
     flows_from() : {flow: Flow, aim: Aim}[] {
       return this.aim.flows_from.map((fromAim: Aim) => ({
@@ -164,48 +152,42 @@ export default defineComponent({
       } 
     }, 
     updateSharesSliderOrigin(){
-      this.sharesSliderOrigin = this.shares
+      this.sharesSliderOrigin = this.aim.shares
     }, 
     updateShares(v: number) {
-      if(this.aim.shares === v) {
-        delete this.aim.changes.shares
-      } else {
-        this.aim.changes.shares = v
-      }
+      if(this.aim.origin.shares === undefined && this.aim.shares !== v) {
+        this.aim.origin.shares = this.aim.shares
+      } 
+      this.aim.shares = v
     }, 
     updateState(v: string) {
-      if(this.aim.state === v) {
-        delete this.aim.changes.state
-      } else {
-        this.aim.changes.state = v
-      }
+      if(this.aim.origin.state  === undefined && this.aim.state !== v) {
+        this.aim.origin.state = this.aim.state
+      } 
+      this.aim.state = v
     }, 
     updateTitle(e: Event) {
       let v = (<HTMLInputElement>e.target).value
-      if(this.aim.title === v) {
-        delete this.aim.changes.title 
-      } else {
-        this.aim.changes.title = v
-      }
+      if(this.aim.origin.title === undefined && this.aim.title !== v) {
+        this.aim.origin.title = this.aim.title 
+      } 
+      this.aim.title = v
     }, 
     effortChange(e: Event) {
       this.effortString = (<HTMLInputElement>e.target).value
     }, 
     parseAndUpdateEffort() {
       if(this.effortString !== undefined) {
-        let newEffort = Effort.fromString(this.effortString)
-
-        if(this.aim.effort.eq(newEffort)) {
-          delete this.aim.changes.effort
-        } else {
-          this.aim.changes.effort = newEffort
-        }
-
+        let v = Effort.fromString(this.effortString)
+        if(this.aim.origin.effort !== undefined && !this.aim.effort.eq(v)) {
+          this.aim.origin.effort = this.aim.effort
+        } 
+        this.aim.effort = v
         this.effortString = undefined
       }
     }, 
     reset() {
-      this.aim.changes = new AimChanges()
+      this.aim.origin = new AimOrigin()
     }, 
     commit() {
       this.aimNetwork.commitChanges(this.aim) 

@@ -1,6 +1,10 @@
 <template>
-  <div class="side-bar" :class="{closed: !open}" :style="style"> 
+  <div 
+    class="side-bar" 
+    :class="{closed: !open}" 
+    :style="style"> 
     <div class="toggle"
+      tabindes="0"
       @click.stop="toggle">
       <span v-if="open">
         &lt; 
@@ -8,6 +12,13 @@
       <span v-else>
         &gt; 
       </span>
+    </div>
+    <div class="back"
+      v-if="ui.view != 'localList'"
+      tabindes="0"
+      @click.stop="goBack">
+      &lt;-
+      
     </div>
     <aimDetails 
       v-if="ui.view == 'aimDetails' && (aimNetwork.selectedAim !== undefined)"
@@ -42,6 +53,7 @@ export default defineComponent({
     }
   }, 
   data() {
+    return {}
   },
   computed: {
     style() {
@@ -64,6 +76,9 @@ export default defineComponent({
   methods: {
     toggle() {
       this.ui.toggleSideMenu()
+    }, 
+    goBack() {
+      this.ui.goBack()
     }
   }
 });
@@ -71,6 +86,7 @@ export default defineComponent({
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
+@size: 3rem; 
 .side-bar {
   position: fixed; 
   left: 0; 
@@ -78,30 +94,44 @@ export default defineComponent({
   background-color: @bg2;
   height: 100%; 
   transform: translate(0, 0); 
-  box-shadow: 0 0 2rem black; 
+  box-shadow: 0 0 4rem black; 
   &.closed{
     box-shadow: none; 
     transform: translate(-100%, 0); 
     .toggle {
       box-shadow: 0 0 2rem black; 
+      left: 100%; 
     }
   }
   .toggle {
-    @size: 3rem; 
+    left: calc(100% - @size);
     font-size: 1.8rem; 
     .clickable(); 
-    background-color: @bg2; 
-    border-bottom-right-radius: @secondaryround; 
-    width: @size - 0.5rem; 
+    background-color: @mid2; 
+    border-bottom-right-radius: @secondaryradius; 
+    width: @size; 
     height: @size; 
     line-height: @size; 
     font-weight: bold; 
     text-align: center; 
     position: absolute; 
-    left: 100%; 
     top: 0; 
-    border-left: none; 
+    transition: left 0.3 ease-out; 
   }
-  transition: transform 0.15s ease-in-out;
+  .back{
+    .button();
+    margin:0; 
+    padding: 0; 
+    left: 0;
+    font-size: 1.8rem; 
+    width: @size; 
+    height: @size; 
+    line-height: @size; 
+    font-weight: bold; 
+    text-align: center; 
+    position: absolute; 
+    top: 0; 
+  }
+  transition: transform 0.15s ease-out;
 }
 </style>
