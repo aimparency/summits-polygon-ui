@@ -33,7 +33,7 @@ export default defineComponent({
   },
   computed: {
     path() : string {
-      const path = makeCircularPath(
+      return makeCircularPath(
         {
           pos: this.connectFrom.pos,
           r: this.connectFrom.importance
@@ -44,8 +44,6 @@ export default defineComponent({
           r: 0
         }
       )
-      console.log(path) 
-      return path
     }
   }
 });

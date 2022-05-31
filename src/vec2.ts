@@ -73,7 +73,6 @@ export function isZero(a: T) {
   return a[0] == 0 && a[1] == 0
 }
 
-
 /* the following cr-helpers create a vector for the operator result */
 
 export function crAdd(a: T, b: T) {

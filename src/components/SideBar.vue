@@ -14,7 +14,7 @@
       </span>
     </div>
     <aimDetails 
-      v-if="showAimDetails"
+      v-if="showAimDetails && aimNetwork.selectedAim"
       :aim="aimNetwork.selectedAim"
       />
     <LocalList v-else/>
@@ -25,7 +25,7 @@
 import { defineComponent } from "vue"
 
 import { useUi } from "../stores/ui"
-import { Aim, useAimNetwork } from "../stores/aim-network"
+import { useAimNetwork } from "../stores/aim-network"
 
 import LocalList from "./LocalList.vue"
 import AimDetails from "./AimDetails.vue"
@@ -112,8 +112,8 @@ export default defineComponent({
     text-align: center; 
     position: absolute; 
     top: 0; 
-    transition: left 0.3s ease-out; 
+    transition: left 0.2s ease-out; 
   }
-  transition: transform 0.3s ease-out;
+  transition: transform 0.2s ease-out;
 }
 </style>
