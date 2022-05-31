@@ -8,8 +8,8 @@
         :key="`${flow.from}x${flow.into}`"
         :flow="flow"/>
       <Connector 
-        v-if="aimNetwork.connectFrom !== undefined"
-        :connectFrom="aimNetwork.connectFrom"/>
+        v-if="map.connectFrom !== undefined"
+        :connectFrom="map.connectFrom"/>
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
         :aim="aim"/>
@@ -86,15 +86,15 @@ export default defineComponent({
 
     const updateDrag = (mouse: V2) => {
       const db = this.map.dragBeginning;
-      const aim = this.aimNetwork.dragCandidate; 
+      const aim = this.map.dragCandidate; 
       if(db && aim) {
         const d = Vec2.clone(db.page)
         Vec2.sub(d, d, mouse) 
         if(Vec2.len(d) > 5) {
           this.map.preventReleaseClick = true
           Vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
-          const pos = Vec2.clone(db.initialPosition)
-          Vec2.add(pos, pos, d) 
+          const pos = Vec2.clone(db.offset)
+          Vec2.sub(pos, pos, d) 
           aim.pos = pos
         }
       }
@@ -119,6 +119,7 @@ export default defineComponent({
       } else if (this.map.dragBeginning) {
         endDrag();
       }
+      setTimeout(() => { this.map.preventReleaseClick = false })
     }
 
     const endPan = () => {
@@ -126,11 +127,11 @@ export default defineComponent({
     }
 
     const endDrag = () => {
-      if(this.map.preventReleaseClick && this.aimNetwork.dragCandidate) {
+      if(this.map.preventReleaseClick && this.map.dragCandidate) {
         //TBD: this.aimNetwork.relocate()
       }
       delete this.map.dragBeginning; 
-      delete this.aimNetwork.dragCandidate; 
+      delete this.map.dragCandidate; 
     }
 
     const updateWhatever = (mouse: Vec2) : void => {
@@ -148,8 +149,8 @@ export default defineComponent({
 
     canvas.addEventListener("mousedown", (e: MouseEvent) => {
       const mouse = Vec2.fromValues(e.clientX, e.clientY)
-      if(this.aimNetwork.dragCandidate) {
-        beginDrag(this.aimNetwork.dragCandidate, mouse)
+      if(this.map.dragCandidate) {
+        beginDrag(this.map.dragCandidate, mouse)
       } else {
         beginPan(mouse) 
       }
@@ -161,7 +162,7 @@ export default defineComponent({
 
     canvas.addEventListener("wheel", (e: WheelEvent) => {
       const mouse = Vec2.fromValues(e.clientX, e.clientY)
-      const f = Math.pow(1.1, e.deltaY / 150)
+      const f = Math.pow(1.1, -e.deltaY / 150)
       this.map.zoom(f, mouse) 
     })
 
@@ -178,18 +179,21 @@ export default defineComponent({
       scale: number, 
     };
     canvas.addEventListener("touchstart", (e: TouchEvent) => { 
+      e.preventDefault()
       if(e.touches.length > 0) {
         if(e.touches.length > 1) {
           // 2 or more touches         
           if(touch.currentCount < 2) {
             touch.currentCount = 2
             // page coordinates
-            let firstPage = Vec2.fromValues(e.touches[0].clientY, e.touches[0].clientY)
+            let firstPage = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
             let secondPage = Vec2.fromValues(e.touches[1].clientX, e.touches[1].clientY)
             let mPhysical = Vec2.clone(firstPage) 
             Vec2.add(mPhysical, mPhysical, secondPage) 
             Vec2.scale(mPhysical, mPhysical, 0.5) 
+            console.log("mPhysical pinch begin " + mPhysical) 
             let mLogical = this.map.physicalToLogicalCoord(mPhysical) 
+            console.log("mLogical pinch begin " + mLogical) 
             // model/svg coordinates
             pinchBeginning = {
               first: e.touches[0].identifier, 
@@ -207,8 +211,8 @@ export default defineComponent({
             touch.currentCount = 1
             touch.dragFingerId = e.touches[0].identifier
             let mouse = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
-            if(this.aimNetwork.dragCandidate) {
-              beginDrag(this.aimNetwork.dragCandidate, mouse)
+            if(this.map.dragCandidate) {
+              beginDrag(this.map.dragCandidate, mouse)
             } else {
               beginPan(mouse)
             }
@@ -221,6 +225,7 @@ export default defineComponent({
     });
 
     canvas.addEventListener("touchmove", (e: TouchEvent) => { 
+      e.preventDefault()
       if(touch.currentCount == 1) {
         let mouse = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
         updateWhatever(mouse)
@@ -229,7 +234,7 @@ export default defineComponent({
           // update pinch
           const map = this.map
 
-          let firstPage = Vec2.fromValues(e.touches[0].clientY, e.touches[0].clientY)
+          let firstPage = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
           let secondPage = Vec2.fromValues(e.touches[1].clientX, e.touches[1].clientY)
           let distancePage = Vec2.dist(firstPage, secondPage)
 
@@ -244,27 +249,27 @@ export default defineComponent({
 
           Vec2.sub(mLogical, mLogical, pinchBeginning.mLogical) 
 
-          Vec2.sub(this.map.offset, this.map.offset, mLogical) 
+          Vec2.add(this.map.offset, this.map.offset, mLogical) 
         }
       }
     })
 
     const finishTouch = () => {
-      if(touch.currentCount == 1) {
-        touch.currentCount = 0
+      if(touch.currentCount > 1) {
+        pinchBeginning = undefined
+      } 
+      if(touch.currentCount > 0) {
         endWhatever()
-      } else if (touch.currentCount == 2) {
-        touch.currentCount = 0
       }
-      this.map.preventReleaseClick = false // click not triggered after touch move
+      touch.currentCount = 0
     }
 
     canvas.addEventListener("touchend", finishTouch) 
     canvas.addEventListener("touchcancel", finishTouch) 
 
-    // canvas.addEventListener("click", (e: MouseEvent) => {
-    //   //TBD nowhere click
-    // });
+    canvas.addEventListener("click", () => {
+      this.aimNetwork.deselect()
+    });
   }, 
   methods: {
 

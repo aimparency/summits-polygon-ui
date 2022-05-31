@@ -71,7 +71,6 @@ function idToBigInt(hex: string) {
   return BigInt('0x' + hex) 
 }
 
-type maybeAim = undefined | Aim
 
 export const useAimNetwork = defineStore('aim-network', {
   state() {
@@ -81,10 +80,8 @@ export const useAimNetwork = defineStore('aim-network', {
       } as {[id: string]: Aim}, 
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
       home: undefined as string | undefined,
-      selectedAim: undefined as maybeAim,
+      selectedAim: undefined as Aim | undefined,
       selectedFlow: undefined as Flow | undefined, 
-      connectFrom: undefined as maybeAim,
-      dragCandidate: undefined as maybeAim, 
     }
   }, 
   actions: {
@@ -93,7 +90,7 @@ export const useAimNetwork = defineStore('aim-network', {
       let web3 = useWeb3Connection()
       if(web3.contract !== undefined) {
         console.log(web3.contract) 
-        const homeId = await web3.contract.homes(web3.address)
+        const homeId = 0 // await web3.contract.homes(web3.address)
         if(homeId == 0) {
           this.home == undefined
         } else {
@@ -163,11 +160,5 @@ export const useAimNetwork = defineStore('aim-network', {
       } 
       delete this.aims[aim.id]
     },
-    startConnecting(aim: Aim) {
-      this.connectFrom = aim
-    }, 
-    startDragging(aim: Aim) {
-      this.dragCandidate = aim
-    }
   }, 
 })

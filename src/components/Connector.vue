@@ -35,14 +35,12 @@ export default defineComponent({
     path() : string {
       return makeCircularPath(
         {
-          x: this.connectFrom.x, 
-          y: this.connectFrom.y, 
+          pos: this.connectFrom.pos,
           r: this.connectFrom.importance
         }, 
         0.1, 
         {
-          x: this.map.mouse.logical[0],		
-          y: this.map.mouse.logical[1],		
+          pos: this.map.mouse.logical,
           r: 0
         }
       )

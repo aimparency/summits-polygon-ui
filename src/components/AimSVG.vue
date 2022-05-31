@@ -5,7 +5,7 @@
       :transform="scale">
       <circle 
         :class="{selected}"
-        :fill="fillColor" 
+        :fill="aim.color" 
         cx="0" 
         cy="0" 
         r="1"
@@ -33,12 +33,14 @@
 import { defineComponent, PropType } from 'vue';
 
 import { Aim, useAimNetwork } from '../stores/aim-network'
+import { useMap } from '../stores/map';
 
 export default defineComponent({
   name: 'AimSVG',
   data() {
     return {
-      aimNetwork: useAimNetwork()
+      aimNetwork: useAimNetwork(),
+      map: useMap()
     }
   },
   props: {
@@ -48,12 +50,9 @@ export default defineComponent({
     }
   }, 
   computed: {
-    fillColor() {
-      return '#' + this.aim.color
-    }, 
     transform() : string {
       let aim = this.aim
-      return `translate(${aim.x}px, ${aim.y}px)`
+      return `translate(${aim.pos[0]}px, ${aim.pos[1]}px)`
     }, 
     scale() : string {
       let aim = this.aim
@@ -69,25 +68,22 @@ export default defineComponent({
       return this.aimNetwork.selectedAim == this.aim; 
     }, 
     showTools() : boolean {
-      return this.selected && this.aimNetwork.connectFrom == undefined; 
+      return this.selected && this.map.connectFrom == undefined; 
     }, 
   },
   methods: {
     select() {
-      this.aimNetwork.selectAim(this.aim)
+      if(!this.map.preventReleaseClick) {
+        this.aimNetwork.selectAim(this.aim)
+      }
     }, 
     mouseDown() {
       if(this.selected) {
-        this.aimNetwork.startConnecting(this.aim)
+        this.map.startConnecting(this.aim)
       } else {
-        this.aimNetwork.startDragging(this.aim)
+        this.map.startDragging(this.aim)
       }
     }, 
-    connect() {
-    }, 
-    remove() {
-      this.$store.dispatch(ActionTypes.REMOVE_NODE, this.aim)
-    }
   }
 });
 </script>

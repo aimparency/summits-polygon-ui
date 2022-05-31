@@ -94,6 +94,9 @@ export default defineComponent({
       required: true
     }
   },
+  mounted() {
+    
+  }, 
   data() {
     const aimNetwork = useAimNetwork()
     const ui = useUi()

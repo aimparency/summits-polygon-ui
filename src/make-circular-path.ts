@@ -13,15 +13,12 @@ function rotCW(v: V2) {
 }
 
 function makeCircularPath(
-  from: {x: number, y: number, r: number}, 
+  from: {pos: V2, r: number}, 
   fromShare: number, 
-  into: {x: number, y: number, r: number}
+  into: {pos: V2, r: number}
 ) : string {
-  let mFrom = Vec2.fromValues(from.x, from.y)
-  let mInto = Vec2.fromValues(into.x, into.y) 
-
-  const delta = Vec2.clone(mInto)
-  Vec2.sub(delta, delta, mFrom)
+  const delta = Vec2.clone(into.pos)
+  Vec2.sub(delta, delta, from.pos)
   const R = Vec2.len(delta)
 
   if(R < from.r) {
@@ -31,8 +28,8 @@ function makeCircularPath(
     Vec2.scale(deltaRot, deltaRot, SQR_3_4) 
 
     // point beween from and into
-    const halfWay = Vec2.clone(mFrom)
-    Vec2.add(halfWay, halfWay, mInto) 
+    const halfWay = Vec2.clone(from.pos)
+    Vec2.add(halfWay, halfWay, into.pos) 
     Vec2.scale(halfWay, halfWay, 0.5)
 
     // center point of arc
@@ -49,13 +46,13 @@ function makeCircularPath(
       const a = Math.pow(radius, 2) / (2 * R)
       const h = Math.sqrt(Math.pow(radius, 2) - Math.pow(a, 2))
 
-      const normMToInto = getMNorm(mInto)
+      const normMToInto = getMNorm(into.pos)
       Vec2.scale(normMToInto, normMToInto, a) 
 
       const normMToIntoRot = rotCW(normMToInto)
       Vec2.scale(normMToIntoRot, normMToIntoRot, h)
 
-      const result = Vec2.clone(mInto)
+      const result = Vec2.clone(into.pos)
       Vec2.sub(result, result, normMToInto) 
       return Vec2.sub(result, result, normMToIntoRot) 
     }
@@ -82,12 +79,12 @@ function makeCircularPath(
     const wingInnerNear = Vec2.clone(arrowWings)
     Vec2.sub(wingInnerNear, wingInnerNear, toNearWingSide); 
 
-    const normMToMFrom = getMNorm(mFrom); 
+    const normMToMFrom = getMNorm(from.pos); 
     const toTheSide = Vec2.clone(normMToMFrom)
     Vec2.scale(toTheSide, toTheSide, width * 0.5); 
-    const startOuter = Vec2.clone(mFrom)
+    const startOuter = Vec2.clone(from.pos)
     Vec2.add(startOuter, startOuter, toTheSide); 
-    const startInner = Vec2.clone(mFrom)
+    const startInner = Vec2.clone(from.pos)
     Vec2.sub(startInner, startInner, toTheSide); 
 
 

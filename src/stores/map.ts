@@ -1,7 +1,10 @@
 import { defineStore } from 'pinia'
 
 import Vec2 from 'gl-vec2'
+import { Aim } from './aim-network'
 type V2 = number[]
+
+type maybeAim = undefined | Aim
 
 export const useMap = defineStore('map', {
   state() {
@@ -18,6 +21,8 @@ export const useMap = defineStore('map', {
       dragBeginning: undefined as undefined | { page: V2, offset: V2 },
       preventReleaseClick: false,
       clientOffset: Vec2.create(),
+      connectFrom: undefined as maybeAim,
+      dragCandidate: undefined as maybeAim, 
     }
   }, 
   actions: {
@@ -32,7 +37,6 @@ export const useMap = defineStore('map', {
       Vec2.sub(result, result, [1,1]) 
       Vec2.scale(result, result, this.logicalHalfSide / this.scale) 
       Vec2.sub(result, result, this.offset) 
-      console.log(coord, "to", result) 
       return result
     }, 
     zoom(f: number, mouse: V2) {
@@ -41,6 +45,12 @@ export const useMap = defineStore('map', {
       let mouseAfter = this.physicalToLogicalCoord(mouse) 
       Vec2.sub(mouseAfter, mouseAfter, mouseBefore) 
       Vec2.add(this.offset, this.offset, mouseAfter) 
+    },
+    startConnecting(aim: Aim) {
+      this.connectFrom = aim
+    }, 
+    startDragging(aim: Aim) {
+      this.dragCandidate = aim
     }
   }
 })
