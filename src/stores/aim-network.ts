@@ -5,7 +5,7 @@ import Effort from '../types/effort'
 
 import ColorHash from 'color-hash'; 
 
-import Vec2 from 'gl-vec2'
+import * as vec2 from '../vec2'
 
 const colorHash = new ColorHash({ lightness: 0.4 }); 
 
@@ -25,7 +25,7 @@ export class Aim {
   shares = 0
   importance = 100
 
-  pos = Vec2.create()
+  pos = vec2.create()
 
   color: string
   

@@ -498,11 +498,6 @@
   resolved "https://registry.yarnpkg.com/@types/color-hash/-/color-hash-1.0.2.tgz#22aec4c488929804c875bd4ef6827499fce00151"
   integrity sha512-QJCVXSVRse+mMvzWQ8vH6AcKxtqCgHPHf5abAdGn86DEeQdUpSJnKAeCa1+hZuohaUF3l4RhigC9akRx82Bwig==
 
-"@types/gl-vec2@^1.3.2":
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/@types/gl-vec2/-/gl-vec2-1.3.2.tgz#a0b6a360f12970d460d43cee3410161594b7148b"
-  integrity sha512-GNiqmx1B9QuhuK0ACgwZ+YTWNjy2RjjorEMoCJEZWYcMbsJ82y7mEfmKkfC5Y+nqCafVlocRvbu83UNo/05JEg==
-
 "@vitejs/plugin-vue@^2.3.1":
   version "2.3.2"
   resolved "https://registry.yarnpkg.com/@vitejs/plugin-vue/-/plugin-vue-2.3.2.tgz#12ea7a42e6c83d5ea48e14dc41fd2bbb5806ee37"
@@ -962,11 +957,6 @@ function-bind@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/function-bind/-/function-bind-1.1.1.tgz#a56899d3ea3c9bab874bb9773b7c5ede92f4895d"
   integrity sha512-yIovAzMX49sF8Yl58fSCWJ5svSLuaibPxXQJFLmBObTuCr0Mf1KiPopGM9NiFjiYBCbfaa2Fh6breQ6ANVTI0A==
-
-gl-vec2@^1.3.0:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/gl-vec2/-/gl-vec2-1.3.0.tgz#83d472ed46034de8e09cbc857123fb6c81c51199"
-  integrity sha512-YiqaAuNsheWmUV0Sa8k94kBB0D6RWjwZztyO+trEYS8KzJ6OQB/4686gdrf59wld4hHFIvaxynO3nRxpk1Ij/A==
 
 globals@^11.1.0:
   version "11.12.0"

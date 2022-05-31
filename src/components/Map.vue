@@ -27,8 +27,7 @@ import Connector from './Connector.vue';
 import { Aim, Flow, useAimNetwork } from '../stores/aim-network'
 import { useMap } from '../stores/map'
 
-import Vec2 from 'gl-vec2'
-type V2 = number[]
+import * as vec2 from '../vec2'
 
 export default defineComponent({
   name: "Map",
@@ -53,63 +52,66 @@ export default defineComponent({
       let w = canvas.clientWidth 
       let h = canvas.clientHeight
       if(w < h) {
-        this.map.clientOffset = Vec2.fromValues(
-          0,
-          (h - w) / 2
-        )
+        this.map.clientOffset = [0, (h - w) / 2]
         this.map.halfSide = w / 2
       } else {
-        this.map.clientOffset = Vec2.fromValues(
-          (w - h) / 2, 
-          0 
-        )
+        this.map.clientOffset = [(w - h) / 2, 0]
         this.map.halfSide = h / 2
       }
     }
     canvas.addEventListener("resize", updateHalfSide)
     updateHalfSide()
 
-    const updatePan = (mouse: V2) => {
+    const updatePan = (mouse: vec2.T) => {
       const pb = this.map.panBeginning; 
       if(pb !== undefined) {
-        const d = Vec2.clone(pb.page) 
-        Vec2.sub(d, d, mouse) 
-        if(Vec2.len(d) > 5) {
+        const d = vec2.crSub(pb.page, mouse)
+        if(vec2.len2(d) > 25) {
           this.map.preventReleaseClick = true
-          Vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
-          const offset = Vec2.clone(pb.offset)
-          Vec2.sub(offset, offset, d)
+          vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
+          const offset = vec2.clone(pb.offset)
+          vec2.sub(offset, offset, d)
           this.map.offset = offset  
         }
       }
     }
 
-    const updateDrag = (mouse: V2) => {
+    const updateDrag = (mouse: vec2.T) => {
       const db = this.map.dragBeginning;
       const aim = this.map.dragCandidate; 
       if(db && aim) {
-        const d = Vec2.clone(db.page)
-        Vec2.sub(d, d, mouse) 
-        if(Vec2.len(d) > 5) {
+        const d = vec2.clone(db.page)
+        vec2.sub(d, d, mouse) 
+        if(vec2.len2(d) > 25) {
           this.map.preventReleaseClick = true
-          Vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
-          const pos = Vec2.clone(db.pos)
-          Vec2.sub(pos, pos, d) 
+          vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
+          const pos = vec2.clone(db.pos)
+          vec2.sub(pos, pos, d) 
           aim.pos = pos
         }
       }
     }
 
-    const beginPan = (mouse: V2) => {
-      this.map.panBeginning = {
-        page: Vec2.clone(mouse), 
-        offset: Vec2.clone(this.map.offset)
+    const beginWhatever = (mouse: vec2.T) => {
+      if(this.map.connectFrom) {
+        this.map.connecting = true
+      } else if(this.map.dragCandidate) {
+        beginDrag(this.map.dragCandidate, mouse)
+      } else {
+        beginPan(mouse) 
       }
     }
-    const beginDrag = (aim: Aim, mouse:V2) => {
+
+    const beginPan = (mouse: vec2.T) => {
+      this.map.panBeginning = {
+        page: vec2.clone(mouse), 
+        offset: vec2.clone(this.map.offset)
+      }
+    }
+    const beginDrag = (aim: Aim, mouse:vec2.T) => {
       this.map.dragBeginning = {
-        page: Vec2.clone(mouse),
-        pos: Vec2.clone(aim.pos) 
+        page: vec2.clone(mouse),
+        pos: vec2.clone(aim.pos) 
       }
     }
 
@@ -135,11 +137,10 @@ export default defineComponent({
       delete this.map.dragCandidate; 
     }
 
-    const updateWhatever = (mouse: V2) : void => {
+    const updateWhatever = (mouse: vec2.T) : void => {
       this.map.updateMouse(mouse)
       if(this.map.panBeginning) {
         updatePan(mouse); 
-        console.log("updating pan") 
       } else if (this.map.dragBeginning) {
         updateDrag(mouse); 
       }
@@ -150,14 +151,8 @@ export default defineComponent({
     })
 
     canvas.addEventListener("mousedown", (e: MouseEvent) => {
-      const mouse = Vec2.fromValues(e.clientX, e.clientY)
-      if(this.map.connectFrom) {
-        this.map.connecting = true
-      } else if(this.map.dragCandidate) {
-        beginDrag(this.map.dragCandidate, mouse)
-      } else {
-        beginPan(mouse) 
-      }
+      const mouse = vec2.fromValues(e.clientX, e.clientY)
+      beginWhatever(mouse)
     })
 
     canvas.addEventListener("mouseup", () => {
@@ -165,7 +160,7 @@ export default defineComponent({
     })
 
     canvas.addEventListener("wheel", (e: WheelEvent) => {
-      const mouse = Vec2.fromValues(e.clientX, e.clientY)
+      const mouse = vec2.fromValues(e.clientX, e.clientY)
       const f = Math.pow(1.1, -e.deltaY / 150)
       this.map.zoom(f, mouse) 
     })
@@ -177,32 +172,32 @@ export default defineComponent({
     let pinchBeginning: undefined | {
       first: number, 
       second: number, 
-      mLogical: V2, 
+      mLogical: vec2.T, 
       distancePage: number, 
-      offset: V2, 
+      offset: vec2.T, 
       scale: number, 
     };
     canvas.addEventListener("touchstart", (e: TouchEvent) => { 
-      e.preventDefault()
       if(e.touches.length > 0) {
         if(e.touches.length > 1) {
           // 2 or more touches         
           if(touch.currentCount < 2) {
+            this.map.connectFrom = undefined
             touch.currentCount = 2
             // page coordinates
-            let firstPage = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
-            let secondPage = Vec2.fromValues(e.touches[1].clientX, e.touches[1].clientY)
-            let mPhysical = Vec2.clone(firstPage) 
-            Vec2.add(mPhysical, mPhysical, secondPage) 
-            Vec2.scale(mPhysical, mPhysical, 0.5) 
+            let firstPage = vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
+            let secondPage = vec2.fromValues(e.touches[1].clientX, e.touches[1].clientY)
+            let mPhysical = vec2.clone(firstPage) 
+            vec2.add(mPhysical, mPhysical, secondPage) 
+            vec2.scale(mPhysical, mPhysical, 0.5) 
             let mLogical = this.map.physicalToLogicalCoord(mPhysical) 
             // model/svg coordinates
             pinchBeginning = {
               first: e.touches[0].identifier, 
               second: e.touches[1].identifier, 
               mLogical, 
-              distancePage: Vec2.dist(firstPage, secondPage), 
-              offset: Vec2.clone(this.map.offset), 
+              distancePage: vec2.dist(firstPage, secondPage), 
+              offset: vec2.clone(this.map.offset), 
               scale: this.map.scale
             }
           } 
@@ -212,12 +207,8 @@ export default defineComponent({
             // new touch 
             touch.currentCount = 1
             touch.dragFingerId = e.touches[0].identifier
-            let mouse = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
-            if(this.map.dragCandidate) {
-              beginDrag(this.map.dragCandidate, mouse)
-            } else {
-              beginPan(mouse)
-            }
+            let mouse = vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
+            beginWhatever(mouse)
           } else if (touch.currentCount > 1) {
             // from 2 or more to 1
             pinchBeginning = undefined // end pinch
@@ -229,29 +220,29 @@ export default defineComponent({
     canvas.addEventListener("touchmove", (e: TouchEvent) => { 
       e.preventDefault()
       if(touch.currentCount == 1) {
-        let mouse = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
+        let mouse = vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
         updateWhatever(mouse)
       } else if (touch.currentCount > 1) {
         if(pinchBeginning) {
           // update pinch
           const map = this.map
 
-          let firstPage = Vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
-          let secondPage = Vec2.fromValues(e.touches[1].clientX, e.touches[1].clientY)
-          let distancePage = Vec2.dist(firstPage, secondPage)
+          let firstPage = vec2.fromValues(e.touches[0].clientX, e.touches[0].clientY)
+          let secondPage = vec2.fromValues(e.touches[1].clientX, e.touches[1].clientY)
+          let distancePage = vec2.dist(firstPage, secondPage)
 
-          let mPhysical = Vec2.clone(firstPage) 
-          Vec2.add(mPhysical, mPhysical, secondPage) 
-          Vec2.scale(mPhysical, mPhysical, 0.5) 
+          let mPhysical = vec2.clone(firstPage) 
+          vec2.add(mPhysical, mPhysical, secondPage) 
+          vec2.scale(mPhysical, mPhysical, 0.5) 
           let mLogical = this.map.physicalToLogicalCoord(mPhysical) 
 
           // 
           let scaleChange = distancePage / pinchBeginning.distancePage 
           map.scale = pinchBeginning.scale * scaleChange
 
-          Vec2.sub(mLogical, mLogical, pinchBeginning.mLogical) 
+          vec2.sub(mLogical, mLogical, pinchBeginning.mLogical) 
 
-          Vec2.add(this.map.offset, this.map.offset, mLogical) 
+          vec2.add(this.map.offset, this.map.offset, mLogical) 
         }
       }
     })
@@ -270,8 +261,37 @@ export default defineComponent({
     canvas.addEventListener("touchcancel", finishTouch) 
 
     canvas.addEventListener("click", () => {
-      this.aimNetwork.deselect()
+      if(!this.map.preventReleaseClick) {
+        this.aimNetwork.deselect()
+      }
     });
+  
+    // const layout = () => {
+    //   let aimCount = Object.keys(this.aimNetwork).length
+    //   for(let i1 = 0; i1 < aimCount; i1++) {
+    //     for(let i2 = i1 + 1; i2 < aimCount; i2++) {
+    //       let aim1 = this.aimNetwork.aims[i1]
+    //       let aim2 = this.aimNetwork.aims[i2]
+    //       let delta = vec2.crSub(aim2.pos, aim1.pos) 
+    //       let targetDistance = aim1.importance + aim2.importance
+    //       if(vec2.isZero(delta)) {
+    //         delta = vec2.fromValues(Math.random() - 0.5, Math.random() - 0.5)
+    //         vec2.scale(delta, delta, targetDistance) 
+    //       }
+
+    //       let d = vec2.len(delta)
+    //       let space = d - 
+    //       
+    //       let space = Math.max(0, vec2.dist(aim1.pos, aim2.pos) - aim1.importance - aim2.importance)
+
+    //       
+
+    //       let f = space + 1
+
+    //     }
+    //   }
+    //   requestAnimationFrame(layout) 
+    // }
   }, 
   methods: {
 
