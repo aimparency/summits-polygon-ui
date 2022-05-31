@@ -95,6 +95,7 @@ export default defineComponent({
     const beginWhatever = (mouse: vec2.T) => {
       if(this.map.connectFrom) {
         this.map.connecting = true
+        this.map.preventReleaseClick = true
       } else if(this.map.dragCandidate) {
         beginDrag(this.map.dragCandidate, mouse)
       } else {
@@ -262,7 +263,7 @@ export default defineComponent({
 
     canvas.addEventListener("click", () => {
       if(!this.map.preventReleaseClick) {
-        if(this.aimNetwork.selectedAim) {
+        if(this.aimNetwork.selectedAim || this.aimNetwork.selectedFlow) {
           this.aimNetwork.deselect()
         } else {
           this.aimNetwork.createAndSelectAim((aim: Aim) => {

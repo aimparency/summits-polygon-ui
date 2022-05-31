@@ -46,7 +46,10 @@ export class Aim {
     public owner: string, 
     public subLevel: number
   ) {
-    this.color = colorHash.hex(id); 
+    let color = colorHash.rgb(id); 
+    color[0] *= 1.3
+    color[2] *= 1.8
+    this.color = `rgb(${color.join(',')})`
   }
 }
 
@@ -103,14 +106,16 @@ export const useAimNetwork = defineStore('aim-network', {
     async loadAim(aimId: BigInt) {
       console.log("load aim", aimId)  
     }, 
-    createAndSelectAim(modifyAimCb: (aim: Aim) => void) {
+    createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       let owner = useWeb3Connection().address
       if(owner) {
         let bytes = new Uint8Array(16)
         crypto.getRandomValues(bytes)
         let aimId = Array.from(bytes).map(n => n.toString(16)).join('')
         let aimRaw = new Aim(aimId, owner, 0)
-        modifyAimCb(aimRaw) 
+        if(modifyAimCb) {
+          modifyAimCb(aimRaw) 
+        }
         this.aims[aimId] = aimRaw
         const aim = this.aims[aimId]
         console.log("is this a proxy?", aim) 
@@ -141,7 +146,7 @@ export const useAimNetwork = defineStore('aim-network', {
           from.flowsInto[into.id] = flow 
           into.flowsFrom[from.id] = flow
           
-          this.selectedFlow = flow
+          this.selectFlow(flow)
         }
       }
     }, 
