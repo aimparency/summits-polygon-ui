@@ -12,6 +12,8 @@
         @click.stop='select'
         @mousedown='mouseDown'
         @touchstart='mouseDown'
+        @mouseup='mouseUp'
+        @touchend='mouseUp'
       />
       <text
         dominant-baseline="central"
@@ -84,6 +86,11 @@ export default defineComponent({
         this.map.startDragging(this.aim)
       }
     }, 
+    mouseUp() {
+      if(this.map.connectFrom && this.map.connecting) {
+        this.aimNetwork.createAndSelectFlow(this.map.connectFrom, this.aim) 
+      }
+    }
   }
 });
 </script>

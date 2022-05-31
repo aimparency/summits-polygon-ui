@@ -15,7 +15,7 @@ import makeCircularPath from '../make-circular-path';
 import { Flow, useAimNetwork } from '../stores/aim-network';
 
 export default defineComponent({
-  name: 'AimSVG',
+  name: 'FlowSVG',
   props: {
     flow: {
       type: Object as PropType<Flow>,
@@ -32,27 +32,15 @@ export default defineComponent({
       return this.flow == this.aimNetwork.selectedFlow;
     }, 
     fillColor() : string {
-      let hex = ''
-      const selectedAim = this.aimNetwork.selectedAim;
-      if ( selectedAim && selectedAim.id == this.flow.from) {
-        hex = "eeeeee"
-      } else {
-        let from = this.aimNetwork.aims[this.flow.from]
-        if(from) {
-          hex = from.color
-        } else {
-          hex = "555555"
-        }
-      }
-      return "#" + hex
+      return this.flow.from.color
     }, 
     path() : string {
-      const from = this.aimNetwork.aims[this.flow.from]
-      const into = this.aimNetwork.aims[this.flow.into]
+      const from = this.flow.from
+      const into = this.flow.into
       return makeCircularPath(
-        {x: from.x, y: from.y, r: from.importance}, 
+        {pos: from.pos, r: from.importance}, 
         this.flow.share, 
-        {x: into.x, y: into.y, r: into.importance}
+        {pos: into.pos, r: into.importance}
       ) 
     }, 
   },

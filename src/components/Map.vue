@@ -5,7 +5,7 @@
     :viewBox="viewBox">
     <g :transform="transform">
       <FlowSVG v-for="flow in flows" 
-        :key="`${flow.from}x${flow.into}`"
+        :key="`${flow.from.id}x${flow.into.id}`"
         :flow="flow"/>
       <Connector 
         v-if="map.connectFrom !== undefined"
@@ -262,7 +262,13 @@ export default defineComponent({
 
     canvas.addEventListener("click", () => {
       if(!this.map.preventReleaseClick) {
-        this.aimNetwork.deselect()
+        if(this.aimNetwork.selectedAim) {
+          this.aimNetwork.deselect()
+        } else {
+          this.aimNetwork.createAndSelectAim((aim: Aim) => {
+            aim.pos = vec2.clone(this.map.mouse.logical)
+          })
+        }
       }
     });
   
@@ -342,6 +348,6 @@ export default defineComponent({
   top: 0; 
   width: 100vw;
   height:100vh; 
-  background-color: @bg1;  
+  background-color: shade(@bg1, 50%);  
 }
 </style>

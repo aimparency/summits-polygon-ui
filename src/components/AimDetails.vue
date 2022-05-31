@@ -46,23 +46,23 @@
         @blur='confirmRemove = false'
         @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
     </div>
-    <h3 v-if="flowsFrom.length > 0"> incoming flows </h3>
+    <h3> incoming flows </h3>
     <div 
       class="flow" 
-      v-for="pair, i in flowsFrom" 
-      @click="flowClick(pair.flow)" 
-      :key="i">
-      {{ pair.aim.title || "<unnamed>"}} <br/>
-      share: {{ pair.flow.share }}
+      v-for="(flow, aimId) in aim.flowsFrom" 
+      @click="flowClick(flow)" 
+      :key="aimId">
+      {{ flow.from.title || "<unnamed>"}} <br/>
+      share: {{ flow.share }}
     </div>
-    <h3 v-if="flowsInto.length > 0"> outgoing flows </h3>
+    <h3> outgoing flows </h3>
     <div 
       class="flow" 
-      v-for="pair, i in flowsInto" 
-      @click="flowClick(pair.flow)" 
-      :key="i">
-      {{ pair.aim.title || "<unnamed>"}} <br/>
-      share: {{ pair.flow.share }}
+      v-for="(flow, aimId) in aim.flowsInto" 
+      @click="flowClick(flow)" 
+      :key="aimId">
+      {{ flow.into.title || "<unnamed>"}} <br/>
+      share: {{ flow.share }}
     </div>
     <BackButton @click="aimNetwork.deselect"/>
   </div>
@@ -72,7 +72,7 @@
 import { defineComponent, PropType } from "vue"
 
 import { useUi } from "../stores/ui"
-import { Aim, AimOrigin, Flow, useAimNetwork } from "../stores/aim-network"
+import { Aim, Flow, useAimNetwork } from "../stores/aim-network"
 import Effort from "../types/effort"
 
 import AimLi from "./AimLi.vue"
@@ -94,9 +94,6 @@ export default defineComponent({
       required: true
     }
   },
-  mounted() {
-    
-  }, 
   data() {
     const aimNetwork = useAimNetwork()
     const ui = useUi()
@@ -140,18 +137,6 @@ export default defineComponent({
       return Math.round(
         this.sharesSliderOrigin * 2 + 10
       )
-    }, 
-    flowsFrom() : {flow: Flow, aim: Aim}[] {
-      return this.aim.flowsFrom.map((fromAim: Aim) => ({
-        flow: this.aimNetwork.$state.flows[fromAim.id][this.aim.id],
-        aim: fromAim
-      }))
-    }, 
-    flowsInto() : {flow: Flow, aim: Aim}[] {
-      return this.aim.flowsInto.map((intoAim: Aim) => ({
-        flow: this.aimNetwork.$state.flows[this.aim.id][intoAim.id],
-        aim: intoAim
-      }))
     }, 
   }, 
   methods: {

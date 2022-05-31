@@ -1,3 +1,6 @@
+/* This store contains all data that are related to aims and their connections. 
+ * It is used by the sidebar and the map */
+
 import { defineStore } from 'pinia'
 import { useWeb3Connection } from './web3-connection'
 
@@ -31,8 +34,8 @@ export class Aim {
   
   published = false
 
-  flowsFrom: Aim[] = []
-  flowsInto: Aim[] = []
+  flowsFrom: { [aimId: string]: Flow } = {}
+  flowsInto: { [aimId: string]: Flow } = {}
 
   origin = new AimOrigin()
 
@@ -62,8 +65,8 @@ export class Flow {
   dy = 0
 
   constructor(
-    public from: string,
-    public into: string
+    public from: Aim,
+    public into: Aim 
   ) {}
 }
 
@@ -75,9 +78,7 @@ function idToBigInt(hex: string) {
 export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
-      aims: {
-        "test": new Aim("test", "me", 0)
-      } as {[id: string]: Aim}, 
+      aims: {} as {[id: string]: Aim}, 
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
       home: undefined as string | undefined,
       selectedAim: undefined as Aim | undefined,
@@ -102,15 +103,46 @@ export const useAimNetwork = defineStore('aim-network', {
     async loadAim(aimId: BigInt) {
       console.log("load aim", aimId)  
     }, 
-    async createAndSelectAim() {
+    createAndSelectAim(modifyAimCb: (aim: Aim) => void) {
       let owner = useWeb3Connection().address
       if(owner) {
         let bytes = new Uint8Array(16)
         crypto.getRandomValues(bytes)
         let aimId = Array.from(bytes).map(n => n.toString(16)).join('')
-        let aim = new Aim(aimId, owner, 0)
-        this.aims[aimId] = aim
+        let aimRaw = new Aim(aimId, owner, 0)
+        modifyAimCb(aimRaw) 
+        this.aims[aimId] = aimRaw
+        const aim = this.aims[aimId]
+        console.log("is this a proxy?", aim) 
         this.selectedAim = aim
+      }
+    }, 
+
+    createAndSelectFlow(from: Aim, into: Aim) {
+      console.log("creating flow") 
+      if(from !== into) {
+        let owner = useWeb3Connection().address
+
+        if(owner == into.owner) {
+          let flowRaw = new Flow(from, into) 
+          flowRaw.share = 0.1
+          const bucket = this.flows[from.id] 
+          if(bucket) {
+            bucket[into.id] = flowRaw
+          } else {
+            this.flows[from.id] = { 
+              [into.id]: flowRaw
+            }
+          }
+
+          // is this reactive? Possible pitfall: object gets reactive when added to the store, not before that. It might as well work - let's observe
+          const flow = this.flows[from.id][into.id]
+
+          from.flowsInto[into.id] = flow 
+          into.flowsFrom[from.id] = flow
+          
+          this.selectedFlow = flow
+        }
       }
     }, 
     async createAimOnChain(_aimId: string) {
