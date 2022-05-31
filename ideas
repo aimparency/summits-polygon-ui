@@ -5,4 +5,11 @@
   - goals haben eingänge und ausgänge
   - connections gehören zum benefitting aim
     - werden also auf der chain veröffentlicht, wenn das receiving aim öffentlich ist
-- 
+
+
+- von gl-vec2 wegwechseln, um mehr precision als Float32 zu haben
+  - vielleicht ne eigene kleine lib bauen
+    - add, sub, divN, multN
+    - alles inplace + returning 
+    - clone
+    - operating on {x: number, y: number}

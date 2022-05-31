@@ -93,7 +93,7 @@ export default defineComponent({
         if(Vec2.len(d) > 5) {
           this.map.preventReleaseClick = true
           Vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
-          const pos = Vec2.clone(db.offset)
+          const pos = Vec2.clone(db.pos)
           Vec2.sub(pos, pos, d) 
           aim.pos = pos
         }
@@ -109,11 +109,12 @@ export default defineComponent({
     const beginDrag = (aim: Aim, mouse:V2) => {
       this.map.dragBeginning = {
         page: Vec2.clone(mouse),
-        offset: Vec2.clone(aim.pos) 
+        pos: Vec2.clone(aim.pos) 
       }
     }
 
     const endWhatever = () : void => {
+      this.map.connectFrom = undefined
       if(this.map.panBeginning) {
         endPan(); 
       } else if (this.map.dragBeginning) {
@@ -134,10 +135,11 @@ export default defineComponent({
       delete this.map.dragCandidate; 
     }
 
-    const updateWhatever = (mouse: Vec2) : void => {
+    const updateWhatever = (mouse: V2) : void => {
       this.map.updateMouse(mouse)
       if(this.map.panBeginning) {
         updatePan(mouse); 
+        console.log("updating pan") 
       } else if (this.map.dragBeginning) {
         updateDrag(mouse); 
       }
@@ -149,7 +151,9 @@ export default defineComponent({
 
     canvas.addEventListener("mousedown", (e: MouseEvent) => {
       const mouse = Vec2.fromValues(e.clientX, e.clientY)
-      if(this.map.dragCandidate) {
+      if(this.map.connectFrom) {
+        this.map.connecting = true
+      } else if(this.map.dragCandidate) {
         beginDrag(this.map.dragCandidate, mouse)
       } else {
         beginPan(mouse) 
@@ -191,9 +195,7 @@ export default defineComponent({
             let mPhysical = Vec2.clone(firstPage) 
             Vec2.add(mPhysical, mPhysical, secondPage) 
             Vec2.scale(mPhysical, mPhysical, 0.5) 
-            console.log("mPhysical pinch begin " + mPhysical) 
             let mLogical = this.map.physicalToLogicalCoord(mPhysical) 
-            console.log("mLogical pinch begin " + mLogical) 
             // model/svg coordinates
             pinchBeginning = {
               first: e.touches[0].identifier, 
@@ -309,11 +311,6 @@ export default defineComponent({
       return aims
     }, 
   },
-  setup() {
-    const onMouseMove = () => {
-    };
-    window.addEventListener('mousemove', onMouseMove) 
-  }
 });
 </script>
 

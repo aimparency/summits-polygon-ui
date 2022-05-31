@@ -18,7 +18,7 @@ export const useMap = defineStore('map', {
       halfSide: 0, 
       logicalHalfSide: 1000, 
       panBeginning: undefined as undefined | { page: V2, offset: V2 },
-      dragBeginning: undefined as undefined | { page: V2, offset: V2 },
+      dragBeginning: undefined as undefined | { page: V2, pos: V2 },
       preventReleaseClick: false,
       clientOffset: Vec2.create(),
       connectFrom: undefined as maybeAim,

@@ -87,7 +87,6 @@ function makeCircularPath(
     const startInner = Vec2.clone(from.pos)
     Vec2.sub(startInner, startInner, toTheSide); 
 
-
     const outerDistance = Vec2.dist(wingOuterNear, startOuter); 
     const outerMToArrowWingsRot = rotCW(normMToArrowWings)
     Vec2.scale(outerMToArrowWingsRot, outerMToArrowWingsRot, outerDistance * 0.34) 
@@ -106,7 +105,7 @@ function makeCircularPath(
     const innerStartControl = Vec2.clone(startInner)
     Vec2.sub(innerStartControl, innerStartControl, innerMToArrowWingsRot) 
 
-    return [
+    const pathSpec = [
       'M', startInner, 
       'C', innerStartControl, innerWingControl, wingInnerNear,  
       'L', wingInnerFar, 
@@ -115,12 +114,17 @@ function makeCircularPath(
       'L', wingOuterNear, 
       'C', outerWingControl, outerStartControl, startOuter, 
       'Z'
-    ].map(c => {
-      if(c instanceof String) {
+    ]
+
+    console.log(pathSpec) 
+
+    return pathSpec.map(c => {
+      console.log(c) 
+      if(typeof c == "string") {
         return c
       } else {
-        return `${c[0]} ${c[1]}`;
-      }
+        return `${c[0]} ${c[1]}`
+      } 
     }).join(' ') 
   }
 }
