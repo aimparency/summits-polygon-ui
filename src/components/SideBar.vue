@@ -13,9 +13,13 @@
         &gt; 
       </span>
     </div>
-    <aimDetails 
-      v-if="showAimDetails && aimNetwork.selectedAim"
+    <AimDetails 
+      v-if="aimNetwork.selectedAim"
       :aim="aimNetwork.selectedAim"
+      />
+    <FlowDetails
+      v-else-if="aimNetwork.selectedFlow"
+      :flow="aimNetwork.selectedFlow"
       />
     <LocalList v-else/>
   </div>
@@ -29,12 +33,14 @@ import { useAimNetwork } from "../stores/aim-network"
 
 import LocalList from "./LocalList.vue"
 import AimDetails from "./AimDetails.vue"
+import FlowDetails from "./FlowDetails.vue"
 
 export default defineComponent({
   name: "SideBar",
   components: {
     LocalList, 
     AimDetails, 
+    FlowDetails, 
   },
   props: {
     msg: String,

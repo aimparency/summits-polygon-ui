@@ -6,7 +6,7 @@ export const useUi = defineStore('ui', {
   state() {
     return {
       screenSize: vec2.create(),
-      sideMenuOpen: false,
+      sideMenuOpen: true,
     }
   }, 
   actions: {

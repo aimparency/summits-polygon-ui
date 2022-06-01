@@ -24,7 +24,7 @@
   .clickable();
   display: inline-block; 
   box-shadow: 0 0 1rem #0008; 
-  margin: 0.2rem; 
+  margin: 0.2rem 0.5rem;
   padding: 0.5rem 1rem; 
   background-color: shade(@c1, 50%); 
   &:focus, &:hover{

@@ -49,6 +49,7 @@ export default defineComponent({
     const canvas = this.$refs.canvas as SVGElement
 
     const updateHalfSide = () => {
+      console.log('resizing') 
       let w = canvas.clientWidth 
       let h = canvas.clientHeight
       if(w < h) {
@@ -59,7 +60,7 @@ export default defineComponent({
         this.map.halfSide = h / 2
       }
     }
-    canvas.addEventListener("resize", updateHalfSide)
+    window.addEventListener("resize", updateHalfSide)
     updateHalfSide()
 
     const updatePan = (mouse: vec2.T) => {
@@ -342,7 +343,6 @@ export default defineComponent({
           }
         }
       }
-      let count = 0 
       let minShift = 0.1 * (this.map.logicalHalfSide / this.map.halfSide) / this.map.scale
       for(let i = 0; i < aimIds.length; i++) {
         const shift = shifts[i]
@@ -359,14 +359,14 @@ export default defineComponent({
           }
         } 
       }
-      console.log("still moving", count)
       requestAnimationFrame(layout) 
     }
     layout()
 
-    for(let i = 0; i < 19; i++) {
-      setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 30)
-    }
+    // //DEBUG
+    // for(let i = 0; i < 19; i++) {
+    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 30)
+    // }
   }, 
   computed: {
     viewBox() : string {

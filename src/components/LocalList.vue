@@ -82,7 +82,6 @@ export default defineComponent({
   .results {
     margin: 1rem 0.5rem; 
     padding: 0; 
-    box-shadow: 0 0 1rem #0008; 
   }
 }
 </style>

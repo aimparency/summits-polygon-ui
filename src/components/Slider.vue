@@ -1,6 +1,10 @@
 <template>
   <div class="slider">
-    <div class="value" tabindex="0">{{name}}: {{(value*factor).toFixed(decimalPlaces)}}{{unit}}</div>
+    <div class="value">
+      {{ name }}
+      <input :value="(value * factor).toFixed(decimalPlaces)" @change="setValue" tabindex="0"/>
+      {{ unit }}
+    </div>
     <div class="left">{{left}}</div>
     <div class="right">{{right}}</div>
     <div class="bar" ref="bar">
@@ -100,6 +104,13 @@ export default defineComponent({
         this.$emit('update', v)
       }
     },
+    setValue(e: Event) {
+      let v = parseFloat((<HTMLInputElement>e.target).value) / this.factor
+      // TBD clamp to min max
+      
+      this.$emit('update', v) 
+      this.$emit('drag-end') 
+    }, 
     getV (e: MouseEvent | TouchEvent) {
       let x = 0
       if (e instanceof MouseEvent) {
@@ -110,7 +121,8 @@ export default defineComponent({
       let r = (x - this.x0) / this.width
       r += this.dragOffset
       r = Math.min(1, Math.max(0, r))
-      return this.from + (this.to - this.from) * r
+      let v = this.from + (this.to - this.from) * r
+      return v
     },
     beforeUnmount () {
       document.removeEventListener('mouseup', this.endDrag)
@@ -127,55 +139,5 @@ export default defineComponent({
 
 <style lang="less">
 @dotsize: 3rem;
-
-.slider {
-  position: relative; 
-  background-color: #0004;
-  border-radius: @secondaryradius;
-  height: 6.5rem; 
-  margin: 1rem; 
-  .value{
-    width: 100%; 
-    position: absolute; 
-    top: 0.7rem; 
-    text-align: center; 
-  }
-  .bar {
-    position: absolute;
-    top: 4rem; 
-    width: calc(100% - @dotsize - 1rem);
-    height: 0.35rem;
-    background: shade(@c2, 40%);
-    border-radius: 0.2rem;
-    left: calc(0.5rem + @dotsize * 0.5);
-    .dot {
-      left: 0; 
-      transition: left 0.15s ease-in-out; 
-      &.dragging{
-        transition: none; 
-      }
-      box-shadow: 0 0 0.5rem #0007;
-      position: absolute;
-      height: @dotsize;
-      width: @dotsize;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: @dotsize * 0.5;
-      background-color: @c2;
-      box-sizing: border-box;
-      border: 0.4rem solid shade(@c2, 20%);
-    }
-  }
-  .right, .left{
-    position: absolute;
-    top: 0.7rem;
-    color: #999;
-  }
-  .left {
-    left: 0.5rem;
-  }
-  .right {
-    right: 0.5rem;
-  }
-}
+@import "./slider.scss";
 </style>

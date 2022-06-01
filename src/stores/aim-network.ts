@@ -59,10 +59,14 @@ export class FlowOrigin {
 }
 
 export class Flow {
-  detailsCid: string = ""
+  reasonCid: string = ""
   share = 0
 
   origin = new FlowOrigin()
+
+  pendingTransactions = false
+
+  published = false
 
   dx = 0
   dy = 0
@@ -103,9 +107,16 @@ export const useAimNetwork = defineStore('aim-network', {
         }
       }
     }, 
-    async loadAim(aimId: BigInt) {
-      console.log("load aim", aimId)  
+    async setHome(aimId: string) {
+      let web3 = useWeb3Connection()
+      if(web3.contract) {
+        const aimIdBigId = BigInt('0x' + aimId)
+        const data = await web3.contract.setHomeAim(aimIdBigId)
+        console.log("called setHome, received: ", data) 
+      }
     }, 
+
+    // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       let owner = useWeb3Connection().address
       if(owner) {
@@ -121,7 +132,40 @@ export const useAimNetwork = defineStore('aim-network', {
         this.selectedAim = aim
       }
     }, 
+    async createAimOnChain(_aimId: string) {
+        if(this.home == undefined) {
+          // TBD this.setHome(idToBigInt(aimId))
+        }
+    }, 
+    async loadAim(aimId: BigInt) {
+      console.log("load aim", aimId)  
+    }, 
 
+    // edit and remove aims
+    async commitAimChanges(aim: Aim) {
+      Object.getOwnPropertyNames(aim.origin).forEach((name: string) => {
+        if((aim.origin as any)[name] !== undefined) {
+          console.log("chaning property", name)
+        }
+      })
+      aim.origin = new AimOrigin()
+    }, 
+    resetAimChanges(aim: Aim) {
+      Object.entries(aim.origin).forEach(([key, value]) => {
+        if(value !== undefined) {
+          (aim as any)[key] = value
+        }
+      })
+      aim.origin = new AimOrigin()
+    }, 
+    removeAim(aim: Aim) {
+      if(this.selectedAim == aim) {
+        this.selectedAim = undefined
+      } 
+      delete this.aims[aim.id]
+    },
+
+    // create and load flows
     createAndSelectFlow(from: Aim, into: Aim) {
       if(from !== into) {
         let owner = useWeb3Connection().address
@@ -148,35 +192,21 @@ export const useAimNetwork = defineStore('aim-network', {
         }
       }
     }, 
-    async createAimOnChain(_aimId: string) {
-        if(this.home == undefined) {
-          // TBD this.setHome(idToBigInt(aimId))
-        }
+    //TBD: createFlowOnChain()
+    
+
+    // edit and remove flows
+    commitFlowChanges() {
     }, 
-    async setHome(aimId: string) {
-      let web3 = useWeb3Connection()
-      if(web3.contract) {
-        const aimIdBigId = BigInt('0x' + aimId)
-        const data = await web3.contract.setHomeAim(aimIdBigId)
-        console.log("called setHome, received: ", data) 
+    resetFlowChanges() {
+    }, 
+    removeFlow(flow: Flow) {
+      if(this.selectedFlow == flow) {
+        this.selectedFlow = undefined
       }
-    }, 
-    async commitChanges(aim: Aim) {
-      Object.getOwnPropertyNames(aim.origin).forEach((name: string) => {
-        if((aim.origin as any)[name] !== undefined) {
-          console.log("chaning property", name)
-        }
-      })
-      aim.origin = new AimOrigin()
-    }, 
-    resetChanges(aim: Aim) {
-      Object.entries(aim.origin).forEach(([key, value]) => {
-        if(value !== undefined) {
-          (aim as any)[key] = value
-        }
-      })
-      aim.origin = new AimOrigin()
-    }, 
+    },
+
+    // selection
     selectFlow(flow: Flow) {
       this.selectedAim = undefined
       this.selectedFlow = flow
@@ -188,12 +218,6 @@ export const useAimNetwork = defineStore('aim-network', {
     deselect() {
       this.selectedAim = undefined
       this.selectedFlow = undefined
-    },
-    removeAim(aim: Aim) {
-      if(this.selectedAim == aim) {
-        this.selectedAim = undefined
-      } 
-      delete this.aims[aim.id]
     },
   }, 
 })

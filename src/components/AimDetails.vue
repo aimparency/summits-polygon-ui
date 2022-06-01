@@ -10,7 +10,8 @@
       @input="updateTitle"></textarea>
     <input 
       class='standard effort' 
-      :value="effortString ?? aim.effort.humanize()" 
+      :value="effort" 
+      placeholder="effort"
       @blur='parseAndUpdateEffort'
       @keypress.enter='parseAndUpdateEffort'
       onfocus="this.select()" 
@@ -48,21 +49,21 @@
     </div>
     <h3> incoming flows </h3>
     <div 
-      class="flow" 
+      class="flow button" 
       v-for="(flow, aimId) in aim.flowsFrom" 
       @click="flowClick(flow)" 
       :key="aimId">
-      {{ flow.from.title || "<unnamed>"}} <br/>
-      share: {{ flow.share }}
+      {{ (100 * flow.share).toFixed(0) }}% : 
+      {{ flow.into.title || "<unnamed>"}} 
     </div>
     <h3> outgoing flows </h3>
     <div 
-      class="flow" 
+      class="flow button" 
       v-for="(flow, aimId) in aim.flowsInto" 
       @click="flowClick(flow)" 
       :key="aimId">
-      {{ flow.into.title || "<unnamed>"}} <br/>
-      share: {{ flow.share }}
+      {{ (100 * flow.share).toFixed(0) }}%: 
+      {{ flow.into.title || "<unnamed>"}} 
     </div>
     <BackButton @click="aimNetwork.deselect"/>
   </div>
@@ -128,6 +129,17 @@ export default defineComponent({
         Object.values(this.aim.origin).filter((v: any) => v !== undefined).length > 0 
       ) 
     }, 
+    effort() : string {
+      if(this.effortString !== undefined) {
+        return this.effortString 
+      } else {
+        if(this.aim.effort.amount == 0) {
+          return ''
+        } else {
+          return this.aim.effort.humanize()
+        }
+      }
+    }, 
     sharesSliderMin(): number {
       return Math.round(
         Math.max(0, this.sharesSliderOrigin / 2 - 10)
@@ -189,18 +201,14 @@ export default defineComponent({
       }
     }, 
     reset() {
-      this.aimNetwork.resetChanges(this.aim)
+      this.aimNetwork.resetAimChanges(this.aim)
       this.updateSharesSliderOrigin()
     }, 
     commit() {
-      this.aimNetwork.commitChanges(this.aim) 
+      this.aimNetwork.commitAimChanges(this.aim) 
     }, 
     flowClick(flow: Flow) {
       this.aimNetwork.selectFlow(flow)
-    }, 
-    focusTitle() {
-      let titleInput = (this.$refs.title as HTMLInputElement)
-      titleInput?.focus()
     }, 
     remove() {
       if(!this.confirmRemove) {
@@ -221,6 +229,10 @@ export default defineComponent({
     &.confirm {
       background-color: @danger; 
     }
+  }
+  .flow {
+    text-align: left; 
+    display: block; 
   }
   textarea {
     height: 10em; 
