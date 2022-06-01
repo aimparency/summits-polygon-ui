@@ -106,7 +106,6 @@ export default class Effort {
       let unit = Effort.unitInfos[unitChar]
       let match = s.match(new RegExp('(\\d+\\.?\\d*)\\s*' + unit.beginning))
       if(match !== null) {
-        console.log("match", match[1]) 
         let amount = parseFloat(match[1])
         efforts.push(new Effort(
           unitChar, 
@@ -115,7 +114,6 @@ export default class Effort {
         smallestUnit = unitChar
       }
     })
-    console.log("smallest unit", smallestUnit) 
     let totalAmount = 0
     for(let effort of efforts) {
       effort.convert(smallestUnit) 

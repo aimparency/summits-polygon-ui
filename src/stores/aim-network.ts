@@ -10,7 +10,7 @@ import ColorHash from 'color-hash';
 
 import * as vec2 from '../vec2'
 
-const colorHash = new ColorHash({ lightness: 0.4 }); 
+const colorHash = new ColorHash({ lightness: 0.35, saturation: 0.5 }); 
 
 export class AimOrigin {
   title?: string
@@ -48,7 +48,7 @@ export class Aim {
   ) {
     let color = colorHash.rgb(id); 
     color[0] *= 1.3
-    color[2] *= 1.8
+    color[2] *= 1.6
     this.color = `rgb(${color.join(',')})`
   }
 }
@@ -118,13 +118,11 @@ export const useAimNetwork = defineStore('aim-network', {
         }
         this.aims[aimId] = aimRaw
         const aim = this.aims[aimId]
-        console.log("is this a proxy?", aim) 
         this.selectedAim = aim
       }
     }, 
 
     createAndSelectFlow(from: Aim, into: Aim) {
-      console.log("creating flow") 
       if(from !== into) {
         let owner = useWeb3Connection().address
 

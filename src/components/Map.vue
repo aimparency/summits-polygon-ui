@@ -273,35 +273,85 @@ export default defineComponent({
       }
     });
   
-    // const layout = () => {
-    //   let aimCount = Object.keys(this.aimNetwork).length
-    //   for(let i1 = 0; i1 < aimCount; i1++) {
-    //     for(let i2 = i1 + 1; i2 < aimCount; i2++) {
-    //       let aim1 = this.aimNetwork.aims[i1]
-    //       let aim2 = this.aimNetwork.aims[i2]
-    //       let delta = vec2.crSub(aim2.pos, aim1.pos) 
-    //       let targetDistance = aim1.importance + aim2.importance
-    //       if(vec2.isZero(delta)) {
-    //         delta = vec2.fromValues(Math.random() - 0.5, Math.random() - 0.5)
-    //         vec2.scale(delta, delta, targetDistance) 
-    //       }
+    const shift = vec2.create()
+    const calcShiftAndApply = (
+      marginFactor: number, 
+      force: number, 
+      d: number, 
+      ab: vec2.T, 
+      rA: number, 
+      rB: number, 
+      rSum: number,
+      shiftA: vec2.T, 
+      shiftB: vec2.T
+    ) => {
+      const amount = (marginFactor - d / rSum) * force / rSum 
 
-    //       let d = vec2.len(delta)
-    //       let space = d - 
-    //       
-    //       let space = Math.max(0, vec2.dist(aim1.pos, aim2.pos) - aim1.importance - aim2.importance)
+      vec2.scale(shift, ab, -rB * amount) 
+      vec2.add(shiftA, shiftA, shift)
 
-    //       
+      vec2.scale(shift, ab, +rA * amount) 
+      vec2.add(shiftB, shiftB, shift)
+      
+    }
 
-    //       let f = space + 1
+    const outerMarginFactor = 2
+    const layout = () => {
+      let aimIds = Object.keys(this.aimNetwork.aims)
+      let shifts: vec2.T[] = []
+      for(let i = 0; i < aimIds.length; i++) {
+        shifts.push(vec2.create())
+      }
+      console.log("hi") 
+      for(let iA = 0; iA < aimIds.length; iA++) {
+        for(let iB = iA + 1; iB < aimIds.length; iB++) {
+          let aimAId = aimIds[iA]
+          let aimBId = aimIds[iB]
+          let aimA = this.aimNetwork.aims[aimAId]
+          let aimB = this.aimNetwork.aims[aimBId]
+          let ab = vec2.crSub(aimB.pos, aimA.pos) 
+          let rA = aimA.importance
+          let rB = aimB.importance
+          let rSum = rA + rB
+          let d = vec2.len(ab)
 
-    //     }
-    //   }
-    //   requestAnimationFrame(layout) 
-    // }
-  }, 
-  methods: {
+          if(d == 0) {
+            const x = Math.random() * 2 - 1
+            const y = Math.sqrt(1 - x * x) * (Math.random() > 0.5 ? 1 : -1)
+            ab = vec2.fromValues(x * rSum, y * rSum)
+          }
+          if(d < rSum) {
+            calcShiftAndApply(
+              1, 1, 
+              d, ab, 
+              rA, rB, rSum, 
+              shifts[iA], 
+              shifts[iB]
+            )
+          } 
+          if (d < rSum * outerMarginFactor) {
+            calcShiftAndApply(
+              outerMarginFactor, 0.1,
+              d, ab, 
+              rA, rB, rSum, 
+              shifts[iA], 
+              shifts[iB]
+            )
+          }
+        }
+      }
+      for(let i = 0; i < aimIds.length; i++) {
+        let aimId = aimIds[i]
+        let aim = this.aimNetwork.aims[aimId]
+        aim.pos = vec2.crAdd(aim.pos, shifts[i])
+      }
+      requestAnimationFrame(layout) 
+    }
+    layout()
 
+    for(let i = 0; i < 19; i++) {
+      setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 30)
+    }
   }, 
   computed: {
     viewBox() : string {
