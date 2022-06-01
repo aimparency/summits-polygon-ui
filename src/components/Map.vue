@@ -302,7 +302,6 @@ export default defineComponent({
       for(let i = 0; i < aimIds.length; i++) {
         shifts.push(vec2.create())
       }
-      console.log("hi") 
       for(let iA = 0; iA < aimIds.length; iA++) {
         for(let iB = iA + 1; iB < aimIds.length; iB++) {
           let aimAId = aimIds[iA]

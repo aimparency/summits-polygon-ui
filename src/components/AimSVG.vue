@@ -6,6 +6,8 @@
       <circle 
         :class="{selected}"
         :fill="aim.color" 
+        :data-aimid="aim.id"
+        class="aim-circle" 
         cx="0" 
         cy="0" 
         r="1"
@@ -13,7 +15,7 @@
         @mousedown='mouseDown'
         @touchstart='mouseDown'
         @mouseup='mouseUp'
-        @touchend='mouseUp'
+        @touchend='touchend'
       />
       <text
         dominant-baseline="central"
@@ -89,6 +91,19 @@ export default defineComponent({
     mouseUp() {
       if(this.map.connectFrom && this.map.connecting) {
         this.aimNetwork.createAndSelectFlow(this.map.connectFrom, this.aim) 
+      }
+    }, 
+    touchend(e: TouchEvent) {
+      if(this.map.connectFrom && this.map.connecting) {
+        var changedTouches = e.changedTouches;
+        const el = document.elementFromPoint(changedTouches[0].clientX, changedTouches[0].clientY)
+        if(el && el.classList.contains("aim-circle")) {
+          let aimCircle = el as SVGCircleElement
+          let connectTo = this.aimNetwork.aims[aimCircle.dataset.aimid!]
+          if(connectTo) {
+            this.aimNetwork.createAndSelectFlow(this.map.connectFrom, connectTo) 
+          }
+        }
       }
     }
   }
