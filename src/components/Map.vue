@@ -110,6 +110,7 @@ export default defineComponent({
       }
     }
     const beginDrag = (aim: Aim, mouse:vec2.T) => {
+      this.aimNetwork.deselect()
       this.map.dragBeginning = {
         page: vec2.clone(mouse),
         pos: vec2.clone(aim.pos) 
@@ -297,22 +298,26 @@ export default defineComponent({
 
     const outerMarginFactor = 2
     const layout = () => {
-      let aimIds = Object.keys(this.aimNetwork.aims)
-      let shifts: vec2.T[] = []
+      let aimIds = Object.keys(this.aimNetwork.aims) 
+      const shifts :vec2.T[] = []
       for(let i = 0; i < aimIds.length; i++) {
-        shifts.push(vec2.create())
+        shifts[i] = vec2.create()
       }
       for(let iA = 0; iA < aimIds.length; iA++) {
+        let aimAId = aimIds[iA]
+        let aimA = this.aimNetwork.aims[aimAId]
+        let shiftA = shifts[iA]
+        let rA = aimA.importance
         for(let iB = iA + 1; iB < aimIds.length; iB++) {
-          let aimAId = aimIds[iA]
           let aimBId = aimIds[iB]
-          let aimA = this.aimNetwork.aims[aimAId]
           let aimB = this.aimNetwork.aims[aimBId]
-          let ab = vec2.crSub(aimB.pos, aimA.pos) 
-          let rA = aimA.importance
+          let shiftB = shifts[iB]
           let rB = aimB.importance
+
+          let ab = vec2.crSub(aimB.pos, aimA.pos) 
           let rSum = rA + rB
           let d = vec2.len(ab)
+
 
           if(d == 0) {
             const x = Math.random() * 2 - 1
@@ -324,8 +329,7 @@ export default defineComponent({
               1, 1, 
               d, ab, 
               rA, rB, rSum, 
-              shifts[iA], 
-              shifts[iB]
+              shiftA, shiftB
             )
           } 
           if (d < rSum * outerMarginFactor) {
@@ -333,17 +337,29 @@ export default defineComponent({
               outerMarginFactor, 0.1,
               d, ab, 
               rA, rB, rSum, 
-              shifts[iA], 
-              shifts[iB]
+              shiftA, shiftB
             )
           }
         }
       }
+      let count = 0 
+      let minShift = 0.1 * (this.map.logicalHalfSide / this.map.halfSide) / this.map.scale
       for(let i = 0; i < aimIds.length; i++) {
-        let aimId = aimIds[i]
-        let aim = this.aimNetwork.aims[aimId]
-        aim.pos = vec2.crAdd(aim.pos, shifts[i])
+        const shift = shifts[i]
+        if(shift[0] < -minShift ||
+          shift[0] > minShift ||
+          shift[1] < -minShift ||
+          shift[1] > minShift) {
+          let aim = this.aimNetwork.aims[aimIds[i]]
+          if(
+            !(aim == this.aimNetwork.selectedAim) &&
+            !(aim == this.map.dragCandidate && this.map.dragBeginning)
+          ) {
+            aim.pos = vec2.crAdd(aim.pos, shift)
+          }
+        } 
       }
+      console.log("still moving", count)
       requestAnimationFrame(layout) 
     }
     layout()
