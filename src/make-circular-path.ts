@@ -2,6 +2,8 @@ import * as vec2 from './vec2'
 
 const SQR_3_4 = Math.sqrt(3/4); 
 
+const arrowWidth = 0.66
+
 function rotCW(v: vec2.T) {
   return vec2.fromValues(v[1], -v[0])
 }
@@ -49,7 +51,7 @@ function makeCircularPath(
       return result
     }
 
-    const width = 2 /* nice */ * from.r * fromShare;
+    const width = /* 2 * nice */ from.r * fromShare;
 
     const arrowPeak = getArcPoint(into.r); 
 
@@ -57,7 +59,7 @@ function makeCircularPath(
     const normMToArrowWings = getMNorm(arrowWings)
     const normMToArrowWingsRot = rotCW(normMToArrowWings)
 
-    const toFarWingSide = vec2.crScale(normMToArrowWings, width)
+    const toFarWingSide = vec2.crScale(normMToArrowWings, width* 1)
     const toNearWingSide = vec2.crScale(normMToArrowWings, width * 0.5) 
 
     const wingOuterFar = vec2.crAdd(arrowWings, toFarWingSide) 
@@ -66,22 +68,22 @@ function makeCircularPath(
     const wingInnerNear = vec2.crSub(arrowWings, toNearWingSide); 
 
     const normMToMFrom = getMNorm(from.pos); 
-    const toTheSide = vec2.crScale(normMToMFrom, width * 0.5); 
+    const toTheSide = vec2.crScale(normMToMFrom, width); 
     const startOuter = vec2.crAdd(from.pos, toTheSide); 
     const startInner = vec2.crSub(from.pos, toTheSide); 
 
     const normMToMFromRot = rotCW(normMToMFrom); 
 
-    const outerDistance = vec2.dist(wingOuterNear, startOuter)
-    const h1 = vec2.crScale(normMToArrowWingsRot, outerDistance * 0.34)
-    const h2 = vec2.crScale(normMToMFromRot, outerDistance * 0.34)
+    const outerDistance = vec2.dist(wingOuterNear, startOuter) * 0.34
+    const h1 = vec2.crScale(normMToArrowWingsRot, outerDistance)
+    const h2 = vec2.crScale(normMToMFromRot, outerDistance)
     const outerWingControl = vec2.crSub(wingOuterNear, h1) 
     const outerStartControl = vec2.crAdd(startOuter, h2) 
 
 
-    const innerDistance = vec2.dist(wingInnerNear, startInner)
-    const h3 = vec2.crScale(normMToArrowWingsRot, innerDistance * 0.34)
-    const h4 = vec2.crScale(normMToMFromRot, innerDistance * 0.34)
+    const innerDistance = vec2.dist(wingInnerNear, startInner) * 0.34
+    const h3 = vec2.crScale(normMToArrowWingsRot, innerDistance)
+    const h4 = vec2.crScale(normMToMFromRot, innerDistance)
     const innerWingControl = vec2.crSub(wingInnerNear, h3) 
     const innerStartControl = vec2.crAdd(startInner, h4) 
 

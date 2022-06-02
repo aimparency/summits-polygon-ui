@@ -54,7 +54,7 @@
       @click="flowClick(flow)" 
       :key="aimId">
       {{ (100 * flow.share).toFixed(0) }}% : 
-      {{ flow.into.title || "<unnamed>"}} 
+      {{ flow.from.title || "[unnamed]"}} 
     </div>
     <h3> outgoing flows </h3>
     <div 
@@ -63,7 +63,7 @@
       @click="flowClick(flow)" 
       :key="aimId">
       {{ (100 * flow.share).toFixed(0) }}%: 
-      {{ flow.into.title || "<unnamed>"}} 
+      {{ flow.into.title || "[unnamed]"}} 
     </div>
     <BackButton @click="aimNetwork.deselect"/>
   </div>
