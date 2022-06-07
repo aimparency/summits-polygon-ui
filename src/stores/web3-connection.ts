@@ -47,11 +47,13 @@ export const useWeb3Connection = defineStore('web3-connection', {
       this.address = await signer.getAddress()
 
       console.log("abi", Summits.abi)
-      this.contract = new ethers.Contract(
+      let contract = new ethers.Contract(
         config.contractAddress, 
         Summits.abi, 
-        provider
+        signer 
       );
+
+      this.contract = markRaw(contract) 
 
       console.log("contract", this.contract) 
 

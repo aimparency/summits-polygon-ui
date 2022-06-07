@@ -55,11 +55,11 @@ function makeCircularPath(
 
     const arrowPeak = getArcPoint(into.r); 
 
-    const arrowWings = getArcPoint(into.r + width * 2)
+    const arrowWings = getArcPoint(into.r + width * 1)
     const normMToArrowWings = getMNorm(arrowWings)
     const normMToArrowWingsRot = rotCW(normMToArrowWings)
 
-    const toFarWingSide = vec2.crScale(normMToArrowWings, width* 1)
+    const toFarWingSide = vec2.crScale(normMToArrowWings, width * 1)
     const toNearWingSide = vec2.crScale(normMToArrowWings, width * 0.5) 
 
     const wingOuterFar = vec2.crAdd(arrowWings, toFarWingSide) 

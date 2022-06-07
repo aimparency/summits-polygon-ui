@@ -31,7 +31,7 @@ export default defineComponent({
   },
   methods: {
     click() {
-      console.log("test") 
+      //TBD do sth maybe
     }
   }
 });

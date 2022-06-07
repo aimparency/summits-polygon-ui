@@ -30,8 +30,10 @@ export class Aim {
 
   pos = vec2.create()
 
+  colorValues: [number, number, number] = [0, 0, 0]// 0...255
   color: string
   
+  onchain = true
   published = false
 
   flowsFrom: { [aimId: string]: Flow } = {}
@@ -49,6 +51,7 @@ export class Aim {
     let color = colorHash.rgb(id); 
     color[0] *= 1.3
     color[2] *= 1.6
+    this.colorValues = color
     this.color = `rgb(${color.join(',')})`
   }
 }
@@ -132,10 +135,32 @@ export const useAimNetwork = defineStore('aim-network', {
         this.selectedAim = aim
       }
     }, 
-    async createAimOnChain(_aimId: string) {
+    async createAimOnChain(aim: Aim) {
+      let w3c = useWeb3Connection() 
+      let provider = w3c.provider
+      let signer = w3c.signer
+      let contract = w3c.contract
+      if(provider && signer && contract) {
+        try {
+          const val = await contract.createAim(
+            '0x' + aim.id, 
+            aim.title, 
+            aim.color, 
+            {
+              unit: aim.effort.unit, 
+              amount: aim.effort.amount
+            },
+            aim.detailsCid, 
+            aim.shares
+          )
+          console.log("createAim response", val) 
+        } catch (err) {
+          console.log("Error: ", err) 
+        }
         if(this.home == undefined) {
           // TBD this.setHome(idToBigInt(aimId))
         }
+      }
     }, 
     async loadAim(aimId: BigInt) {
       console.log("load aim", aimId)  
@@ -172,7 +197,7 @@ export const useAimNetwork = defineStore('aim-network', {
 
         if(owner == into.owner) {
           let flowRaw = new Flow(from, into) 
-          flowRaw.share = 0.1
+          flowRaw.share = 0.5
           const bucket = this.flows[from.id] 
           if(bucket) {
             bucket[into.id] = flowRaw

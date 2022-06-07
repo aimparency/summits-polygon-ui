@@ -1,7 +1,7 @@
 <template>
   <Map/>
-  <SideBar/>
   <ConnectionStatus/>
+  <SideBar/>
 </template>
 
 <script lang="ts">

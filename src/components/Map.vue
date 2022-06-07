@@ -27,6 +27,8 @@ import Connector from './Connector.vue';
 import { Aim, Flow, useAimNetwork } from '../stores/aim-network'
 import { useMap } from '../stores/map'
 
+import boxIntersect from 'box-intersect'
+
 import * as vec2 from '../vec2'
 
 export default defineComponent({
@@ -300,49 +302,60 @@ export default defineComponent({
     const outerMarginFactor = 2
     const layout = () => {
       let aimIds = Object.keys(this.aimNetwork.aims) 
+      let boxes: number[][] = []
+      let r: number[] = []
+      let pos: vec2.T[] = []
+
       const shifts :vec2.T[] = []
       for(let i = 0; i < aimIds.length; i++) {
         shifts[i] = vec2.create()
+        let aim = this.aimNetwork.aims[aimIds[i]]
+        let tr = aim.importance
+        r[i] = tr
+        tr *= outerMarginFactor
+        boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
+        pos[i] = aim.pos
       }
-      for(let iA = 0; iA < aimIds.length; iA++) {
-        let aimAId = aimIds[iA]
-        let aimA = this.aimNetwork.aims[aimAId]
+      console.log(boxes) 
+      let intersections = boxIntersect(boxes) 
+      for(let intersection of intersections) {
+        let iA = intersection[0]
+        let iB = intersection[1]
         let shiftA = shifts[iA]
-        let rA = aimA.importance
-        for(let iB = iA + 1; iB < aimIds.length; iB++) {
-          let aimBId = aimIds[iB]
-          let aimB = this.aimNetwork.aims[aimBId]
-          let shiftB = shifts[iB]
-          let rB = aimB.importance
+        let rA = r[iA] 
+        let posA = pos[iA]
+        let shiftB = shifts[iB]
+        let rB = r[iB] 
+        let posB = pos[iB]
 
-          let ab = vec2.crSub(aimB.pos, aimA.pos) 
-          let rSum = rA + rB
-          let d = vec2.len(ab)
+        let ab = vec2.crSub(posB, posA) 
+        let rSum = rA + rB
+        let d = vec2.len(ab)
 
 
-          if(d == 0) {
-            const x = Math.random() * 2 - 1
-            const y = Math.sqrt(1 - x * x) * (Math.random() > 0.5 ? 1 : -1)
-            ab = vec2.fromValues(x * rSum, y * rSum)
-          }
-          if(d < rSum) {
-            calcShiftAndApply(
-              1, 1, 
-              d, ab, 
-              rA, rB, rSum, 
-              shiftA, shiftB
-            )
-          } 
-          if (d < rSum * outerMarginFactor) {
-            calcShiftAndApply(
-              outerMarginFactor, 0.1,
-              d, ab, 
-              rA, rB, rSum, 
-              shiftA, shiftB
-            )
-          }
+        if(d == 0) {
+          const x = Math.random() * 2 - 1
+          const y = Math.sqrt(1 - x * x) * (Math.random() > 0.5 ? 1 : -1)
+          ab = vec2.fromValues(x * rSum, y * rSum)
+        }
+        if(d < rSum) {
+          calcShiftAndApply(
+            1, 1, 
+            d, ab, 
+            rA, rB, rSum, 
+            shiftA, shiftB
+          )
+        } 
+        if (d < rSum * outerMarginFactor) {
+          calcShiftAndApply(
+            outerMarginFactor, 0.1,
+            d, ab, 
+            rA, rB, rSum, 
+            shiftA, shiftB
+          )
         }
       }
+
       let minShift = 0.1 * (this.map.logicalHalfSide / this.map.halfSide) / this.map.scale
       for(let i = 0; i < aimIds.length; i++) {
         const shift = shifts[i]

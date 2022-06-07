@@ -1,3 +1,9 @@
+
+- removing connections when removing aims
+
+- "..." anzeigen, wenn ein aim noch keinen Namen hat
+
+
 # umgekehrt chronologisch
 
 - connect on touch release
