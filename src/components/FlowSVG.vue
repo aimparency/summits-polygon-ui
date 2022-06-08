@@ -1,8 +1,9 @@
 <template>
   <path class="flow"
-    :class="{selected}" 
+    :class="{selected, aimSelected}" 
     :fill="fillColor"
     :d="path"
+    :stroke-width="strokeWidth"
     @click.stop="select"
   />
 </template>
@@ -31,6 +32,13 @@ export default defineComponent({
     selected() : boolean {
       return this.flow == this.aimNetwork.selectedFlow;
     }, 
+    aimSelected() : boolean {
+      return this.flow.from == this.aimNetwork.selectedAim ||
+        this.flow.into == this.aimNetwork.selectedAim;
+    }, 
+    strokeWidth() : number {
+      return 0.07 * this.flow.from.importance
+    }, 
     fillColor() : string {
       return this.flow.from.color
     }, 
@@ -56,9 +64,14 @@ export default defineComponent({
 <style scoped lang="less">
 .flow {
   stroke: none;
-  opacity: 0.7; 
+  opacity: 0.5; 
+  mix-blend-mode: lighten; 
   &.selected {
-    fill: #ccc; 
+    stroke: #fff; 
+    opacity: 0.8; 
+  }
+  &.aimSelected {
+    opacity: 0.8; 
   }
   cursor: pointer; 
 }

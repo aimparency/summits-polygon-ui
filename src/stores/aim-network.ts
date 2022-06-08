@@ -10,7 +10,7 @@ import ColorHash from 'color-hash';
 
 import * as vec2 from '../vec2'
 
-const colorHash = new ColorHash({ lightness: 0.35, saturation: 0.5 }); 
+const colorHash = new ColorHash({ lightness: 0.38, saturation: 0.8 })
 
 export class AimOrigin {
   title?: string
@@ -26,7 +26,7 @@ export class Aim {
   state: string=""
   effort = new Effort('s', 0)
   shares = 0
-  importance = 100
+  importance = Math.random() * 200 + 20
 
   pos = vec2.create()
 
@@ -49,8 +49,8 @@ export class Aim {
     public subLevel: number
   ) {
     let color = colorHash.rgb(id); 
-    color[0] *= 1.3
-    color[2] *= 1.6
+    color[0] *= 1.15
+    color[2] *= 1.3
     this.colorValues = color
     this.color = `rgb(${color.join(',')})`
   }
@@ -184,6 +184,12 @@ export const useAimNetwork = defineStore('aim-network', {
       aim.origin = new AimOrigin()
     }, 
     removeAim(aim: Aim) {
+      for(let fromId in aim.flowsFrom) {
+        this.removeFlow(aim.flowsFrom[fromId]) 
+      }
+      for(let intoId in aim.flowsInto) {
+        this.removeFlow(aim.flowsInto[intoId]) 
+      }
       if(this.selectedAim == aim) {
         this.selectedAim = undefined
       } 
@@ -229,6 +235,9 @@ export const useAimNetwork = defineStore('aim-network', {
       if(this.selectedFlow == flow) {
         this.selectedFlow = undefined
       }
+      delete flow.from.flowsInto[flow.into.id]
+      delete flow.into.flowsFrom[flow.from.id]
+      delete this.flows[flow.from.id][flow.into.id]
     },
 
     // selection

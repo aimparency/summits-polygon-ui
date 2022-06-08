@@ -393,11 +393,18 @@ export default defineComponent({
     }, 
     flows() : Flow[] {
       let flows: Flow[] = []
+      let flow = undefined
       for(let fromId in this.aimNetwork.flows) {
         let intoFlows = this.aimNetwork.flows[fromId]
         for(let intoId in intoFlows) {
-          flows.push(intoFlows[intoId]) 
+          flow = intoFlows[intoId]
+          if(flow !== this.aimNetwork.selectedFlow) {
+            flows.push(intoFlows[intoId]) 
+          }
         }
+      }
+      if(this.aimNetwork.selectedFlow) {
+        flows.push(this.aimNetwork.selectedFlow) 
       }
       return flows; 
     }, 

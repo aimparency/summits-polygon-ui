@@ -1,16 +1,16 @@
 
-- removing connections when removing aims
 
+
+- D: removing connections when removing aims
 - "..." anzeigen, wenn ein aim noch keinen Namen hat
-
 
 # umgekehrt chronologisch
 
-- connect on touch release
+- D(musste get element under point - hack benutzen): connect on touch release
 
-- aim layout: die selected Node nicht bewegen :) 
+- D: aim layout: die selected Node nicht bewegen :) 
 
-- aims connecten / flows anzeigen
+- D: aims connecten / flows anzeigen
 
 
 - "public" optional machen (hardcode true von mir aus bis zum ico)
