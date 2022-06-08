@@ -302,14 +302,17 @@ export default defineComponent({
     const outerMarginFactor = 2
     const layout = () => {
       let aimIds = Object.keys(this.aimNetwork.aims) 
+      let revAimIds: {[aimId: string]: number} = {}
       let boxes: number[][] = []
       let r: number[] = []
       let pos: vec2.T[] = []
 
       const shifts :vec2.T[] = []
       for(let i = 0; i < aimIds.length; i++) {
+        let aimId = aimIds[i]
+        revAimIds[aimId] = i
         shifts[i] = vec2.create()
-        let aim = this.aimNetwork.aims[aimIds[i]]
+        let aim = this.aimNetwork.aims[aimId]
         let tr = aim.importance
         r[i] = tr
         tr *= outerMarginFactor
@@ -318,19 +321,24 @@ export default defineComponent({
       }
       console.log(boxes) 
       let intersections = boxIntersect(boxes) 
-      for(let intersection of intersections) {
-        let iA = intersection[0]
-        let iB = intersection[1]
-        let shiftA = shifts[iA]
-        let rA = r[iA] 
-        let posA = pos[iA]
-        let shiftB = shifts[iB]
-        let rB = r[iB] 
-        let posB = pos[iB]
+      let iA, shiftA, rA, posA
+      let iB, shiftB, rB, posB
+      let ab, rSum, d
 
-        let ab = vec2.crSub(posB, posA) 
-        let rSum = rA + rB
-        let d = vec2.len(ab)
+
+      for(let intersection of intersections) {
+        iA = intersection[0]
+        iB = intersection[1]
+        shiftA = shifts[iA]
+        rA = r[iA] 
+        posA = pos[iA]
+        shiftB = shifts[iB]
+        rB = r[iB] 
+        posB = pos[iB]
+
+        ab = vec2.crSub(posB, posA) 
+        rSum = rA + rB
+        d = vec2.len(ab)
 
 
         if(d == 0) {
@@ -353,6 +361,37 @@ export default defineComponent({
             rA, rB, rSum, 
             shiftA, shiftB
           )
+        } 
+      }
+
+      for(let fromId in this.aimNetwork.flows) {
+        let bucket = this.aimNetwork.flows[fromId]
+        for(let intoId in bucket) {
+          let flow = bucket[intoId]
+          iA = revAimIds[flow.from.id]
+          iB = revAimIds[flow.into.id]
+
+          shiftA = shifts[iA]
+          rA = r[iA] 
+          posA = pos[iA]
+          shiftB = shifts[iB]
+          rB = r[iB] 
+          posB = pos[iB]
+
+          ab = vec2.crSub(posB, posA) 
+          rSum = rA + rB
+          d = vec2.len(ab)
+
+          // vec2.scale(ab, ab, 1 - rSum * outerMarginFactor / d) 
+
+          if(d > rSum * outerMarginFactor * 1) {
+            calcShiftAndApply(
+              outerMarginFactor, 0.025,
+              d - outerMarginFactor, ab, 
+              rA, rB, rSum, 
+              shiftA, shiftB
+            )
+          }
         }
       }
 
