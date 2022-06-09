@@ -16,6 +16,8 @@ export const useMap = defineStore('map', {
       },
       halfSide: 0, 
       logicalHalfSide: 1000, 
+      xratio: 1, 
+      yratio: 1, 
       panBeginning: undefined as undefined | { page: vec2.T, offset: vec2.T },
       dragBeginning: undefined as undefined | { page: vec2.T, pos: vec2.T },
       connecting: false, 

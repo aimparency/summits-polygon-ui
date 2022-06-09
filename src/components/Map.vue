@@ -13,6 +13,14 @@
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
         :aim="aim"/>
+      <rect
+        :x="- map.offset[0] - map.logicalHalfSide * map.xratio * 0.5 / map.scale"
+        :y="- map.offset[1] - map.logicalHalfSide * map.yratio * 0.5 / map.scale"
+        :width="map.logicalHalfSide * map.xratio / map.scale"
+        :height="map.logicalHalfSide * map.yratio / map.scale"
+        stroke="#0f0"
+        fill="none"
+      />
     </g>
   </svg>
 </template>
@@ -54,12 +62,16 @@ export default defineComponent({
       console.log('resizing') 
       let w = canvas.clientWidth 
       let h = canvas.clientHeight
-      if(w < h) {
-        this.map.clientOffset = [0, (h - w) / 2]
-        this.map.halfSide = w / 2
-      } else {
+      if(w > h) {
         this.map.clientOffset = [(w - h) / 2, 0]
         this.map.halfSide = h / 2
+        this.map.xratio = w/h
+        this.map.yratio = 1
+      } else {
+        this.map.clientOffset = [0, (h - w) / 2]
+        this.map.halfSide = w / 2
+        this.map.xratio = 1
+        this.map.yratio = h/w
       }
     }
     window.addEventListener("resize", updateHalfSide)
@@ -301,25 +313,70 @@ export default defineComponent({
 
     const outerMarginFactor = 2
     const layout = () => {
-      let aimIds = Object.keys(this.aimNetwork.aims) 
-      let revAimIds: {[aimId: string]: number} = {}
-      let boxes: number[][] = []
-      let r: number[] = []
-      let pos: vec2.T[] = []
+      let aims = this.aimNetwork.aims
+      let map = this.map
 
-      const shifts :vec2.T[] = []
-      for(let i = 0; i < aimIds.length; i++) {
-        let aimId = aimIds[i]
-        revAimIds[aimId] = i
-        shifts[i] = vec2.create()
-        let aim = this.aimNetwork.aims[aimId]
-        let tr = aim.importance
-        r[i] = tr
-        tr *= outerMarginFactor
-        boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
-        pos[i] = aim.pos
+      /* there is 
+        - aimId: the string
+        - aimIndex: the index of an aim in all the following arrays like r[]
+        - boxIndex: the index of an aim in the boxes array */
+
+      let aimIdToIndex: {[aimId: string]: number} = {}
+      let aimIndexToId: string[] = []
+      let r: number[] = []
+      let tr
+      let pos: vec2.T[] = []
+      let shifts :vec2.T[] = []
+
+      let boxes: number[][] = []
+      const boxToAimIndex: number[] = []
+      const relevantAims = new Set()
+
+      let aim
+      let left, right, top, bottom
+
+      // /2 is for debugging - shoudl be * [1, 2]
+      let hwx = map.logicalHalfSide * map.xratio / 2 / map.scale
+      let hwy = map.logicalHalfSide * map.yratio / 2 / map.scale
+      
+      const sLeft = (-map.offset[0] - hwx) 
+      const sRight = (-map.offset[0] + hwx) 
+      const sTop = (-map.offset[1] - hwy) 
+      const sBottom = (-map.offset[1] + hwy) 
+
+      let aimIndex, boxIndex
+
+      for(let aimId in aims) {
+        aimIndex = aimIndexToId.length
+
+        aim = aims[aimId]
+        tr = aim.importance 
+
+        left = aim.pos[0] - tr
+        right = aim.pos[0] + tr
+        top = aim.pos[1] - tr
+        bottom = aim.pos[1] + tr
+
+        if(
+          left < sRight &&
+          right > sLeft &&
+          top < sBottom &&
+          bottom > sTop
+        ) {
+          boxIndex = boxes.length
+          relevantAims.add(aimIndex) 
+          boxToAimIndex[boxIndex] = aimIndex
+          tr *= outerMarginFactor
+          boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
+        }
+
+        aimIdToIndex[aimId] = aimIndex
+        aimIndexToId.push(aimId) 
+        shifts.push(vec2.create())
+        r.push(aim.importance)
+        pos.push(aim.pos)
+
       }
-      console.log(boxes) 
       let intersections = boxIntersect(boxes) 
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
@@ -327,8 +384,8 @@ export default defineComponent({
 
 
       for(let intersection of intersections) {
-        iA = intersection[0]
-        iB = intersection[1]
+        iA = boxToAimIndex[intersection[0]]
+        iB = boxToAimIndex[intersection[1]]
         shiftA = shifts[iA]
         rA = r[iA] 
         posA = pos[iA]
@@ -368,44 +425,48 @@ export default defineComponent({
         let bucket = this.aimNetwork.flows[fromId]
         for(let intoId in bucket) {
           let flow = bucket[intoId]
-          iA = revAimIds[flow.from.id]
-          iB = revAimIds[flow.into.id]
+          iA = aimIdToIndex[flow.from.id]
+          iB = aimIdToIndex[flow.into.id]
 
-          shiftA = shifts[iA]
-          rA = r[iA] 
-          posA = pos[iA]
-          shiftB = shifts[iB]
-          rB = r[iB] 
-          posB = pos[iB]
+          if(relevantAims.has(iA) || relevantAims.has(iB)) {
+            shiftA = shifts[iA]
+            rA = r[iA] 
+            posA = pos[iA]
+            shiftB = shifts[iB]
+            rB = r[iB] 
+            posB = pos[iB]
 
-          ab = vec2.crSub(posB, posA) 
-          rSum = rA + rB
-          d = vec2.len(ab)
+            ab = vec2.crSub(posB, posA) 
+            rSum = rA + rB
+            d = vec2.len(ab)
 
-          // vec2.scale(ab, ab, 1 - rSum * outerMarginFactor / d) 
+            // vec2.scale(ab, ab, 1 - rSum * outerMarginFactor / d) 
 
-          if(d > rSum * outerMarginFactor * 1) {
-            calcShiftAndApply(
-              outerMarginFactor, 0.025,
-              d - outerMarginFactor, ab, 
-              rA, rB, rSum, 
-              shiftA, shiftB
-            )
+            if(d > rSum * outerMarginFactor * 1) {
+              calcShiftAndApply(
+                outerMarginFactor, 0.025,
+                d - outerMarginFactor, ab, 
+                rA, rB, rSum, 
+                shiftA, shiftB
+              )
+            }
           }
         }
       }
 
-      let minShift = 0.1 * (this.map.logicalHalfSide / this.map.halfSide) / this.map.scale
-      for(let i = 0; i < aimIds.length; i++) {
+      let minShift = 0.1 * (map.logicalHalfSide / map.halfSide) / map.scale
+      let i
+      for(let aimId in aims) {
+        i = aimIdToIndex[aimId]
         const shift = shifts[i]
         if(shift[0] < -minShift ||
           shift[0] > minShift ||
           shift[1] < -minShift ||
           shift[1] > minShift) {
-          let aim = this.aimNetwork.aims[aimIds[i]]
+          aim = this.aimNetwork.aims[aimIndexToId[i]]
           if(
             !(aim == this.aimNetwork.selectedAim) &&
-            !(aim == this.map.dragCandidate && this.map.dragBeginning)
+            !(aim == map.dragCandidate && map.dragBeginning)
           ) {
             aim.pos = vec2.crAdd(aim.pos, shift)
           }
