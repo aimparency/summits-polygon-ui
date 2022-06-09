@@ -13,14 +13,14 @@
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
         :aim="aim"/>
-      <rect
+      <!--rect
         :x="- map.offset[0] - map.logicalHalfSide * map.xratio * 0.5 / map.scale"
         :y="- map.offset[1] - map.logicalHalfSide * map.yratio * 0.5 / map.scale"
         :width="map.logicalHalfSide * map.xratio / map.scale"
         :height="map.logicalHalfSide * map.yratio / map.scale"
         stroke="#0f0"
         fill="none"
-      />
+      /-->
     </g>
   </svg>
 </template>
@@ -336,8 +336,8 @@ export default defineComponent({
       let left, right, top, bottom
 
       // /2 is for debugging - shoudl be * [1, 2]
-      let hwx = map.logicalHalfSide * map.xratio / 2 / map.scale
-      let hwy = map.logicalHalfSide * map.yratio / 2 / map.scale
+      let hwx = map.logicalHalfSide * map.xratio * 2 / map.scale
+      let hwy = map.logicalHalfSide * map.yratio * 2 / map.scale
       
       const sLeft = (-map.offset[0] - hwx) 
       const sRight = (-map.offset[0] + hwx) 
@@ -381,7 +381,6 @@ export default defineComponent({
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
       let ab, rSum, d
-
 
       for(let intersection of intersections) {
         iA = boxToAimIndex[intersection[0]]
