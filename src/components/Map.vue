@@ -39,6 +39,9 @@ import boxIntersect from 'box-intersect'
 
 import * as vec2 from '../vec2'
 
+const outerMarginFactor = 2
+const hShift = vec2.create()
+
 export default defineComponent({
   name: "Map",
   components: {
@@ -59,7 +62,6 @@ export default defineComponent({
     const canvas = this.$refs.canvas as SVGElement
 
     const updateHalfSide = () => {
-      console.log('resizing') 
       let w = canvas.clientWidth 
       let h = canvas.clientHeight
       if(w > h) {
@@ -289,31 +291,59 @@ export default defineComponent({
       }
     });
   
-    const shift = vec2.create()
 
-    const calcShiftAndApply = (
-      marginFactor: number, 
-      force: number, 
-      d: number, 
-      ab: vec2.T, 
-      rA: number, 
-      rB: number, 
-      rSum: number,
-      shiftA: vec2.T, 
-      shiftB: vec2.T
-    ) => {
-      const amount = (marginFactor - d / rSum) * force / rSum 
 
-      vec2.scale(shift, ab, -rB * amount) 
-      vec2.add(shiftA, shiftA, shift)
+    this.layout()
 
-      vec2.scale(shift, ab, +rA * amount) 
-      vec2.add(shiftB, shiftB, shift)
-      
-    }
-
-    const outerMarginFactor = 2
-    const layout = () => {
+    // //DEBUG
+    // for(let i = 0; i < 19; i++) {
+    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 30)
+    // }
+  }, 
+  computed: {
+    viewBox() : string {
+      return [-1,-1,2,2].map((v: number) => v * this.map.logicalHalfSide).join(' ')
+    }, 
+    transform() : string {
+      return [
+        `scale(${this.map.scale})`, 
+        `translate(${this.map.offset[0]}, ${this.map.offset[1]})`, 
+      ].join(' ')
+    }, 
+    flows() : Flow[] {
+      let flows: Flow[] = []
+      let flow = undefined
+      for(let fromId in this.aimNetwork.flows) {
+        let intoFlows = this.aimNetwork.flows[fromId]
+        for(let intoId in intoFlows) {
+          flow = intoFlows[intoId]
+          if(flow !== this.aimNetwork.selectedFlow) {
+            flows.push(intoFlows[intoId]) 
+          }
+        }
+      }
+      if(this.aimNetwork.selectedFlow) {
+        flows.push(this.aimNetwork.selectedFlow) 
+      }
+      return flows; 
+    }, 
+    aims() : Aim[] {
+      let aims = Object.values(this.aimNetwork.aims)
+      let selectedAim = this.aimNetwork.selectedAim
+      if(selectedAim) {
+        aims = aims.filter(aim => aim !== selectedAim)
+      }
+      aims = aims.filter(aim => aim.loadLevel < 0).concat(
+        aims.filter(aim => aim.loadLevel >= 0)
+      )
+      if(selectedAim) {
+        aims.push(selectedAim)
+      }
+      return aims
+    }, 
+  },
+  methods: {
+    layout() {
       let aims = toRaw(this.aimNetwork.aims) // expecting slight performance boost from toRaw
       let map = this.map
 
@@ -322,8 +352,8 @@ export default defineComponent({
         - aimIndex: the index of an aim in all the following arrays like r[]
         - boxIndex: the index of an aim in the boxes array */
 
-      let aimIdToIndex: {[aimId: string]: number} = {}
-      let aimIndexToId: string[] = []
+      let aimIdToIndex: {[aimId: number]: number} = {}
+      let aimIndexToId: number[] = []
       let r: number[] = []
       let tr
       let pos: vec2.T[] = []
@@ -371,7 +401,7 @@ export default defineComponent({
         }
 
         aimIdToIndex[aimId] = aimIndex
-        aimIndexToId.push(aimId) 
+        aimIndexToId[aimIndex] = aimId 
         shifts.push(vec2.create())
         r.push(aim.importance)
         pos.push(aim.pos)
@@ -403,7 +433,7 @@ export default defineComponent({
           ab = vec2.fromValues(x * rSum, y * rSum)
         }
         if(d < rSum) {
-          calcShiftAndApply(
+          this.calcShiftAndApply(
             1, 1, 
             d, ab, 
             rA, rB, rSum, 
@@ -411,7 +441,7 @@ export default defineComponent({
           )
         } 
         if (d < rSum * outerMarginFactor) {
-          calcShiftAndApply(
+          this.calcShiftAndApply(
             outerMarginFactor, 0.1,
             d, ab, 
             rA, rB, rSum, 
@@ -444,7 +474,7 @@ export default defineComponent({
             // vec2.scale(ab, ab, 1 - rSum * outerMarginFactor / d) 
 
             if(d > rSum * outerMarginFactor * 1) {
-              calcShiftAndApply(
+              this.calcShiftAndApply(
                 outerMarginFactor, 0.025,
                 d - outerMarginFactor, ab, 
                 rA, rB, rSum, 
@@ -473,58 +503,29 @@ export default defineComponent({
           }
         } 
       }
-      requestAnimationFrame(layout) 
-    }
-    layout()
+      requestAnimationFrame(this.layout.bind(this)) 
+    },
+    calcShiftAndApply(
+      marginFactor: number, 
+      force: number, 
+      d: number, 
+      ab: vec2.T, 
+      rA: number, 
+      rB: number, 
+      rSum: number,
+      shiftA: vec2.T, 
+      shiftB: vec2.T
+    ) {
+      const amount = (marginFactor - d / rSum) * force / rSum 
 
-    // //DEBUG
-    // for(let i = 0; i < 19; i++) {
-    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 30)
-    // }
-  }, 
-  computed: {
-    viewBox() : string {
-      return [-1,-1,2,2].map((v: number) => v * this.map.logicalHalfSide).join(' ')
-    }, 
-    transform() : string {
-      return [
-        `scale(${this.map.scale})`, 
-        `translate(${this.map.offset[0]}, ${this.map.offset[1]})`, 
-      ].join(' ')
-    }, 
-    flows() : Flow[] {
-      let flows: Flow[] = []
-      let flow = undefined
-      for(let fromId in this.aimNetwork.flows) {
-        let intoFlows = this.aimNetwork.flows[fromId]
-        for(let intoId in intoFlows) {
-          flow = intoFlows[intoId]
-          if(flow !== this.aimNetwork.selectedFlow) {
-            flows.push(intoFlows[intoId]) 
-          }
-        }
-      }
-      if(this.aimNetwork.selectedFlow) {
-        flows.push(this.aimNetwork.selectedFlow) 
-      }
-      console.log("flows", flows) 
-      return flows; 
-    }, 
-    aims() : Aim[] {
-      let aims = Object.values(this.aimNetwork.aims)
-      let selectedAim = this.aimNetwork.selectedAim
-      if(selectedAim) {
-        aims = aims.filter(aim => aim !== selectedAim)
-      }
-      aims = aims.filter(aim => aim.loadLevel < 0).concat(
-        aims.filter(aim => aim.loadLevel >= 0)
-      )
-      if(selectedAim) {
-        aims.push(selectedAim)
-      }
-      return aims
-    }, 
-  },
+      vec2.scale(hShift, ab, -rB * amount) 
+      vec2.add(shiftA, shiftA, hShift)
+
+      vec2.scale(hShift, ab, +rA * amount) 
+      vec2.add(shiftB, shiftB, hShift)
+      
+    }
+  }
 });
 </script>
 

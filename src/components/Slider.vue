@@ -106,7 +106,9 @@ export default defineComponent({
     },
     setValue(e: Event) {
       let v = parseFloat((<HTMLInputElement>e.target).value) / this.factor
-      // TBD clamp to min max
+      if(!v) {
+        v = this.from
+      }
       
       this.$emit('update', v) 
       this.$emit('drag-end') 

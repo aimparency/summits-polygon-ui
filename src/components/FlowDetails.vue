@@ -20,13 +20,12 @@
     </div>
     <Slider
       name='weight'
-      left='0%'
-      right='100%'
-      :factor='100'
-      unit='%'
+      left='0'
+      right='100'
+      :factor="100/0xffff"
       :decimalPlaces='2'
       :from='0'
-      :to='1'
+      :to='0xffff'
       :value='flow.weight'
       @update='updateShare'/>
     <div v-if="flow.pendingTransactions"> 
@@ -109,7 +108,7 @@ export default defineComponent({
       } 
     }, 
     updateShare(v: number) {
-      this.flow.weight = v
+      this.flow.setWeight(v)
     }, 
     reset() {
       this.aimNetwork.resetFlowChanges(this.flow)

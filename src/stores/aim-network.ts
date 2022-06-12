@@ -4,9 +4,24 @@
 import { defineStore } from 'pinia'
 import { useWeb3Connection } from './web3-connection'
 
+import { ethers } from 'ethers'
+
 import Effort from '../types/effort'
 
 import * as vec2 from '../vec2'
+
+function randomAimColor() {
+  let r,g,b,l:number | undefined
+  while(!l || l < 0) {
+    r = Math.random() 
+    g = Math.random()
+    b = Math.random()
+    l = Math.sqrt(r * r + g * g + b * b)
+    if(l > 0) {
+      return [r,g,b].map(c => Math.floor((0.05 + 0.8 * c / l!) * 255 ))
+    }
+  }
+}
 
 export class AimOrigin {
   title?: string
@@ -26,7 +41,7 @@ export class Aim {
   state: string=""
   effort = new Effort('s', 0)
   shares = 0
-  importance = Math.random() * 100 + 40
+  importance = Math.random() * 100 + 100
 
   loadLevel = 0 // 0 means: don't load neighbors
 
@@ -92,13 +107,14 @@ export class Flow {
   ) {}
 
   setWeight(v: number) {
+    v = Math.max(Math.min(0xffff, v), 0) // clamp
+    console.log(v)
     this.weight = v
     let flows = this.into.flowsFrom
     let totalWeight = this.from.loopWeight
     for(let key in flows) {
       totalWeight += flows[key].weight
     }
-    console.log("total weight", totalWeight) 
     for(let key in flows) {
       flows[key].share = flows[key].weight / totalWeight
     }
@@ -116,7 +132,6 @@ export const useAimNetwork = defineStore('aim-network', {
   }, 
   actions: {
     async loadHome() {
-      console.log("loading home node") 
       let summitsContract = useWeb3Connection().getSummitsContract()
       if(summitsContract) {
         const baseAimAddr = await summitsContract.baseAim()
@@ -128,14 +143,14 @@ export const useAimNetwork = defineStore('aim-network', {
       if(summitsContract) {
         const aimIdBigId = BigInt('0x' + aimId)
         const data = await summitsContract.setHomeAim(aimIdBigId)
-        console.log("called setHome, received: ", data) 
       }
     }, 
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       this.selectedAim = this.createAim(aim => {
         aim.permissions = Aim.Permissions.FULL
-        aim.setColor([122,122,122])
+        aim.setColor(randomAimColor())
+
         modifyAimCb && modifyAimCb(aim)
       })
     }, 
@@ -144,7 +159,6 @@ export const useAimNetwork = defineStore('aim-network', {
       if(modifyAimCb) {
         modifyAimCb(rawAim) 
       }
-      console.log("aim",rawAim)
       this.aims[rawAim.id] = rawAim // only now it becomes reactive
       return this.aims[rawAim.id] 
     },
@@ -166,12 +180,14 @@ export const useAimNetwork = defineStore('aim-network', {
     async loadAim(aimAddr: string) {
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(aimAddr) 
-      let aimTitle = await aimContract.title()
-      //let permissions = await aimContract.getUserPermissions()
-      console.log(aimTitle)
-      this.createAim(aim => {
-        aim.title = aimTitle
-        //aim.permissions = 
+      let dataPromises = []
+      dataPromises.push(aimContract.title())
+      dataPromises.push(aimContract.color())
+      Promise.all(dataPromises).then(([title, color]) => {
+        this.createAim(aim => {
+          aim.title = title 
+          aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
+        })
       })
     }, 
 
@@ -179,7 +195,6 @@ export const useAimNetwork = defineStore('aim-network', {
     async commitAimChanges(aim: Aim) {
       Object.getOwnPropertyNames(aim.origin).forEach((name: string) => {
         if((aim.origin as any)[name] !== undefined) {
-          console.log("chaning property", name)
         }
       })
       aim.origin = new AimOrigin()
