@@ -101,7 +101,7 @@ export const useAimNetwork = defineStore('aim-network', {
       let web3 = useWeb3Connection()
       if(web3.contract !== undefined) {
         console.log(web3.contract) 
-        const homeId = 0 // await web3.contract.homes(web3.address)
+        const homeId = await web3.contract.baseAim()
         if(homeId == 0) {
           this.home == undefined
         } else {
@@ -110,7 +110,7 @@ export const useAimNetwork = defineStore('aim-network', {
         }
       }
     }, 
-    async setHome(aimId: string) {
+    async setHome(aimId: string) { // there will be no home to be set no more
       let web3 = useWeb3Connection()
       if(web3.contract) {
         const aimIdBigId = BigInt('0x' + aimId)
@@ -162,8 +162,10 @@ export const useAimNetwork = defineStore('aim-network', {
         }
       }
     }, 
-    async loadAim(aimId: BigInt) {
+    async loadAim(aimAddr: string) {
       console.log("load aim", aimId)  
+      const web3 = useWeb3Connection()
+      const homeId = await web3.contract.baseAim()
     }, 
 
     // edit and remove aims

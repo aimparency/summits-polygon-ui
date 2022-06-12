@@ -1,5 +1,6 @@
-
-
+- Performance optimization (layout) 
+  - reuse arrays (except boxes) by accessing indizes instead of push
+  - or maybe even better: try directly (leaving out vue) modifying the svg props. 
 
 - D: removing connections when removing aims
 - "..." anzeigen, wenn ein aim noch keinen Namen hat
@@ -12,19 +13,18 @@
 
 - D: aims connecten / flows anzeigen
 
-
 - "public" optional machen (hardcode true von mir aus bis zum ico)
   - nur wenn public auf blockchain veröffentlichen 
+
 - Datamodel
   - connections sind selbstständige objekte
   - goals haben eingänge und ausgänge
   - connections gehören zum benefitting aim
     - werden also auf der chain veröffentlicht, wenn das receiving aim öffentlich ist
 
-
 - von gl-vec2 wegwechseln, um mehr precision als Float32 zu haben
   - vielleicht ne eigene kleine lib bauen
     - add, sub, divN, multN
     - alles inplace + returning 
     - clone
-    - operating on {x: number, y: number}
+    - operating on {x: number, y: number} 

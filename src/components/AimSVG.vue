@@ -23,8 +23,8 @@
         class="label"
         x="0"
         y="0">
+        <!--(debug, see what's being redrawn) tspan :dy="-0.5"> {{ Date.now() }} </tspan-->
         <tspan 
-          x="0"
           :dy="i == 0 ? (-0.3 * (titleLines.length - 1) / 2) : 0.3 "
           v-for="line, i in titleLines" 
           :key="i"> {{ line }} </tspan>

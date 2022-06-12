@@ -26,7 +26,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent } from "vue";
+import { defineComponent, toRaw } from "vue";
 
 import AimSVG from './AimSVG.vue';
 import FlowSVG from './FlowSVG.vue';
@@ -290,6 +290,7 @@ export default defineComponent({
     });
   
     const shift = vec2.create()
+
     const calcShiftAndApply = (
       marginFactor: number, 
       force: number, 
@@ -313,7 +314,7 @@ export default defineComponent({
 
     const outerMarginFactor = 2
     const layout = () => {
-      let aims = this.aimNetwork.aims
+      let aims = toRaw(this.aimNetwork.aims) // expecting slight performance boost from toRaw
       let map = this.map
 
       /* there is 
@@ -335,14 +336,13 @@ export default defineComponent({
       let aim
       let left, right, top, bottom
 
-      // /2 is for debugging - shoudl be * [1, 2]
-      let hwx = map.logicalHalfSide * map.xratio * 2 / map.scale
-      let hwy = map.logicalHalfSide * map.yratio * 2 / map.scale
-      
-      const sLeft = (-map.offset[0] - hwx) 
-      const sRight = (-map.offset[0] + hwx) 
-      const sTop = (-map.offset[1] - hwy) 
-      const sBottom = (-map.offset[1] + hwy) 
+      let mapWidth = map.logicalHalfSide * map.xratio * 2 / map.scale
+      let mapHeight = map.logicalHalfSide * map.yratio * 2 / map.scale
+
+      const sLeft = (-map.offset[0] - mapWidth) 
+      const sRight = (-map.offset[0] + mapWidth) 
+      const sTop = (-map.offset[1] - mapHeight) 
+      const sBottom = (-map.offset[1] + mapHeight) 
 
       let aimIndex, boxIndex
 
@@ -420,8 +420,10 @@ export default defineComponent({
         } 
       }
 
-      for(let fromId in this.aimNetwork.flows) {
-        let bucket = this.aimNetwork.flows[fromId]
+      let flows = toRaw(this.aimNetwork.flows) // benchmark proof this performance optimization
+
+      for(let fromId in flows) {
+        let bucket = flows[fromId]
         for(let intoId in bucket) {
           let flow = bucket[intoId]
           iA = aimIdToIndex[flow.from.id]
