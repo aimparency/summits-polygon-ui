@@ -6,11 +6,7 @@ import { useWeb3Connection } from './web3-connection'
 
 import Effort from '../types/effort'
 
-import ColorHash from 'color-hash'; 
-
 import * as vec2 from '../vec2'
-
-const colorHash = new ColorHash({ lightness: 0.38, saturation: 0.8 })
 
 export class AimOrigin {
   title?: string
@@ -21,49 +17,65 @@ export class AimOrigin {
 }
 
 export class Aim {
+  static nextAimId = 0
+  id = Aim.nextAimId++ // auto increment xD
+
+  address?: string
   title: string = ""
-  detailsCid: string = "" 
+  description: string = "" 
   state: string=""
   effort = new Effort('s', 0)
   shares = 0
-  importance = Math.random() * 200 + 20
+  importance = Math.random() * 100 + 40
+
+  loadLevel = 0 // 0 means: don't load neighbors
+
+  tokenName = ""
+  tokenSymbol = ""
 
   pos = vec2.create()
 
-  colorValues: [number, number, number] = [0, 0, 0]// 0...255
-  color: string
+  rgb: [number, number, number] = [0, 0, 0]
+  color = "000000"
   
-  onchain = true
-  published = false
-
   flowsFrom: { [aimId: string]: Flow } = {}
   flowsInto: { [aimId: string]: Flow } = {}
+
+  loopWeight = 0x7000; // half of uint16
 
   origin = new AimOrigin()
 
   pendingTransactions = false
 
-  constructor(
-    public id: string, 
-    public owner: string, 
-    public subLevel: number
-  ) {
-    let color = colorHash.rgb(id); 
-    color[0] *= 1.15
-    color[2] *= 1.3
-    this.colorValues = color
-    this.color = `rgb(${color.join(',')})`
+  static Permissions = {
+    FULL: 0xff, 
+    EDIT: 0x01, 
+    NETWORK: 0x02,
+    MANAGE: 0x04, 
+    //...
+    OWNER: 0x80, 
+  }
+  permissions = 0
+
+  constructor() {
+  }
+
+  setColor(rgb: [number, number, number]) {
+    this.color = '#' + rgb.map(c => ("0" + Math.floor(c).toString(16)).slice(-2)).join('') 
+    this.rgb = rgb
   }
 }
 
 export class FlowOrigin {
   detailsCid?: string
-  share?: number
+  weigth?: number
 }
 
 export class Flow {
-  reasonCid: string = ""
-  share = 0
+  explanation: string = ""
+  weight = 0x7000;
+
+  share = 0; // share get's calculated based on all outgoing weights
 
   origin = new FlowOrigin()
 
@@ -78,19 +90,26 @@ export class Flow {
     public from: Aim,
     public into: Aim 
   ) {}
-}
 
-function idToBigInt(hex: string) {
-  return BigInt('0x' + hex) 
+  setWeight(v: number) {
+    this.weight = v
+    let flows = this.into.flowsFrom
+    let totalWeight = this.from.loopWeight
+    for(let key in flows) {
+      totalWeight += flows[key].weight
+    }
+    console.log("total weight", totalWeight) 
+    for(let key in flows) {
+      flows[key].share = flows[key].weight / totalWeight
+    }
+  }
 }
-
 
 export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
-      aims: {} as {[id: string]: Aim}, 
+      aims: {} as {[id: number]: Aim}, 
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
-      home: undefined as string | undefined,
       selectedAim: undefined as Aim | undefined,
       selectedFlow: undefined as Flow | undefined, 
     }
@@ -98,74 +117,62 @@ export const useAimNetwork = defineStore('aim-network', {
   actions: {
     async loadHome() {
       console.log("loading home node") 
-      let web3 = useWeb3Connection()
-      if(web3.contract !== undefined) {
-        console.log(web3.contract) 
-        const homeId = await web3.contract.baseAim()
-        if(homeId == 0) {
-          this.home == undefined
-        } else {
-          this.home = homeId
-          this.loadAim(homeId) 
-        }
+      let summitsContract = useWeb3Connection().getSummitsContract()
+      if(summitsContract) {
+        const baseAimAddr = await summitsContract.baseAim()
+        this.loadAim(baseAimAddr) 
       }
     }, 
     async setHome(aimId: string) { // there will be no home to be set no more
-      let web3 = useWeb3Connection()
-      if(web3.contract) {
+      let summitsContract = useWeb3Connection().getSummitsContract()
+      if(summitsContract) {
         const aimIdBigId = BigInt('0x' + aimId)
-        const data = await web3.contract.setHomeAim(aimIdBigId)
+        const data = await summitsContract.setHomeAim(aimIdBigId)
         console.log("called setHome, received: ", data) 
       }
     }, 
-
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
-      let owner = useWeb3Connection().address
-      if(owner) {
-        let bytes = new Uint8Array(16)
-        crypto.getRandomValues(bytes)
-        let aimId = Array.from(bytes).map(n => n.toString(16)).join('')
-        let aimRaw = new Aim(aimId, owner, 0)
-        if(modifyAimCb) {
-          modifyAimCb(aimRaw) 
-        }
-        this.aims[aimId] = aimRaw
-        const aim = this.aims[aimId]
-        this.selectedAim = aim
-      }
+      this.selectedAim = this.createAim(aim => {
+        aim.permissions = Aim.Permissions.FULL
+        aim.setColor([122,122,122])
+        modifyAimCb && modifyAimCb(aim)
+      })
     }, 
-    async createAimOnChain(aim: Aim) {
-      let w3c = useWeb3Connection() 
-      let provider = w3c.provider
-      let signer = w3c.signer
-      let contract = w3c.contract
-      if(provider && signer && contract) {
-        try {
-          const val = await contract.createAim(
-            '0x' + aim.id, 
-            aim.title, 
-            aim.color, 
-            {
-              unit: aim.effort.unit, 
-              amount: aim.effort.amount
-            },
-            aim.detailsCid, 
-            aim.shares
-          )
-          console.log("createAim response", val) 
-        } catch (err) {
-          console.log("Error: ", err) 
-        }
-        if(this.home == undefined) {
-          // TBD this.setHome(idToBigInt(aimId))
+    createAim(modifyAimCb?: (aim: Aim) => void) {
+      let rawAim = new Aim()
+      if(modifyAimCb) {
+        modifyAimCb(rawAim) 
+      }
+      console.log("aim",rawAim)
+      this.aims[rawAim.id] = rawAim // only now it becomes reactive
+      return this.aims[rawAim.id] 
+    },
+    async publishAimOnChain(aim: Aim) {
+      let summitsContract = useWeb3Connection().getSummitsContract()
+      if(summitsContract) {
+        let address = summitsContract.createAim(
+          aim.title, 
+          aim.description, 
+          aim.effort,
+          aim.tokenName,
+          aim.tokenSymbol
+        )
+        if(address) {
+          aim.address = address
         }
       }
     }, 
     async loadAim(aimAddr: string) {
-      console.log("load aim", aimId)  
-      const web3 = useWeb3Connection()
-      const homeId = await web3.contract.baseAim()
+      const w3 = useWeb3Connection()
+      let aimContract = w3.getAimContract(aimAddr) 
+      let aimTitle = await aimContract.title()
+      //let permissions = await aimContract.getUserPermissions()
+      console.log(aimTitle)
+      this.createAim(aim => {
+        aim.title = aimTitle
+        //aim.permissions = 
+      })
     }, 
 
     // edit and remove aims
@@ -201,17 +208,15 @@ export const useAimNetwork = defineStore('aim-network', {
     // create and load flows
     createAndSelectFlow(from: Aim, into: Aim) {
       if(from !== into) {
-        let owner = useWeb3Connection().address
-
-        if(owner == into.owner) {
-          let flowRaw = new Flow(from, into) 
-          flowRaw.share = 0.5
+        if((Aim.Permissions.NETWORK & into.permissions) > 0) {
+          let rawFlow = new Flow(from, into) 
+          rawFlow.weight = 0x7fff;
           const bucket = this.flows[from.id] 
           if(bucket) {
-            bucket[into.id] = flowRaw
+            bucket[into.id] = rawFlow
           } else {
             this.flows[from.id] = { 
-              [into.id]: flowRaw
+              [into.id]: rawFlow
             }
           }
 
@@ -220,18 +225,17 @@ export const useAimNetwork = defineStore('aim-network', {
 
           from.flowsInto[into.id] = flow 
           into.flowsFrom[from.id] = flow
-          
+          flow.setWeight(0x7fff)
           this.selectFlow(flow)
         }
       }
     }, 
     //TBD: createFlowOnChain()
-    
 
     // edit and remove flows
-    commitFlowChanges() {
+    commitFlowChanges(_flow: Flow) {
     }, 
-    resetFlowChanges() {
+    resetFlowChanges(_flow: Flow) {
     }, 
     removeFlow(flow: Flow) {
       if(this.selectedFlow == flow) {

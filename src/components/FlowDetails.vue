@@ -19,7 +19,7 @@
       </div>
     </div>
     <Slider
-      name='share'
+      name='weight'
       left='0%'
       right='100%'
       :factor='100'
@@ -27,7 +27,7 @@
       :decimalPlaces='2'
       :from='0'
       :to='1'
-      :value='flow.share'
+      :value='flow.weight'
       @update='updateShare'/>
     <div v-if="flow.pendingTransactions"> 
       <div class="spinner"></div>
@@ -81,7 +81,6 @@ export default defineComponent({
       ui, 
       confirmRemove: false, 
       effortString: undefined as string | undefined,
-      sharesSliderOrigin: 0, 
       stateOptions: [
         {
           value: "open", 
@@ -110,13 +109,13 @@ export default defineComponent({
       } 
     }, 
     updateShare(v: number) {
-      this.flow.share = v
+      this.flow.weight = v
     }, 
     reset() {
       this.aimNetwork.resetFlowChanges(this.flow)
     }, 
     commit() {
-      this.aimNetwork.commitFlowChanges(this.aim) 
+      this.aimNetwork.commitFlowChanges(this.flow) 
     }, 
     flowClick(flow: Flow) {
       this.aimNetwork.selectFlow(flow)

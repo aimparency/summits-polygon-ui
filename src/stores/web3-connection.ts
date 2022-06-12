@@ -1,63 +1,64 @@
-import {markRaw} from 'vue'
 import { defineStore } from 'pinia'
-import { Web3Provider, JsonRpcSigner } from '@ethersproject/providers'
-
-import Web3Modal from "web3modal";
 
 import { Contract, ethers } from "ethers";
+import { Web3Provider, JsonRpcSigner } from '@ethersproject/providers'
 
 import config from '../config'
 import Summits from '../Summits.json'
+import Aim from '../Aim.json'
+
+let provider: Web3Provider
+let signer: JsonRpcSigner
+
+let summitsContract: Contract
+let aimContracts: {[address: string]: Contract} = {}
 
 export const useWeb3Connection = defineStore('web3-connection', {
   state() {
     return {
-      provider: undefined as undefined | Web3Provider,
-      signer: undefined as undefined | JsonRpcSigner, 
       connected: false, 
       network: "", 
       address: "", 
-      contract: undefined as undefined | Contract,  
     }
   }, 
   actions: {
     async connect(
       onConnect: () => void, 
     ) {
-      const providerOptions = {
-        /* See Provider Options Section */
-      };
-      const web3Modal = new Web3Modal({
-        network: "mainnet", // optional
-        cacheProvider: true, // optional
-        providerOptions, // required
-      });
+      provider = new ethers.providers.Web3Provider((window as any).ethereum) 
+      await provider.send("eth_requestAccounts", [])
+      signer = provider.getSigner()
 
-      const instance = await web3Modal.connect()
-
-      let provider = new ethers.providers.Web3Provider(instance)
-      this.provider = markRaw(provider)
-
-      let signer = provider.getSigner()
-      this.signer = markRaw(signer)
-
-      provider.getNetwork().then((network: ethers.providers.Network) => {
+      provider.getNetwork().then((network) => {
         this.network = network.name
       })
-      this.address = await signer.getAddress()
+      
+      signer.getAddress().then((address) => {
+        this.address = address
+      }) 
 
-      console.log("abi", Summits.abi)
-      let contract = new ethers.Contract(
+      summitsContract = new ethers.Contract(
         config.contractAddress, 
         Summits.abi, 
         signer 
       );
 
-      this.contract = markRaw(contract) 
-
-      console.log("contract", this.contract) 
-
       onConnect()
     },
-  }
+    getSummitsContract() {
+      return summitsContract
+    },
+    getAimContract(address: string) {
+      let contract = aimContracts[address]
+      if(!contract) {
+        contract = aimContracts[address] = new ethers.Contract(
+          address,
+          Aim.abi,
+          signer
+        ) 
+      }
+      console.log("aimcontract", contract)
+      return contract
+    }
+  }, 
 }) 

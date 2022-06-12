@@ -507,6 +507,7 @@ export default defineComponent({
       if(this.aimNetwork.selectedFlow) {
         flows.push(this.aimNetwork.selectedFlow) 
       }
+      console.log("flows", flows) 
       return flows; 
     }, 
     aims() : Aim[] {
@@ -515,8 +516,8 @@ export default defineComponent({
       if(selectedAim) {
         aims = aims.filter(aim => aim !== selectedAim)
       }
-      aims = aims.filter(aim => aim.subLevel < 0).concat(
-        aims.filter(aim => aim.subLevel >= 0)
+      aims = aims.filter(aim => aim.loadLevel < 0).concat(
+        aims.filter(aim => aim.loadLevel >= 0)
       )
       if(selectedAim) {
         aims.push(selectedAim)

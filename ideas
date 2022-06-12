@@ -1,3 +1,15 @@
+- Flows
+  - man soll es sehen, wenn riesenpfeile ... von kleinen Aims abgehen 
+  - oder doch: zu kleinen Aims zeigen? flows...
+  - "depends on" vs. "contributes to"
+  - contributes to ist schöner. Zukunft, in Richtung
+  - kann die Pfeile ja so ändern, dass ich am Ende einen Kreis male "round cap" <<== DAS!
+  - daran erkennt man dann auch ganz schön: so groß müsste das Ziel eigentlich sein!
+
+- Bug fixen
+  - nach langer laufzeit ruckelt es
+  - liegt an stack grow bei "layout" funktion. 
+
 - Performance optimization (layout) 
   - reuse arrays (except boxes) by accessing indizes instead of push
   - or maybe even better: try directly (leaving out vue) modifying the svg props. 
