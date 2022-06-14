@@ -3,14 +3,31 @@
     class="aim-details"> 
     <h2 class="sidebar-heading">aim details</h2>
 
+    
+    <p class="permissions">
+      permisions: 
+      <span v-for="permission, key in permissions">{{ permission }}</span>
+      <span v-if="permissions.length == 0">
+        none
+      </span>
+    </p>
+
     <textarea
       ref='title'
-      class='standard title' 
+      rows="4"
+      class='title' 
       placeholder="aim title"
       :value="aim.title"
       @input="updateTitle"></textarea>
+    <textarea
+      ref='description'
+      rows="9"
+      class='description' 
+      placeholder="aim description"
+      :value="aim.description"
+      @input="updateDescription"></textarea>
     <input 
-      class='standard effort' 
+      class='effort' 
       :value="effort" 
       placeholder="effort"
       @blur='parseAndUpdateEffort'
@@ -57,7 +74,6 @@
       unit="tokens"
       @drag-end='updateTokensSliderOrigin'
       @update='updateTokens'/>
-
     <h3> incoming flows </h3>
     <Slider
       name='loop weight'
@@ -148,6 +164,20 @@ export default defineComponent({
     this.updateTokensSliderOrigin()
   },
   computed: {
+    permissions() : string[] {
+      if(this.aim.permissions == Aim.Permissions.ALL) {
+        return ['ALL']
+      } else {
+        let permissions: string[] = []
+        for(let name in Aim.Permissions) {
+          let bits = Aim.Permissions[name]
+          if((this.aim.permissions & bits) == bits) {
+            permissions.push(name) 
+          }
+        }
+        return permissions
+      }
+    }, 
     dirty() : boolean {
       return ( 
         Object.values(this.aim.origin).filter((v: any) => v !== undefined).length > 0 
@@ -165,14 +195,14 @@ export default defineComponent({
       }
     }, 
     tokensSliderMin(): bigint {
-      let min = this.tokenSliderOrigin / 2n - 1000n
+      let min = this.tokenSliderOrigin / 2n - 1000000n
       if(min < 0n) {
         min = 0n
       }
       return min
     }, 
     tokensSliderMax(): bigint {
-      return this.tokenSliderOrigin * 2n + 1000n
+      return this.tokenSliderOrigin * 2n + 1000000n
     }, 
   }, 
   methods: {
@@ -208,6 +238,15 @@ export default defineComponent({
         this.aim.origin.title = this.aim.title
       }
       this.aim.title = v
+    }, 
+    updateDescription(e: Event) {
+      const v = (<HTMLTextAreaElement>e.target).value
+      if(v === this.aim.origin.description) { 
+        this.aim.origin.description = undefined
+      } else if(this.aim.origin.description === undefined) {
+        this.aim.origin.description = this.aim.description
+      }
+      this.aim.description = v
     }, 
     effortChange(e: Event) {
       this.effortString = (<HTMLInputElement>e.target).value
@@ -268,7 +307,7 @@ export default defineComponent({
     display: block; 
   }
   textarea {
-    height: 10em; 
+    resize: vertical; 
   }
   h3 {
     margin: 1rem auto; 
@@ -276,6 +315,14 @@ export default defineComponent({
   }
   p.supply {
     margin:0.5rem; 
+  }
+  p.permissions {
+    margin: 1rem; 
+    span {
+      padding: 0.3rem;
+      border-radius: 0.3rem; 
+      background-color: #fff4; 
+    }
   }
 }
 

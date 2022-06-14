@@ -56,16 +56,13 @@ export default defineComponent({
 input, textarea {
   font-size: 1rem; 
   width: calc(100% - 2rem); 
-  margin: 0.5rem; 
+  margin-bottom: 0.5rem; 
   padding: 0.5rem; 
   border: none; 
   border-radius: @secondaryradius; 
   &:focus {
     outline: 0.2rem solid #fff8; 
   }
-}
-
-input, textarea {
   background-color: #0004; 
 }
 

@@ -108,9 +108,11 @@ export default defineComponent({
       }
     },
     setValue(e: Event) {
-      let v = parseInt((<HTMLInputElement>e.target).value)
-      this.$emit('update', v)
-      this.$emit('drag-end')
+      try{
+        let v = BigInt((<HTMLInputElement>e.target).value)
+        this.$emit('update', v)
+        this.$emit('drag-end')
+      } catch {}
     },
     getV (e: MouseEvent | TouchEvent) {
       let x = 0

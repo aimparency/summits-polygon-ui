@@ -29,8 +29,8 @@ function clampLoopWeight(v: number) {
 
 export class AimOrigin {
   title?: string
-  detailsCid?: string
-  tokens?: number
+  description?: string
+  tokens?: bigint 
   state?: string 
   effort?: Effort
 }
@@ -68,14 +68,14 @@ export class Aim {
 
   pendingTransactions = false
 
-  static Permissions = {
-    FULL: 0xff, 
+  static Permissions: {[name: string]: number} = {
+    ALL: 0xff, 
     EDIT: 0x01, 
     NETWORK: 0x02,
     MANAGE: 0x04, 
     //...
     OWNER: 0x80, 
-  }
+  } 
 
   permissions = 0
 
@@ -111,7 +111,7 @@ export class Aim {
 }
 
 export class FlowOrigin {
-  detailsCid?: string
+  explanation?: string
   weigth?: number
 }
 
@@ -161,7 +161,7 @@ export const useAimNetwork = defineStore('aim-network', {
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       this.selectedAim = this.createAim(aim => {
-        aim.permissions = Aim.Permissions.FULL
+        aim.permissions = Aim.Permissions.ALL
         aim.setColor(randomAimColor())
         modifyAimCb && modifyAimCb(aim)
       })

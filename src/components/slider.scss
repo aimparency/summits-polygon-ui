@@ -43,14 +43,14 @@
   }
   .right, .left{
     position: absolute;
-    top: 0.7rem;
+    bottom: 0.4rem;
     user-select: none; 
     color: #999;
   }
   .left {
-    left: 0.5rem;
+    left: 2rem;
   }
   .right {
-    right: 0.5rem;
+    right: 2rem;
   }
 }
