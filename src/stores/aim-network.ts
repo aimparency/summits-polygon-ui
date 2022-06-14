@@ -4,7 +4,7 @@
 import { defineStore } from 'pinia'
 import { useWeb3Connection } from './web3-connection'
 
-import { ethers } from 'ethers'
+import { BigNumber, ethers } from 'ethers'
 
 import Effort from '../types/effort'
 
@@ -12,21 +12,25 @@ import * as vec2 from '../vec2'
 
 function randomAimColor() {
   let r,g,b,l:number | undefined
-  while(!l || l < 0) {
+  while(true) {
     r = Math.random() 
     g = Math.random()
     b = Math.random()
     l = Math.sqrt(r * r + g * g + b * b)
     if(l > 0) {
-      return [r,g,b].map(c => Math.floor((0.05 + 0.8 * c / l!) * 255 ))
+      return [r,g,b].map(c => Math.floor((0.05 + 0.8 * c / l!) * 255 )) as [number, number, number]
     }
   }
+}
+
+function clampLoopWeight(v: number) {
+  return Math.max(Math.min(0xffff, v), 0)
 }
 
 export class AimOrigin {
   title?: string
   detailsCid?: string
-  shares?: number
+  tokens?: number
   state?: string 
   effort?: Effort
 }
@@ -40,23 +44,25 @@ export class Aim {
   description: string = "" 
   state: string=""
   effort = new Effort('s', 0)
-  shares = 0
-  importance = Math.random() * 100 + 100
+  rgb: [number, number, number] = [0, 0, 0]
 
-  loadLevel = 0 // 0 means: don't load neighbors
+  tokens = 0n
+  totalSupply = 0n
+  tokensOnChain = 0n
 
   tokenName = ""
   tokenSymbol = ""
 
   pos = vec2.create()
-
-  rgb: [number, number, number] = [0, 0, 0]
+  r = 0
   color = "000000"
+
+  loadLevel = 0 // 0 means: don't load neighbors
   
   flowsFrom: { [aimId: string]: Flow } = {}
   flowsInto: { [aimId: string]: Flow } = {}
 
-  loopWeight = 0x7000; // half of uint16
+  loopWeight = 0x8000; // half of uint16
 
   origin = new AimOrigin()
 
@@ -70,6 +76,7 @@ export class Aim {
     //...
     OWNER: 0x80, 
   }
+
   permissions = 0
 
   constructor() {
@@ -78,6 +85,28 @@ export class Aim {
   setColor(rgb: [number, number, number]) {
     this.color = '#' + rgb.map(c => ("0" + Math.floor(c).toString(16)).slice(-2)).join('') 
     this.rgb = rgb
+  }
+
+  setLoopWeight(v: number) {
+    this.loopWeight = clampLoopWeight(v) 
+    this.recalcWeights()
+  }
+
+  recalcWeights() {
+    let flows = this.flowsFrom
+    let totalWeight = this.loopWeight
+    for(let key in flows) {
+      totalWeight += flows[key].weight
+    }
+    for(let key in flows) {
+      flows[key].share = flows[key].weight / totalWeight
+    }
+  }
+
+  setTokens(v: bigint) {
+    this.tokens = v
+    let localSupply: bigint = this.totalSupply - this.tokensOnChain + this.tokens
+    this.r = Math.sqrt(Number((localSupply / 1000000n).toString())) // here, this is the only factor that counts
   }
 }
 
@@ -107,17 +136,8 @@ export class Flow {
   ) {}
 
   setWeight(v: number) {
-    v = Math.max(Math.min(0xffff, v), 0) // clamp
-    console.log(v)
-    this.weight = v
-    let flows = this.into.flowsFrom
-    let totalWeight = this.from.loopWeight
-    for(let key in flows) {
-      totalWeight += flows[key].weight
-    }
-    for(let key in flows) {
-      flows[key].share = flows[key].weight / totalWeight
-    }
+    this.weight = clampLoopWeight(v) 
+    this.into.recalcWeights()
   }
 }
 
@@ -138,19 +158,11 @@ export const useAimNetwork = defineStore('aim-network', {
         this.loadAim(baseAimAddr) 
       }
     }, 
-    async setHome(aimId: string) { // there will be no home to be set no more
-      let summitsContract = useWeb3Connection().getSummitsContract()
-      if(summitsContract) {
-        const aimIdBigId = BigInt('0x' + aimId)
-        const data = await summitsContract.setHomeAim(aimIdBigId)
-      }
-    }, 
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       this.selectedAim = this.createAim(aim => {
         aim.permissions = Aim.Permissions.FULL
         aim.setColor(randomAimColor())
-
         modifyAimCb && modifyAimCb(aim)
       })
     }, 
@@ -183,10 +195,27 @@ export const useAimNetwork = defineStore('aim-network', {
       let dataPromises = []
       dataPromises.push(aimContract.title())
       dataPromises.push(aimContract.color())
-      Promise.all(dataPromises).then(([title, color]) => {
+      dataPromises.push(aimContract.symbol())
+      dataPromises.push(aimContract.name())
+      dataPromises.push(aimContract.description())
+      dataPromises.push(aimContract.totalSupply())
+      dataPromises.push(aimContract.getPermissions())
+      dataPromises.push(aimContract.getInvestment())
+      Promise.all(dataPromises).then(([
+        title, color, symbol, name, description, supply, permissions, tokens
+      ]) => {
         this.createAim(aim => {
+          aim.address = aimAddr
           aim.title = title 
+          aim.description = description
           aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
+          aim.tokenName = name 
+          aim.tokenSymbol = symbol
+          aim.permissions = permissions
+          const t = BigNumber.from(tokens).toBigInt()
+          aim.totalSupply = BigNumber.from(supply).toBigInt()
+          aim.tokensOnChain = t
+          aim.setTokens(t) 
         })
       })
     }, 

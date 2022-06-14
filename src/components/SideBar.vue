@@ -13,15 +13,17 @@
         &gt; 
       </span>
     </div>
-    <AimDetails 
-      v-if="aimNetwork.selectedAim"
-      :aim="aimNetwork.selectedAim"
-      />
-    <FlowDetails
-      v-else-if="aimNetwork.selectedFlow"
-      :flow="aimNetwork.selectedFlow"
-      />
-    <LocalList v-else/>
+    <div class="container">
+      <AimDetails 
+        v-if="aimNetwork.selectedAim"
+        :aim="aimNetwork.selectedAim"
+        />
+      <FlowDetails
+        v-else-if="aimNetwork.selectedFlow"
+        :flow="aimNetwork.selectedFlow"
+        />
+      <LocalList v-else/>
+    </div>
   </div>
 </template>
 
@@ -104,6 +106,10 @@ export default defineComponent({
       box-shadow: 0 0 2rem black; 
       left: 100%; 
     }
+  }
+  .container {
+    overflow-y: auto;
+    height: 100%; 
   }
   .toggle {
     left: calc(100% - @size);

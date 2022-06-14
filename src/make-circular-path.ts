@@ -10,7 +10,7 @@ function rotCW(v: vec2.T) {
 
 function makeCircularPath(
   from: {pos: vec2.T, r: number}, 
-  fromShare: number, 
+  width: number, 
   into: {pos: vec2.T, r: number}
 ) : string {
   const delta = vec2.crSub(into.pos, from.pos)
@@ -51,8 +51,6 @@ function makeCircularPath(
       return result
     }
 
-    const width = /* 2 * nice */ from.r * fromShare;
-
     const arrowPeak = getArcPoint(into.r); 
 
     const arrowWings = getArcPoint(into.r + width * 1)
@@ -87,6 +85,8 @@ function makeCircularPath(
     const innerWingControl = vec2.crSub(wingInnerNear, h3) 
     const innerStartControl = vec2.crAdd(startInner, h4) 
 
+
+
     const pathSpec = [
       'M', startInner, 
       'C', innerStartControl, innerWingControl, wingInnerNear,  
@@ -95,8 +95,14 @@ function makeCircularPath(
       'L', wingOuterFar, 
       'L', wingOuterNear, 
       'C', outerWingControl, outerStartControl, startOuter, 
-      'Z'
     ]
+
+    let widthWithStroke = width * 1.1
+    if(widthWithStroke > from.r) {
+      let arcR = width * 1.001
+      pathSpec.push(`A ${arcR} ${arcR} 0 0 1 ${startInner[0]} ${startInner[1]}`)
+    }
+    pathSpec.push('Z') 
 
 
     return pathSpec.map(c => {

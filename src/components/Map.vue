@@ -286,18 +286,19 @@ export default defineComponent({
         } else {
           this.aimNetwork.createAndSelectAim((aim: Aim) => {
             aim.pos = vec2.clone(this.map.mouse.logical)
+            // r * scale soll 100 sein
+            let tR = BigInt(Math.trunc(1000 * 100 / this.map.scale))
+            aim.setTokens(tR * tR)
           })
         }
       }
     });
   
-
-
     this.layout()
 
-    // //DEBUG
+    // DEBUG
     // for(let i = 0; i < 19; i++) {
-    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 30)
+    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 3000)
     // }
   }, 
   computed: {
@@ -380,7 +381,7 @@ export default defineComponent({
         aimIndex = aimIndexToId.length
 
         aim = aims[aimId]
-        tr = aim.importance 
+        tr = aim.r
 
         left = aim.pos[0] - tr
         right = aim.pos[0] + tr
@@ -403,10 +404,12 @@ export default defineComponent({
         aimIdToIndex[aimId] = aimIndex
         aimIndexToId[aimIndex] = aimId 
         shifts.push(vec2.create())
-        r.push(aim.importance)
+        r.push(aim.r)
         pos.push(aim.pos)
-
       }
+
+
+
       let intersections = boxIntersect(boxes) 
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
@@ -503,7 +506,9 @@ export default defineComponent({
           }
         } 
       }
-      requestAnimationFrame(this.layout.bind(this)) 
+      requestAnimationFrame(() => {
+        this.layout()
+      })
     },
     calcShiftAndApply(
       marginFactor: number, 

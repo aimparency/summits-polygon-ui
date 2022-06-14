@@ -2,6 +2,7 @@
   <div 
     class="aim-details"> 
     <h2 class="sidebar-heading">aim details</h2>
+
     <textarea
       ref='title'
       class='standard title' 
@@ -23,15 +24,6 @@
       :options="stateOptions" 
       @change='updateState'
       />
-    <IntSlider 
-      name='shares'
-      :left='sharesSliderMin.toString()'
-      :right='sharesSliderMax.toString()'
-      :from='sharesSliderMin'
-      :to='sharesSliderMax'
-      :value='aim.shares'
-      @drag-end='updateSharesSliderOrigin'
-      @update='updateShares'/>
     <div v-if="aim.pendingTransactions"> 
       <div class="spinner"></div>
     </div>
@@ -47,7 +39,36 @@
         @blur='confirmRemove = false'
         @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
     </div>
+
+    <h3> investment </h3>
+    <div v-if="aim.address">
+      <p class="supply">current supply: <b>{{aim.totalSupply}}</b></p>
+      Token: <span class="tokenInfo"><input size="13" placeholder="token name" :value="aim.tokenName"/></span>
+      <span class="tokenInfo"><input size="5" placeholder="symbol" :value="aim.tokenSymbol"/></span>
+    </div>
+    <p v-else> initial investment: </p>
+    <BigIntSlider 
+      name='balance'
+      :left='tokensSliderMin.toString()'
+      :right='tokensSliderMax.toString()'
+      :from='tokensSliderMin'
+      :to='tokensSliderMax'
+      :value='aim.tokens'
+      unit="tokens"
+      @drag-end='updateTokensSliderOrigin'
+      @update='updateTokens'/>
+
     <h3> incoming flows </h3>
+    <Slider
+      name='loop weight'
+      left='0'
+      right='100'
+      :factor="100/0xffff"
+      :decimalPlaces='2'
+      :from='0'
+      :to='0xffff'
+      :value='aim.loopWeight'
+      @update='updateLoopWeight'/>
     <div 
       class="flow button" 
       v-for="(flow, aimId) in aim.flowsFrom" 
@@ -65,6 +86,7 @@
       {{ (100 * flow.share).toFixed(0) }}%: 
       {{ flow.into.title || "[unnamed]"}} 
     </div>
+    <div class="scrollspace"/>
     <BackButton @click="aimNetwork.deselect"/>
   </div>
 </template>
@@ -78,7 +100,8 @@ import Effort from "../types/effort"
 
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
-import IntSlider from './IntSlider.vue'
+import BigIntSlider from './BigIntSlider.vue'
+import Slider from './Slider.vue'
 import BackButton from './SideBar/BackButton.vue'
 
 export default defineComponent({
@@ -86,7 +109,8 @@ export default defineComponent({
   components: {
     AimLi,
     MultiSwitch,
-    IntSlider, 
+    BigIntSlider, 
+    Slider, 
     BackButton,
   },
   props: {
@@ -103,7 +127,7 @@ export default defineComponent({
       ui, 
       confirmRemove: false, 
       effortString: undefined as string | undefined,
-      sharesSliderOrigin: 0, 
+      tokenSliderOrigin: 0n,
       stateOptions: [
         {
           value: "open", 
@@ -121,7 +145,7 @@ export default defineComponent({
     }
   }, 
   mounted() {
-    this.updateSharesSliderOrigin()
+    this.updateTokensSliderOrigin()
   },
   computed: {
     dirty() : boolean {
@@ -140,15 +164,15 @@ export default defineComponent({
         }
       }
     }, 
-    sharesSliderMin(): number {
-      return Math.round(
-        Math.max(0, this.sharesSliderOrigin / 2 - 10)
-      )
+    tokensSliderMin(): bigint {
+      let min = this.tokenSliderOrigin / 2n - 1000n
+      if(min < 0n) {
+        min = 0n
+      }
+      return min
     }, 
-    sharesSliderMax(): number {
-      return Math.round(
-        this.sharesSliderOrigin * 2 + 10
-      )
+    tokensSliderMax(): bigint {
+      return this.tokenSliderOrigin * 2n + 1000n
     }, 
   }, 
   methods: {
@@ -157,16 +181,16 @@ export default defineComponent({
         this.commit()
       } 
     }, 
-    updateSharesSliderOrigin(){
-      this.sharesSliderOrigin = this.aim.shares
+    updateTokensSliderOrigin(){
+      this.tokenSliderOrigin = this.aim.tokens
     }, 
-    updateShares(v: number) {
-      if(v === this.aim.origin.shares) { 
-        this.aim.origin.shares = undefined
-      } else if(this.aim.origin.shares === undefined) {
-        this.aim.origin.shares = this.aim.shares
+    updateTokens(v: number) {
+      if(v === this.aim.origin.tokens) { 
+        this.aim.origin.tokens = undefined
+      } else if(this.aim.origin.tokens === undefined) {
+        this.aim.origin.tokens = this.aim.tokens
       }
-      this.aim.shares = v
+      this.aim.setTokens(v) 
     }, 
     updateState(v: string) {
       if(v === this.aim.origin.state) { 
@@ -202,7 +226,7 @@ export default defineComponent({
     }, 
     reset() {
       this.aimNetwork.resetAimChanges(this.aim)
-      this.updateSharesSliderOrigin()
+      this.updateTokensSliderOrigin()
     }, 
     commit() {
       this.aimNetwork.commitAimChanges(this.aim) 
@@ -216,6 +240,9 @@ export default defineComponent({
       } else {
         this.aimNetwork.removeAim(this.aim)
       }
+    },
+    updateLoopWeight(v: number) {
+      this.aim.setLoopWeight(v)
     }
   }, 
 });
@@ -230,12 +257,25 @@ export default defineComponent({
       background-color: @danger; 
     }
   }
+  .tokenInfo {
+    input {
+      display: inline-block; 
+      width: auto; 
+    }
+  }
   .flow {
     text-align: left; 
     display: block; 
   }
   textarea {
     height: 10em; 
+  }
+  h3 {
+    margin: 1rem auto; 
+    padding-top: 2rem; 
+  }
+  p.supply {
+    margin:0.5rem; 
   }
 }
 

@@ -78,4 +78,7 @@ input, textarea {
   background-color: @mid2; 
 }
 
+div.scrollspace {
+  height: 5rem;
+}
 </style>

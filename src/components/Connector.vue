@@ -3,7 +3,7 @@
     class="connector"
     fill="white"
     :d="path"
-    :stroke-width="connectFrom.importance * 100"
+    :stroke-width="connectFrom.r"
   />
 </template>
 
@@ -36,9 +36,9 @@ export default defineComponent({
       return makeCircularPath(
         {
           pos: this.connectFrom.pos,
-          r: this.connectFrom.importance
+          r: this.connectFrom.r
         }, 
-        0.1, 
+        0.5 * this.connectFrom.r,
         {
           pos: this.map.mouse.logical,
           r: 0
@@ -53,6 +53,5 @@ export default defineComponent({
 <style scoped lang="less">
 .connector{
   fill: #bbb; 
-  stroke: none; 
 }
 </style>

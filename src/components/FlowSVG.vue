@@ -37,7 +37,7 @@ export default defineComponent({
         this.flow.into == this.aimNetwork.selectedAim;
     }, 
     strokeWidth() : number {
-      return 0.07 * this.flow.from.importance
+      return 0.2 * this.flow.into.r * this.flow.share
     }, 
     fillColor() : string {
       return this.flow.from.color
@@ -46,9 +46,9 @@ export default defineComponent({
       const from = this.flow.from
       const into = this.flow.into
       return makeCircularPath(
-        {pos: from.pos, r: from.importance}, 
-        this.flow.share, 
-        {pos: into.pos, r: into.importance}
+        {pos: from.pos, r: from.r}, 
+        into.r * this.flow.share, 
+        {pos: into.pos, r: into.r}
       ) 
     }, 
   },

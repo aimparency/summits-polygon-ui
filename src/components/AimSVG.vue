@@ -26,6 +26,7 @@
         <!--(debug, see what's being redrawn) tspan :dy="-0.5"> {{ Date.now() }} </tspan-->
         <tspan 
           :dy="i == 0 ? (-0.3 * (titleLines.length - 1) / 2) : 0.3 "
+          x="0"
           v-for="line, i in titleLines" 
           :key="i"> {{ line }} </tspan>
       </text>
@@ -60,7 +61,7 @@ export default defineComponent({
     }, 
     scale() : string {
       let aim = this.aim
-      return `scale(${aim.importance})`
+      return `scale(${aim.r})`
     }, 
     titleLines() : string[] {
       return this.aim.title

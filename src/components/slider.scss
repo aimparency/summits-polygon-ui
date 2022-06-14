@@ -25,7 +25,7 @@
     left: calc(0.5rem + @dotsize * 0.5);
     .dot {
       left: 0; 
-      transition: left 0.15s ease-in-out; 
+      //transition: left 0.15s ease-in-out; 
       &.dragging{
         transition: none; 
       }

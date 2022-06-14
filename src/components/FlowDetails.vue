@@ -43,6 +43,7 @@
         @blur='confirmRemove = false'
         @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
     </div>
+    <div class="scrollspace"></div>
     <BackButton @click="aimNetwork.deselect"/>
   </div>
 </template>
