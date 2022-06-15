@@ -9,6 +9,7 @@ import { BigNumber, ethers } from 'ethers'
 import { useMap } from './map'
 
 import * as vec2 from '../vec2'
+import { toRaw } from 'vue'
 
 function randomAimColor() {
   let r,g,b,l:number | undefined
@@ -161,6 +162,10 @@ export const useAimNetwork = defineStore('aim-network', {
         // scale = 100 / home.r
         map.scale = 200 / home.r
       }
+
+      // for testing
+      let r = await summitsContract.test()
+      console.log("test result", r) 
     }, 
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
