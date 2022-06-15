@@ -6,12 +6,12 @@
       <div tabindex="0" class="button" 
         @keypress.enter="addAim"
         @click.stop="addAim">
-        Add aim ...
+        add aim
       </div>
       <div tabindex="0" class="button" 
         @keyup.enter="switchToGlobalSearch"
         @click.stop="switchToGlobalSearch">
-        Search globally ...
+        search globally
       </div>
     </div>
     <div class="results">
@@ -77,10 +77,11 @@ export default defineComponent({
 <style scoped lang="less">
 .local-list {
   .buttonList {
-    margin: 0.5rem; 
   }
   .results {
-    margin: 1rem 0.5rem; 
+    background-color: #0008; 
+    box-shadow: 0 0 1rem #0008; 
+    margin: 0.5rem; 
     padding: 0; 
   }
 }

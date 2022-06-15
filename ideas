@@ -1,3 +1,17 @@
+#2022-06-14
+- Effort in engery umbenennen?
+  - Was ist eine gute Metrik? Gibt es da überhaupt eine Dimension?
+  - Energy... aber z.B. für computation hängt energy davon ab, wie gut die chips sind
+    - schwer zu bemessen
+    - vielleicht lasse ich es einfach weg? effort?
+    - Zeit mag ich nicht, weil es keinen Sinn ergibt, Sachen in Zeit zu messen. 
+
+- Ok, also, ich würde gern... voranschreiten
+  - aims speichern on chain
+  - aims ändern on chain
+  - dann: subgraph schreiben
+  - dauert alles länger als gedacht. Ist aber so. 
+
 - Layout
   - vieleicht wäre es gut, wenn es so einen Toleranzbereich gibt, in dem sich nichts verschiebt
   - Aber eh will ich die dx und dy aus den flows verwenden. 

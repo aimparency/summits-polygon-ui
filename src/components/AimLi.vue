@@ -26,6 +26,9 @@ export default defineComponent({
 <style scoped lang="less">
 .aim-li{
   .button();
+  box-shadow: none; 
   display: block; 
+  margin: 0; 
+  border-bottom: 0.2rem solid shade(@c1, 70%) ;
 }
 </style>

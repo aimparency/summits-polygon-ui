@@ -57,6 +57,7 @@ input, textarea {
   font-size: 1rem; 
   width: calc(100% - 2rem); 
   margin-bottom: 0.5rem; 
+  margin-left: 0.5rem;
   padding: 0.5rem; 
   border: none; 
   border-radius: @secondaryradius; 

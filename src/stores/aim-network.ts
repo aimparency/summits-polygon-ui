@@ -6,7 +6,7 @@ import { useWeb3Connection } from './web3-connection'
 
 import { BigNumber, ethers } from 'ethers'
 
-import Effort from '../types/effort'
+import { useMap } from './map'
 
 import * as vec2 from '../vec2'
 
@@ -32,7 +32,7 @@ export class AimOrigin {
   description?: string
   tokens?: bigint 
   state?: string 
-  effort?: Effort
+  effort?: number 
 }
 
 export class Aim {
@@ -43,7 +43,7 @@ export class Aim {
   title: string = ""
   description: string = "" 
   state: string=""
-  effort = new Effort('s', 0)
+  effort: number = 0 
   rgb: [number, number, number] = [0, 0, 0]
 
   tokens = 0n
@@ -155,7 +155,11 @@ export const useAimNetwork = defineStore('aim-network', {
       let summitsContract = useWeb3Connection().getSummitsContract()
       if(summitsContract) {
         const baseAimAddr = await summitsContract.baseAim()
-        this.loadAim(baseAimAddr) 
+        let home = await this.loadAim(baseAimAddr) 
+        const map = useMap()
+        // 100 = scale * home.r
+        // scale = 100 / home.r
+        map.scale = 200 / home.r
       }
     }, 
     // create and load aims
@@ -175,14 +179,24 @@ export const useAimNetwork = defineStore('aim-network', {
       return this.aims[rawAim.id] 
     },
     async publishAimOnChain(aim: Aim) {
+      console.log("publishing on chain") 
       let summitsContract = useWeb3Connection().getSummitsContract()
       if(summitsContract) {
+        console.log(aim.title)
+        console.log(aim.description) 
+        console.log(aim.effort)
+        console.log(aim.rgb) 
+        console.log(aim.tokenName)
+        console.log(aim.tokenSymbol) 
+        console.log(aim.tokens)
         let address = summitsContract.createAim(
           aim.title, 
           aim.description, 
-          aim.effort,
+          Math.trunc(aim.effort), 
+          toRaw(aim.rgb), 
           aim.tokenName,
-          aim.tokenSymbol
+          aim.tokenSymbol, 
+          aim.tokens
         )
         if(address) {
           aim.address = address
@@ -201,10 +215,10 @@ export const useAimNetwork = defineStore('aim-network', {
       dataPromises.push(aimContract.totalSupply())
       dataPromises.push(aimContract.getPermissions())
       dataPromises.push(aimContract.getInvestment())
-      Promise.all(dataPromises).then(([
+      return await Promise.all(dataPromises).then(([
         title, color, symbol, name, description, supply, permissions, tokens
       ]) => {
-        this.createAim(aim => {
+        return this.createAim(aim => {
           aim.address = aimAddr
           aim.title = title 
           aim.description = description

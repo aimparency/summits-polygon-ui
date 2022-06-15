@@ -11,7 +11,7 @@
 @bg1: mix(@baseBg, @c1, 80%); 
 @bg2: mix(@baseBg, @c2, 80%); 
 
-@buttonradius: 2rem; 
+@buttonradius: 0.2rem; 
 @secondaryradius: 0.3rem; 
 
 .clickable {
@@ -24,7 +24,7 @@
   .clickable();
   display: inline-block; 
   box-shadow: 0 0 1rem #0008; 
-  margin: 0.2rem 0.5rem;
+  margin: 0.1rem 0.5rem;
   padding: 0.5rem 1rem; 
   background-color: shade(@c1, 50%); 
   &:focus, &:hover{

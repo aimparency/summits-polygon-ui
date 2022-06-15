@@ -80,21 +80,6 @@ export default defineComponent({
       aimNetwork, 
       ui, 
       confirmRemove: false, 
-      effortString: undefined as string | undefined,
-      stateOptions: [
-        {
-          value: "open", 
-          color: "#288"
-        }, 
-        {
-          value: "in progress", 
-          color: "#a74", 
-        }, 
-        { 
-          value: "submitted", 
-          color: "#56b", 
-        }
-      ]
     }
   }, 
   computed: {

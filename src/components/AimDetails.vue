@@ -28,12 +28,9 @@
       @input="updateDescription"></textarea>
     <input 
       class='effort' 
-      :value="effort" 
+      :value="aim.effort" 
       placeholder="effort"
-      @blur='parseAndUpdateEffort'
-      @keypress.enter='parseAndUpdateEffort'
-      onfocus="this.select()" 
-      @input="effortChange"/>
+      @input="updateEffort"/>
     <MultiSwitch
       class='state'
       label="state"
@@ -41,27 +38,11 @@
       :options="stateOptions" 
       @change='updateState'
       />
-    <div v-if="aim.pendingTransactions"> 
-      <div class="spinner"></div>
-    </div>
-    <div v-else>
-      <span v-if='dirty'>
-        <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
-        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit</div>
-      </span>
-      <div
-        tabindex="0"  
-        class='button' 
-        :class='{confirm: confirmRemove}'
-        @blur='confirmRemove = false'
-        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
-    </div>
 
-    <h3> investment </h3>
     <div v-if="aim.address">
-      <p class="supply">current supply: <b>{{aim.totalSupply}}</b></p>
-      Token: <span class="tokenInfo"><input size="13" placeholder="token name" :value="aim.tokenName"/></span>
+      token: <span class="tokenInfo"><input size="13" placeholder="token name" :value="aim.tokenName"/></span>
       <span class="tokenInfo"><input size="5" placeholder="symbol" :value="aim.tokenSymbol"/></span>
+      <p class="supply">current supply: <b>{{aim.totalSupply}}</b></p>
     </div>
     <p v-else> initial investment: </p>
     <BigIntSlider 
@@ -74,6 +55,22 @@
       unit="tokens"
       @drag-end='updateTokensSliderOrigin'
       @update='updateTokens'/>
+    <div v-if="aim.pendingTransactions"> 
+      <div class="spinner"></div>
+    </div>
+    <div v-else>
+      <span v-if='dirty && aim.title'>
+        <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
+        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit</div>
+      </span>
+      <div
+        tabindex="0"  
+        class='button' 
+        :class='{confirm: confirmRemove}'
+        @blur='confirmRemove = false'
+        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+    </div>
+
     <h3> incoming flows </h3>
     <Slider
       name='loop weight'
@@ -112,7 +109,6 @@ import { defineComponent, PropType } from "vue"
 
 import { useUi } from "../stores/ui"
 import { Aim, Flow, useAimNetwork } from "../stores/aim-network"
-import Effort from "../types/effort"
 
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
@@ -146,15 +142,19 @@ export default defineComponent({
       tokenSliderOrigin: 0n,
       stateOptions: [
         {
-          value: "open", 
+          value: "untouched", 
           color: "#288"
         }, 
         {
-          value: "in progress", 
+          value: "brewing", 
+          color: "#892", 
+        }, 
+        {
+          value: "wip", 
           color: "#a74", 
         }, 
         { 
-          value: "submitted", 
+          value: "maintainance", 
           color: "#56b", 
         }
       ]
@@ -182,17 +182,6 @@ export default defineComponent({
       return ( 
         Object.values(this.aim.origin).filter((v: any) => v !== undefined).length > 0 
       ) 
-    }, 
-    effort() : string {
-      if(this.effortString !== undefined) {
-        return this.effortString 
-      } else {
-        if(this.aim.effort.amount == 0) {
-          return ''
-        } else {
-          return this.aim.effort.humanize()
-        }
-      }
     }, 
     tokensSliderMin(): bigint {
       let min = this.tokenSliderOrigin / 2n - 1000000n
@@ -251,24 +240,27 @@ export default defineComponent({
     effortChange(e: Event) {
       this.effortString = (<HTMLInputElement>e.target).value
     }, 
-    parseAndUpdateEffort() {
-      if(this.effortString !== undefined) {
-        let v = Effort.fromString(this.effortString)
-        if(v.eq(this.aim.origin.effort)) { 
-          this.aim.origin.effort = undefined
-        } else if(this.aim.origin.effort === undefined) {
-          this.aim.origin.effort = this.aim.effort
-        }
-        this.aim.effort = v
-        this.effortString = undefined
+    updateEffort(e: Event) {
+      const v = Number((<HTMLTextAreaElement>e.target).value)
+      if(v === this.aim.origin.effort) { 
+        this.aim.origin.effort = undefined
+      } else if(this.aim.origin.effort === undefined) {
+        this.aim.origin.effort = this.aim.effort
       }
+      this.aim.effort = v
     }, 
     reset() {
       this.aimNetwork.resetAimChanges(this.aim)
       this.updateTokensSliderOrigin()
     }, 
     commit() {
-      this.aimNetwork.commitAimChanges(this.aim) 
+      if(this.dirty) {
+        if(this.aim.address) {
+          this.aimNetwork.commitAimChanges(this.aim)
+        } else {
+          this.aimNetwork.publishAimOnChain(this.aim) 
+        }
+      }
     }, 
     flowClick(flow: Flow) {
       this.aimNetwork.selectFlow(flow)
@@ -297,6 +289,7 @@ export default defineComponent({
     }
   }
   .tokenInfo {
+    margin: 0.5rem;
     input {
       display: inline-block; 
       width: auto; 
