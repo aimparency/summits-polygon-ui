@@ -16,7 +16,7 @@ function makeCircularPath(
   const delta = vec2.crSub(into.pos, from.pos)
   const R = vec2.len(delta)
 
-  if(R < from.r) {
+  if(R < from.r + into.r) {
     return ""
   } else {
     const deltaRot = rotCW(delta)
