@@ -67,7 +67,7 @@ export class Aim {
 
   origin = new AimOrigin()
 
-  pendingTransactions = false
+  pendingTransactions = 0
 
   static Permissions: {[name: string]: number} = {
     ALL: 0xff, 
@@ -124,7 +124,7 @@ export class Flow {
 
   origin = new FlowOrigin()
 
-  pendingTransactions = false
+  pendingTransactions = 0
 
   published = false
 
@@ -158,14 +158,15 @@ export const useAimNetwork = defineStore('aim-network', {
         const baseAimAddr = await summitsContract.baseAim()
         let home = await this.loadAim(baseAimAddr) 
         const map = useMap()
+
+        // Gleichung: 
         // 100 = scale * home.r
         // scale = 100 / home.r
         map.scale = 200 / home.r
-      }
 
-      // for testing
-      let r = await summitsContract.test()
-      console.log("test result", r) 
+        // test transaction
+        // await summitsContract.test() // test
+      }
     }, 
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
@@ -186,6 +187,7 @@ export const useAimNetwork = defineStore('aim-network', {
     async publishAimOnChain(aim: Aim) {
       console.log("publishing on chain") 
       let summitsContract = useWeb3Connection().getSummitsContract()
+      let price = aim.tokens * aim.tokens
       if(summitsContract) {
         console.log(aim.title)
         console.log(aim.description) 
@@ -194,18 +196,32 @@ export const useAimNetwork = defineStore('aim-network', {
         console.log(aim.tokenName)
         console.log(aim.tokenSymbol) 
         console.log(aim.tokens)
-        let address = summitsContract.createAim(
+        console.log(summitsContract) 
+        aim.pendingTransactions += 1
+        let tx = await summitsContract.createAim(
           aim.title, 
           aim.description, 
           Math.trunc(aim.effort), 
           toRaw(aim.rgb), 
           aim.tokenName,
           aim.tokenSymbol, 
-          aim.tokens
+          aim.tokens, 
+          {
+            value: price, 
+            gasPrice: 50000000000, 
+            gasLimit: 10000000 
+          }
         )
-        if(address) {
-          aim.address = address
-        }
+        console.log("created aim") 
+        let rc = await tx.wait()
+        let events: any = rc.events.find((e: any) => e.event === 'AimCreation') 
+        // let [from, to, value] = events.args
+        console.log("AimCreated event args:", events.args) 
+        aim.pendingTransactions -= 1
+        // if(address) {
+        //   aim.address = address
+        //   console.log("created aim on chain; received address", address)  
+        // }
       }
     }, 
     async loadAim(aimAddr: string) {

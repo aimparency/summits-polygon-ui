@@ -2,7 +2,6 @@
   <div 
     class="aim-details"> 
     <h2 class="sidebar-heading">aim details</h2>
-
     
     <p class="permissions">
       permisions: 

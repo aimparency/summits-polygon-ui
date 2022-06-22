@@ -7,6 +7,8 @@ import config from '../config'
 import Summits from '../Summits.json'
 import Aim from '../Aim.json'
 
+let network = config.networks[config.network]
+
 let provider: Web3Provider
 let signer: JsonRpcSigner
 
@@ -25,7 +27,33 @@ export const useWeb3Connection = defineStore('web3-connection', {
     async connect(
       onConnect: () => void, 
     ) {
-      provider = new ethers.providers.Web3Provider((window as any).ethereum) 
+      let ethereum = (window as any).ethereum
+
+      if(ethereum.networkVersion !== network.chainId) {
+        try {
+          await ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x' + network.chainId.toString(16) }]
+          });
+        } catch (err: any) {
+            // This error code indicates that the chain has not been added to MetaMask
+          if (err.code === 4902) {
+            await ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainName: network.name,
+                  chainId: '0x' + network.chainId.toString(16),
+                  nativeCurrency: Object.assign({}, network.nativeCurrency), 
+                  rpcUrls: [network.url]
+                }
+              ]
+            });
+          }
+        }
+      }
+
+      provider = new ethers.providers.Web3Provider(ethereum) 
       await provider.send("eth_requestAccounts", [])
       signer = provider.getSigner()
 
@@ -38,7 +66,7 @@ export const useWeb3Connection = defineStore('web3-connection', {
       }) 
 
       summitsContract = new ethers.Contract(
-        config.contractAddress, 
+        network.contractAddress, 
         Summits.abi, 
         signer 
       );
@@ -57,8 +85,9 @@ export const useWeb3Connection = defineStore('web3-connection', {
           signer
         ) 
       }
-      console.log("aimcontract", contract)
       return contract
     }
   }, 
 }) 
+
+

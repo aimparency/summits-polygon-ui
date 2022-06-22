@@ -3,16 +3,6 @@
     class="side-bar" 
     :class="{closed: !open}" 
     :style="style"> 
-    <div class="toggle"
-      tabindes="0"
-      @click.stop="toggle">
-      <span v-if="open">
-        &lt; 
-      </span>
-      <span v-else>
-        &gt; 
-      </span>
-    </div>
     <div class="container">
       <AimDetails 
         v-if="aimNetwork.selectedAim"
@@ -23,6 +13,16 @@
         :flow="aimNetwork.selectedFlow"
         />
       <LocalList v-else/>
+    </div>
+    <div class="toggle"
+      tabindes="0"
+      @click.stop="toggle">
+      <span v-if="open">
+        &lt; 
+      </span>
+      <span v-else>
+        &gt; 
+      </span>
     </div>
   </div>
 </template>
@@ -109,6 +109,7 @@ export default defineComponent({
   }
   .container {
     overflow-y: auto;
+    overflow-y: overlay;
     height: 100%; 
   }
   .toggle {

@@ -56,11 +56,10 @@ export default defineComponent({
 input, textarea {
   font-size: 1rem; 
   width: calc(100% - 2rem); 
-  margin-bottom: 0.5rem; 
-  margin-left: 0.5rem;
   padding: 0.5rem; 
   border: none; 
   border-radius: @secondaryradius; 
+  box-sizing: border-box; 
   &:focus {
     outline: 0.2rem solid #fff8; 
   }
@@ -78,5 +77,16 @@ input, textarea {
 
 div.scrollspace {
   height: 5rem;
+}
+
+::-webkit-scrollbar {
+    width: 0.5em;
+    z-index: 1; 
+}
+
+::-webkit-scrollbar-thumb {
+    background: #fff4;
+    border-radius: 0.25rem;
+    box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.75);
 }
 </style>

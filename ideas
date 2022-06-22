@@ -1,3 +1,10 @@
+#2022-06-15
+- Now that smart contracts work
+  - reset "origin" on createOnChain
+  - implement change aims
+  - connections
+    - when loading: buffer until absent aim gets loaded. 
+
 #2022-06-14
 - Effort in engery umbenennen?
   - Was ist eine gute Metrik? Gibt es da überhaupt eine Dimension?
