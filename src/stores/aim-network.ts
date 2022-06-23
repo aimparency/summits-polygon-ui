@@ -28,10 +28,12 @@ function clampLoopWeight(v: number) {
   return Math.max(Math.min(0xffff, v), 0)
 }
 
+export type Rgb = [number, number, number]
+
 export class AimOrigin {
   title?: string
   description?: string
-  tokens?: bigint 
+  color?: Rgb
   state?: string 
   effort?: number 
 }
@@ -48,8 +50,8 @@ export class Aim {
   rgb: [number, number, number] = [0, 0, 0]
 
   tokens = 0n
-  totalSupply = 0n
   tokensOnChain = 0n
+  tokenSupply = 0n
 
   tokenName = ""
   tokenSymbol = ""
@@ -106,8 +108,52 @@ export class Aim {
 
   setTokens(v: bigint) {
     this.tokens = v
-    let localSupply: bigint = this.totalSupply - this.tokensOnChain + this.tokens
-    this.r = Math.sqrt(Number((localSupply / 1000000n).toString())) // here, this is the only factor that counts
+    let localSupply: bigint = this.tokenSupply - this.tokensOnChain + this.tokens
+    this.r = Math.sqrt(Number((localSupply).toString())) / 1000 
+  }
+
+  clearOrigin() {
+    this.origin = new AimOrigin()
+  }
+
+  updateTokens(v: bigint) {
+    this.setTokens(v) 
+  }
+
+  updateState(v: string) {
+    if(v === this.origin.state) { 
+      this.origin.state = undefined
+    } else if(this.origin.state === undefined) {
+      this.origin.state = this.state
+    }
+    this.state = v
+  }
+
+  updateTitle(v: string) {
+    if(v === this.origin.title) { 
+      this.origin.title = undefined
+    } else if(this.origin.title === undefined) {
+      this.origin.title = this.title
+    }
+    this.title = v
+  }
+
+  updateDescription(v: string) {
+    if(v === this.origin.description) { 
+      this.origin.description = undefined
+    } else if(this.origin.description === undefined) {
+      this.origin.description = this.description
+    }
+    this.description = v
+  }
+
+  updateEffort(v: number) {
+    if(v === this.origin.effort) { 
+      this.origin.effort = undefined
+    } else if(this.origin.effort === undefined) {
+      this.origin.effort = this.effort
+    }
+    this.effort = v
   }
 }
 
@@ -146,6 +192,7 @@ export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
       aims: {} as {[id: number]: Aim}, 
+      aimAddressToId: {} as {[addr: string]: number},
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
       selectedAim: undefined as Aim | undefined,
       selectedFlow: undefined as Flow | undefined, 
@@ -184,44 +231,104 @@ export const useAimNetwork = defineStore('aim-network', {
       this.aims[rawAim.id] = rawAim // only now it becomes reactive
       return this.aims[rawAim.id] 
     },
-    async publishAimOnChain(aim: Aim) {
-      console.log("publishing on chain") 
+    async createAimOnChain(aim: Aim) {
       let summitsContract = useWeb3Connection().getSummitsContract()
       let price = aim.tokens * aim.tokens
       if(summitsContract) {
-        console.log(aim.title)
-        console.log(aim.description) 
-        console.log(aim.effort)
-        console.log(aim.rgb) 
-        console.log(aim.tokenName)
-        console.log(aim.tokenSymbol) 
-        console.log(aim.tokens)
-        console.log(summitsContract) 
         aim.pendingTransactions += 1
-        let tx = await summitsContract.createAim(
-          aim.title, 
-          aim.description, 
-          Math.trunc(aim.effort), 
-          toRaw(aim.rgb), 
-          aim.tokenName,
-          aim.tokenSymbol, 
-          aim.tokens, 
+        try {
+          let tx = await summitsContract.createAim(
+            aim.title, 
+            aim.description, 
+            Math.trunc(aim.effort), 
+            toRaw(aim.rgb), 
+            aim.tokenName,
+            aim.tokenSymbol, 
+            aim.tokens, 
+            {
+              value: price, 
+            }
+          )
+          let rc = await tx.wait()
+          aim.pendingTransactions -= 1 
+          let creationEvent: any = rc.events.find((e: any) => e.event === 'AimCreation') 
+          if(creationEvent) {
+            aim.address = creationEvent.args.aimAddress
+            aim.tokenSupply = aim.tokens
+            aim.tokensOnChain = aim.tokens
+            aim.clearOrigin()
+          }
+        } catch {
+          aim.pendingTransactions -= 1
+        }
+      }
+    }, 
+    async commitAimChanges(aim: Aim) {
+      let fields: string[] = []
+      let values: any[] = []
+      let origin = aim.origin as any
+      Object.getOwnPropertyNames(aim.origin).forEach((name: string) => {
+        if(origin[name] !== undefined) {
+          fields.push(name)
+          values.push((aim as any)[name]) 
+        }
+      })
+      let functionName = 'update' + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
+      const w3 = useWeb3Connection()
+      const aimContract = w3.getAimContract(aim.address!) 
+      console.log("calling", functionName, "with", values) 
+      aim.pendingTransactions += 1
+      try {
+        let tx = await aimContract[functionName](...values)
+        let rc = await tx.wait()
+        for(let name of fields) {
+          delete origin[name]
+        }
+        aim.pendingTransactions -= 1
+      } catch(err)  {
+        console.error("Failed to commit aim changes", err) 
+        aim.pendingTransactions -= 1
+      }
+
+    }, 
+    async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
+      console.log("buying tokens") 
+      const w3 = useWeb3Connection()
+      const aimContract = w3.getAimContract(aim.address!) 
+      aim.pendingTransactions += 1
+      try {
+        let tx = await aimContract.buy(
+          amount, 
           {
-            value: price, 
-            gasPrice: 50000000000, 
-            gasLimit: 10000000 
+            value: maxPrice
           }
         )
-        console.log("created aim") 
         let rc = await tx.wait()
-        let events: any = rc.events.find((e: any) => e.event === 'AimCreation') 
-        // let [from, to, value] = events.args
-        console.log("AimCreated event args:", events.args) 
+        aim.tokenSupply += amount
+        aim.tokensOnChain = aim.tokens
         aim.pendingTransactions -= 1
-        // if(address) {
-        //   aim.address = address
-        //   console.log("created aim on chain; received address", address)  
-        // }
+      } catch(err)  {
+        console.error("Failed to buy tokens", err) 
+        aim.pendingTransactions -= 1
+      }
+    },
+    async sellTokens(aim: Aim, amount: bigint, minPrice: bigint ) {
+      console.log("selling tokens") 
+      const w3 = useWeb3Connection()
+      const aimContract = w3.getAimContract(aim.address!) 
+      aim.pendingTransactions += 1
+      try {
+        let tx = await aimContract.sell(
+          amount, 
+          minPrice
+        )
+        let rc = await tx.wait()
+        aim.tokenSupply -= amount
+        aim.tokensOnChain = aim.tokens
+        aim.pendingTransactions -= 1
+      } catch(err)  {
+        console.error("Failed to sell tokens", err) 
+        aim.pendingTransactions -= 1
       }
     }, 
     async loadAim(aimAddr: string) {
@@ -239,29 +346,27 @@ export const useAimNetwork = defineStore('aim-network', {
       return await Promise.all(dataPromises).then(([
         title, color, symbol, name, description, supply, permissions, tokens
       ]) => {
-        return this.createAim(aim => {
-          aim.address = aimAddr
-          aim.title = title 
-          aim.description = description
-          aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
-          aim.tokenName = name 
-          aim.tokenSymbol = symbol
-          aim.permissions = permissions
-          const t = BigNumber.from(tokens).toBigInt()
-          aim.totalSupply = BigNumber.from(supply).toBigInt()
-          aim.tokensOnChain = t
-          aim.setTokens(t) 
-        })
-      })
-    }, 
+        if(this.aimAddressToId[aimAddr]) {
+          let aim = this.aims[this.aimAddressToId[aimAddr]]
+          // maybe: update all fields, respect changes
+          return aim
 
-    // edit and remove aims
-    async commitAimChanges(aim: Aim) {
-      Object.getOwnPropertyNames(aim.origin).forEach((name: string) => {
-        if((aim.origin as any)[name] !== undefined) {
+        } else { 
+          return this.createAim(aim => {
+            aim.address = aimAddr
+            aim.title = title 
+            aim.description = description
+            aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
+            aim.tokenName = name 
+            aim.tokenSymbol = symbol
+            aim.permissions = permissions
+            const t = BigNumber.from(tokens).toBigInt()
+            aim.tokenSupply = BigNumber.from(supply).toBigInt()
+            aim.tokensOnChain = t
+            aim.setTokens(t) 
+          })
         }
       })
-      aim.origin = new AimOrigin()
     }, 
     resetAimChanges(aim: Aim) {
       Object.entries(aim.origin).forEach(([key, value]) => {
@@ -269,7 +374,7 @@ export const useAimNetwork = defineStore('aim-network', {
           (aim as any)[key] = value
         }
       })
-      aim.origin = new AimOrigin()
+      aim.clearOrigin()
     }, 
     removeAim(aim: Aim) {
       for(let fromId in aim.flowsFrom) {
@@ -284,7 +389,7 @@ export const useAimNetwork = defineStore('aim-network', {
       delete this.aims[aim.id]
     },
 
-    // create and load flows
+    // Flows
     createAndSelectFlow(from: Aim, into: Aim) {
       if(from !== into) {
         if((Aim.Permissions.NETWORK & into.permissions) > 0) {

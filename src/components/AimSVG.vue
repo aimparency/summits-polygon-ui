@@ -4,7 +4,7 @@
     <g 
       :transform="scale">
       <circle 
-        :class="{selected}"
+        :class="{selected, loading}"
         :fill="aim.color" 
         :data-aimid="aim.id"
         class="aim-circle" 
@@ -72,6 +72,9 @@ export default defineComponent({
     selected() : boolean {
       return this.aimNetwork.selectedAim == this.aim; 
     }, 
+    loading() : boolean {
+      return this.aim.pendingTransactions > 0 
+    }, 
     showTools() : boolean {
       return this.selected && this.map.connectFrom == undefined; 
     }, 
@@ -99,10 +102,12 @@ export default defineComponent({
         var changedTouches = e.changedTouches;
         const el = document.elementFromPoint(changedTouches[0].clientX, changedTouches[0].clientY)
         if(el && el.classList.contains("aim-circle")) {
-          let aimCircle = el as SVGCircleElement
-          let connectTo = this.aimNetwork.aims[aimCircle.dataset.aimid!]
-          if(connectTo) {
-            this.aimNetwork.createAndSelectFlow(this.map.connectFrom, connectTo) 
+          let aimIdString = (el as SVGCircleElement).dataset.aimId
+          if(aimIdString) {
+            let connectTo = this.aimNetwork.aims[parseInt(aimIdString)]
+            if(connectTo) {
+              this.aimNetwork.createAndSelectFlow(this.map.connectFrom, connectTo) 
+            }
           }
         }
       }
@@ -122,6 +127,11 @@ export default defineComponent({
     &.selected {
       stroke: #ccc; 
     }
+    &.loading {
+      stroke: #ccc; 
+      animation: dash 1.5s linear infinite;
+      stroke-linecap: round;
+    }
   }
   text{
     fill: #fff; 
@@ -134,23 +144,25 @@ export default defineComponent({
   }
 }
 
+/*
 @keyframes rotate {
   100% {
     transform: rotate(360deg);
   }
 }
+*/
 
 @keyframes dash {
   0% {
-    stroke-dasharray: 0, 3.141;
+    stroke-dasharray: 0.1, 3.041;
     stroke-dashoffset: 0;
   }
-  50% {
-    stroke-dasharray: 3.141 / 2, 3.141 / 2;
-    stroke-dashoffset: -3.141 / 2;
+  33% {
+    stroke-dasharray: 1.5705, 1.5705;
+    stroke-dashoffset: -1.5705;
   }
   100% {
-    stroke-dasharray: 0, 3.141;
+    stroke-dasharray: 0.1, 3.041; 
     stroke-dashoffset: -3.141 * 2;
   }
 }

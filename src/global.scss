@@ -27,6 +27,7 @@
   margin: 0.1rem 0.5rem;
   padding: 0.5rem 1rem; 
   background-color: shade(@c1, 50%); 
+  vertical-align: middle; 
   &:focus, &:hover{
     background-color: shade(@c1, 30%); 
     outline: none; 

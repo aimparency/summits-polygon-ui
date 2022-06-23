@@ -8,7 +8,7 @@
       :style="{backgroundColor: option.color}"
       class="option"
       :class="{ selected: option.value == value}"
-      @keypress.space="select(i)"
+      @keypress.space.prevent="select(i)"
       @keypress.enter="select(i)"
       @click="select(i)">
       {{ option.value }}
@@ -51,7 +51,7 @@ export default defineComponent({
 @dotsize: 3em;
 
 .multi-switch {
-  margin: 0.5rem; 
+  margin: 1rem 0.5rem; 
   .option {
     margin: 0.25rem;
     display: inline-block; 

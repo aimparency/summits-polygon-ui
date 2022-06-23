@@ -1,9 +1,28 @@
-#2022-06-15
+#2022-06-23
+- createOnChain für beides
+- commit changes nur für die felder
+- buy und sell für token changes
+
+#2022-06-22
 - Now that smart contracts work
   - reset "origin" on createOnChain
   - implement change aims
-  - connections
-    - when loading: buffer until absent aim gets loaded. 
+
+- connections
+  - when loading: buffer until absent aim gets loaded. 
+  - Edit baseAim and automatically load 
+
+- Info LED for aims and flows
+  - red: changes
+  - blue: same as on chain
+
+- Local storage 
+  - store aim addresses locally and load them, when opening the tab again
+    - or maybe allow to "pin" aims, that get loaded automatically
+    - and allow to "blacklist" annoying aims (e.g. wide titles) 
+
+- The Graph natürlich (endlich, hat mal wieder länger gedauert ^^) 
+
 
 #2022-06-14
 - Effort in engery umbenennen?

@@ -76,12 +76,16 @@ export default defineComponent({
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
 .local-list {
+  input {
+    margin: 0.5rem 1rem ;
+  }
   .buttonList {
+    margin: 0.5rem; 
   }
   .results {
     background-color: #0008; 
     box-shadow: 0 0 1rem #0008; 
-    margin: 0.5rem; 
+    margin: 1rem; 
     padding: 0; 
   }
 }

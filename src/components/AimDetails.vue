@@ -27,7 +27,7 @@
       @input="updateDescription"></textarea>
     <input 
       class='effort' 
-      :value="aim.effort" 
+      :value='aim.effort == 0 ? "" : aim.effort'
       placeholder="effort"
       @input="updateEffort"/>
     <MultiSwitch
@@ -37,12 +37,40 @@
       :options="stateOptions" 
       @change='updateState'
       />
-
-    <div v-if="aim.address">
-      token: <span class="tokenInfo"><input size="13" placeholder="token name" :value="aim.tokenName"/></span>
-      <span class="tokenInfo"><input size="5" placeholder="symbol" :value="aim.tokenSymbol"/></span>
-      <p class="supply">current supply: <b>{{aim.totalSupply}}</b></p>
+        
+    <div class="fieldButtons">
+      <div
+        v-if="dirty" 
+        class='button' tabindex="0"  
+        @click="reset">reset</div>
+      <div 
+        v-if="dirty && aim.address !== undefined"
+        class='button'
+        tabindex="0"
+        @click="commitChanges">commit changes</div>
+      <div
+        tabindex="0"  
+        class='button' 
+        :class='{confirm: confirmRemove}'
+        @blur='confirmRemove = false'
+        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
     </div>
+
+    <div >
+      token: 
+      <span v-if="aim.address == undefined">
+        <input class="tokenInfo" size="13" placeholder="token name" 
+          :value="aim.tokenName"
+          @change="changeTokenName"/>
+        <input class="tokenInfo" size="5" placeholder="symbol" 
+          :value="aim.tokenSymbol"
+          @change="changeTokenSymbol"/>
+      </span>
+      <span v-else>
+        {{ aim.tokenName }} ({{ aim.tokenSymbol }}) 
+      </span>
+    </div>
+    <p v-if="aim.address" class="supply">current supply: <b>{{aim.tokenSupply}}</b></p>
     <p v-else> initial investment: </p>
     <BigIntSlider 
       name='balance'
@@ -57,18 +85,23 @@
     <div v-if="aim.pendingTransactions"> 
       <div class="spinner"></div>
     </div>
-    <div v-else>
-      <span v-if='dirty && aim.title'>
-        <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
-        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit</div>
-      </span>
-      <div
-        tabindex="0"  
+    <div v-else-if="aim.address == undefined">
+      <div 
+        v-if='aim.title != ""'
         class='button' 
-        :class='{confirm: confirmRemove}'
-        @blur='confirmRemove = false'
-        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+        tabindex="0" 
+        @click="createAimOnChain">create aim on chain</div>
     </div>
+    <div v-else-if='trade !== undefined'>
+      <div class='button' tabindex="0" @click="resetTokens"> 
+        reset
+      </div>
+      <div
+        class='button' tabindex="0" @click="doTrade"> 
+        {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.price }} a{{ nativeCurrency.symbol }}
+      </div>
+    </div>
+
 
     <h3> incoming flows </h3>
     <Slider
@@ -106,7 +139,6 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 
-import { useUi } from "../stores/ui"
 import { Aim, Flow, useAimNetwork } from "../stores/aim-network"
 
 import AimLi from "./AimLi.vue"
@@ -114,6 +146,14 @@ import MultiSwitch from './MultiSwitch.vue'
 import BigIntSlider from './BigIntSlider.vue'
 import Slider from './Slider.vue'
 import BackButton from './SideBar/BackButton.vue'
+
+import config from '../config'
+
+interface Trade {
+  verb: string, 
+  amount: bigint, 
+  price: bigint
+}
 
 export default defineComponent({
   name: "AimDetails",
@@ -132,12 +172,9 @@ export default defineComponent({
   },
   data() {
     const aimNetwork = useAimNetwork()
-    const ui = useUi()
     return { 
       aimNetwork, 
-      ui, 
       confirmRemove: false, 
-      effortString: undefined as string | undefined,
       tokenSliderOrigin: 0n,
       stateOptions: [
         {
@@ -156,13 +193,37 @@ export default defineComponent({
           value: "maintainance", 
           color: "#56b", 
         }
-      ]
+      ],
+      nativeCurrency: config.networks[config.network].nativeCurrency
     }
   }, 
   mounted() {
     this.updateTokensSliderOrigin()
   },
   computed: {
+    trade() : undefined | Trade {
+      const aim = this.aim
+      if( aim.tokens !== aim.tokensOnChain) {
+        let amount = aim.tokens - aim.tokensOnChain
+        let volPricePre = aim.tokenSupply * aim.tokenSupply
+        let newSupply = aim.tokenSupply + amount
+        let volPricePost = newSupply * newSupply
+        let price = volPricePost - volPricePre
+        if( amount > 0n ) {
+          return {
+            verb: 'buy', 
+            amount,
+            price
+          }
+        } else {
+          return {
+            verb: 'sell', 
+            amount: -amount, 
+            price: -price
+          }
+        }
+      }
+    }, 
     permissions() : string[] {
       if(this.aim.permissions == Aim.Permissions.ALL) {
         return ['ALL']
@@ -194,73 +255,58 @@ export default defineComponent({
     }, 
   }, 
   methods: {
-    keypress(e: KeyboardEvent) {
-      if(e.key == 'Enter' && this.dirty) {
-        this.commit()
-      } 
-    }, 
     updateTokensSliderOrigin(){
       this.tokenSliderOrigin = this.aim.tokens
     }, 
-    updateTokens(v: number) {
-      if(v === this.aim.origin.tokens) { 
-        this.aim.origin.tokens = undefined
-      } else if(this.aim.origin.tokens === undefined) {
-        this.aim.origin.tokens = this.aim.tokens
-      }
-      this.aim.setTokens(v) 
+    updateTokens(v: bigint) {
+      this.aim.updateTokens(v) 
     }, 
     updateState(v: string) {
-      if(v === this.aim.origin.state) { 
-        this.aim.origin.state = undefined
-      } else if(this.aim.origin.state === undefined) {
-        this.aim.origin.state = this.aim.state
-      }
-      this.aim.state = v
+      this.aim.updateState(v) 
     }, 
     updateTitle(e: Event) {
       const v = (<HTMLTextAreaElement>e.target).value
-      if(v === this.aim.origin.title) { 
-        this.aim.origin.title = undefined
-      } else if(this.aim.origin.title === undefined) {
-        this.aim.origin.title = this.aim.title
-      }
-      this.aim.title = v
+      this.aim.updateTitle(v) 
     }, 
     updateDescription(e: Event) {
       const v = (<HTMLTextAreaElement>e.target).value
-      if(v === this.aim.origin.description) { 
-        this.aim.origin.description = undefined
-      } else if(this.aim.origin.description === undefined) {
-        this.aim.origin.description = this.aim.description
-      }
-      this.aim.description = v
-    }, 
-    effortChange(e: Event) {
-      this.effortString = (<HTMLInputElement>e.target).value
+      this.aim.updateDescription(v)
     }, 
     updateEffort(e: Event) {
-      const v = Number((<HTMLTextAreaElement>e.target).value)
-      if(v === this.aim.origin.effort) { 
-        this.aim.origin.effort = undefined
-      } else if(this.aim.origin.effort === undefined) {
-        this.aim.origin.effort = this.aim.effort
+      let inputEl = (<HTMLTextAreaElement>e.target)
+      const v = Number(inputEl.value)
+      if(!isNaN(v)) {
+        this.aim.updateEffort(v) 
+      } else {
+        inputEl.value = this.aim.effort.toString()
       }
-      this.aim.effort = v
     }, 
     reset() {
       this.aimNetwork.resetAimChanges(this.aim)
       this.updateTokensSliderOrigin()
     }, 
-    commit() {
+    resetTokens() {
+      this.aim.setTokens(this.aim.tokensOnChain)
+      this.updateTokensSliderOrigin()
+    }, 
+    createAimOnChain() {
+      this.aimNetwork.createAimOnChain(this.aim) 
+    }, 
+    commitChanges() {
       if(this.dirty) {
-        if(this.aim.address) {
-          this.aimNetwork.commitAimChanges(this.aim)
-        } else {
-          this.aimNetwork.publishAimOnChain(this.aim) 
-        }
+        this.aimNetwork.commitAimChanges(this.aim) 
       }
     }, 
+    doTrade() {
+      // allow price slip
+      if(this.trade !== undefined) {
+        if(this.trade.verb == "buy") {
+          this.aimNetwork.buyTokens(this.aim, this.trade.amount, this.trade.price) 
+        } else {
+          this.aimNetwork.sellTokens(this.aim, this.trade.amount, this.trade.price) 
+        }
+      }
+    },
     flowClick(flow: Flow) {
       this.aimNetwork.selectFlow(flow)
     }, 
@@ -273,6 +319,14 @@ export default defineComponent({
     },
     updateLoopWeight(v: number) {
       this.aim.setLoopWeight(v)
+    }, 
+    changeTokenName(e: Event) {
+      const v = (<HTMLInputElement>e.target).value
+      this.aim.tokenName = v
+    }, 
+    changeTokenSymbol(e: Event) {
+      const v = (<HTMLInputElement>e.target).value
+      this.aim.tokenSymbol = v
     }
   }, 
 });
@@ -282,6 +336,9 @@ export default defineComponent({
 <style scoped lang="less">
 .aim-details{
   text-align: center; 
+  .fieldButtons {
+    margin: 1rem; 
+  }
   .button {
     &.confirm {
       background-color: @danger; 
@@ -289,10 +346,8 @@ export default defineComponent({
   }
   .tokenInfo {
     margin: 0.5rem;
-    input {
-      display: inline-block; 
-      width: auto; 
-    }
+    display: inline-block; 
+    width: auto; 
   }
   .flow {
     text-align: left; 

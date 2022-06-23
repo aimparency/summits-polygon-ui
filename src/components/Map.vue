@@ -287,8 +287,10 @@ export default defineComponent({
           this.aimNetwork.createAndSelectAim((aim: Aim) => {
             aim.pos = vec2.clone(this.map.mouse.logical)
             // r * scale soll 100 sein
-            let tR = BigInt(Math.trunc(1000 * 100 / this.map.scale))
-            aim.setTokens(tR * tR)
+            let tR = BigInt(Math.trunc(1000 * 150 / this.map.scale))
+            tR *= tR
+            aim.setTokens(tR)
+            aim.tokensOnChain = 0n
           })
         }
       }
@@ -409,7 +411,6 @@ export default defineComponent({
       }
 
 
-
       let intersections = boxIntersect(boxes) 
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
@@ -437,7 +438,7 @@ export default defineComponent({
         }
         if(d < rSum) {
           this.calcShiftAndApply(
-            1, 1, 
+            1, 0.9, 
             d, ab, 
             rA, rB, rSum, 
             shiftA, shiftB
@@ -445,7 +446,7 @@ export default defineComponent({
         } 
         if (d < rSum * outerMarginFactor) {
           this.calcShiftAndApply(
-            outerMarginFactor, 0.1,
+            outerMarginFactor, 0.09,
             d, ab, 
             rA, rB, rSum, 
             shiftA, shiftB
@@ -478,7 +479,7 @@ export default defineComponent({
 
             if(d > rSum * outerMarginFactor * 1) {
               this.calcShiftAndApply(
-                outerMarginFactor, 0.025,
+                outerMarginFactor, 0.02,
                 d - outerMarginFactor, ab, 
                 rA, rB, rSum, 
                 shiftA, shiftB
