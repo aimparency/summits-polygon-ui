@@ -1,3 +1,17 @@
+- also doch vielleicht key value store. (wegen solidity's 16 local var limit, string size = 2 slots)
+  - um bequem mit einem Aufruf mehrere felder setzen zu können
+
+#2022-06-27
+- Create Flows onchain
+- Permissions on aimparency fixen
+- Fix bug: token mint on aim creation seems to be broken
+
+#2022-06-24
+- Nodes and Flows you create on chain get pinned automatically
+- Maybe
+  - Nodes and Flows you create locally get stored in an indexedDB
+  - But maybe skip indexedDB and use matrix right away
+
 #2022-06-23
 - createOnChain für beides
 - commit changes nur für die felder

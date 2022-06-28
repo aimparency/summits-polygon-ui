@@ -43,6 +43,8 @@ export class Aim {
   id = Aim.nextAimId++ // auto increment xD
 
   address?: string
+  owner?: string
+
   title: string = ""
   description: string = "" 
   state: string=""
@@ -234,21 +236,23 @@ export const useAimNetwork = defineStore('aim-network', {
     async createAimOnChain(aim: Aim) {
       let summitsContract = useWeb3Connection().getSummitsContract()
       let price = aim.tokens * aim.tokens
+      console.log("calling summits create aim with initial_tokens =", aim.tokens)
       if(summitsContract) {
         aim.pendingTransactions += 1
         try {
           let tx = await summitsContract.createAim(
             aim.title, 
-            aim.description, 
-            Math.trunc(aim.effort), 
-            toRaw(aim.rgb), 
             aim.tokenName,
             aim.tokenSymbol, 
             aim.tokens, 
             {
               value: price, 
             }
+            // also doch 
           )
+          //  aim.description, 
+          //  Math.trunc(aim.effort), 
+          //  toRaw(aim.rgb), 
           let rc = await tx.wait()
           aim.pendingTransactions -= 1 
           let creationEvent: any = rc.events.find((e: any) => e.event === 'AimCreation') 
@@ -342,9 +346,10 @@ export const useAimNetwork = defineStore('aim-network', {
       dataPromises.push(aimContract.description())
       dataPromises.push(aimContract.totalSupply())
       dataPromises.push(aimContract.getPermissions())
+      dataPromises.push(aimContract.owner())
       dataPromises.push(aimContract.getInvestment())
       return await Promise.all(dataPromises).then(([
-        title, color, symbol, name, description, supply, permissions, tokens
+        title, color, symbol, name, description, supply, permissions, owner, tokens
       ]) => {
         if(this.aimAddressToId[aimAddr]) {
           let aim = this.aims[this.aimAddressToId[aimAddr]]
@@ -360,6 +365,7 @@ export const useAimNetwork = defineStore('aim-network', {
             aim.tokenName = name 
             aim.tokenSymbol = symbol
             aim.permissions = permissions
+            aim.owner = owner
             const t = BigNumber.from(tokens).toBigInt()
             aim.tokenSupply = BigNumber.from(supply).toBigInt()
             aim.tokensOnChain = t
