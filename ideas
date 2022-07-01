@@ -1,3 +1,22 @@
+#2022-07-01
+Ok, welche features wären mir denn jetzt noch am wichtigsten? 
+- pinnen (Local storage array der ids)
+- blacklisten (nervige aims blacklisten können) 
+- share aims by link (contains the aim addr) 
+- load connections and recoursively load aims (until a certain distance) 
+  - gestrichelter stroke, wenn die connections eines aims noch nicht geladen werden 
+    loadLevel = 0 oder so
+- aim erstellen in einer Transaktion (mit allen werten) 
+  - key-value pairs
+  - analoges interface für flow creations
+    - dx, dy als float32 als "position" key-value pair
+    - description als string 
+- aims über the graph suchen können
+
+#2022-06-30
+- key-value store
+
+#2022-06-28
 - also doch vielleicht key value store. (wegen solidity's 16 local var limit, string size = 2 slots)
   - um bequem mit einem Aufruf mehrere felder setzen zu können
 

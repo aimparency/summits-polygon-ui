@@ -24,7 +24,7 @@ export default defineComponent({
   },
   setup() {
     useWeb3Connection().connect(() => {
-      useAimNetwork().loadHome()
+      useAimNetwork().loadInitial()
     }) 
     let ui = useUi()
     const onResize = () => {

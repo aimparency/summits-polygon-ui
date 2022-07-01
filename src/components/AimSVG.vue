@@ -30,6 +30,22 @@
           v-for="line, i in titleLines" 
           :key="i"> {{ line }} </tspan>
       </text>
+      <g v-if='selected'>
+  
+        <g v-if="aim.address !== undefined"
+          transform="translate(-1, -1) scale(0.2)">
+          <circle 
+            class="button"
+            @click.stop="togglePin"
+            r="1.3" fill="#379"
+            />
+          <image 
+            class="icon"
+            x="-1" y="-1" 
+            width="2" height="2" 
+            :href="aim.pinned ? 'pinned.svg' : 'pin.svg'" />
+        </g>
+      </g>
     </g>
   </g>
 </template>
@@ -111,6 +127,10 @@ export default defineComponent({
           }
         }
       }
+    },
+    togglePin() {
+      console.log("test") 
+      this.aimNetwork.togglePin(this.aim) 
     }
   }
 });
@@ -140,6 +160,15 @@ export default defineComponent({
     &.label{
       font-size: 0.25px;
       font-family: monospace;
+    }
+  }
+  .icon {
+    pointer-events: none; 
+  }
+  .button {
+    opacity: 0.7; 
+    &:hover {
+      opacity: 1; 
     }
   }
 }

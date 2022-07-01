@@ -9,7 +9,7 @@ import { BigNumber, ethers } from 'ethers'
 import { useMap } from './map'
 
 import * as vec2 from '../vec2'
-import { toRaw } from 'vue'
+import { markRaw, toRaw } from 'vue'
 
 function randomAimColor() {
   let r,g,b,l:number | undefined
@@ -44,6 +44,7 @@ export class Aim {
 
   address?: string
   owner?: string
+  pinned: boolean = false
 
   title: string = ""
   description: string = "" 
@@ -194,19 +195,26 @@ export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
       aims: {} as {[id: number]: Aim}, 
-      aimAddressToId: {} as {[addr: string]: number},
+      aimAddressToId: markRaw({}) as {[addr: string]: number},
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
       selectedAim: undefined as Aim | undefined,
       selectedFlow: undefined as Flow | undefined, 
     }
   }, 
   actions: {
+    async loadInitial() {
+      await this.loadHome()
+      this.loadPinned() 
+    }, 
     async loadHome() {
       let summitsContract = useWeb3Connection().getSummitsContract()
       if(summitsContract) {
         const baseAimAddr = await summitsContract.baseAim()
         let home = await this.loadAim(baseAimAddr) 
+        home.pinned = true
+
         const map = useMap()
+        this.selectedAim = home
 
         // Gleichung: 
         // 100 = scale * home.r
@@ -215,6 +223,18 @@ export const useAimNetwork = defineStore('aim-network', {
 
         // test transaction
         // await summitsContract.test() // test
+      }
+    }, 
+    async loadPinned() {
+      const pinningsStr = window.localStorage.getItem("pinnedAims")
+      if(pinningsStr !== null && pinningsStr !== "") {
+        const pinnings = pinningsStr.split(',')
+        console.log("laoding pinned:", pinnings) 
+        pinnings.forEach((addr: string) => {
+          this.loadAim(addr).then(aim => {
+            aim.pinned = true
+          })
+        })
       }
     }, 
     // create and load aims
@@ -231,6 +251,9 @@ export const useAimNetwork = defineStore('aim-network', {
         modifyAimCb(rawAim) 
       }
       this.aims[rawAim.id] = rawAim // only now it becomes reactive
+      if(rawAim.address !== undefined) {
+        this.aimAddressToId[rawAim.address] = rawAim.id
+      }
       return this.aims[rawAim.id] 
     },
     async createAimOnChain(aim: Aim) {
@@ -258,6 +281,7 @@ export const useAimNetwork = defineStore('aim-network', {
           let creationEvent: any = rc.events.find((e: any) => e.event === 'AimCreation') 
           if(creationEvent) {
             aim.address = creationEvent.args.aimAddress
+            this.aimAddressToId[aim.address!] = aim.id
             aim.tokenSupply = aim.tokens
             aim.tokensOnChain = aim.tokens
             aim.clearOrigin()
@@ -351,26 +375,27 @@ export const useAimNetwork = defineStore('aim-network', {
       return await Promise.all(dataPromises).then(([
         title, color, symbol, name, description, supply, permissions, owner, tokens
       ]) => {
-        if(this.aimAddressToId[aimAddr]) {
+        const setValues = (aim: Aim) => {
+          aim.address = aimAddr
+          aim.title = title 
+          aim.description = description
+          aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
+          aim.tokenName = name 
+          aim.tokenSymbol = symbol
+          aim.permissions = permissions
+          aim.owner = owner
+          const t = BigNumber.from(tokens).toBigInt()
+          aim.tokenSupply = BigNumber.from(supply).toBigInt()
+          aim.tokensOnChain = t
+          aim.setTokens(t) 
+        }
+        console.log("on load, aim addr to id = ", this.aimAddressToId) 
+        if(this.aimAddressToId[aimAddr] !== undefined) {
           let aim = this.aims[this.aimAddressToId[aimAddr]]
-          // maybe: update all fields, respect changes
+          setValues(aim) 
           return aim
-
         } else { 
-          return this.createAim(aim => {
-            aim.address = aimAddr
-            aim.title = title 
-            aim.description = description
-            aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
-            aim.tokenName = name 
-            aim.tokenSymbol = symbol
-            aim.permissions = permissions
-            aim.owner = owner
-            const t = BigNumber.from(tokens).toBigInt()
-            aim.tokenSupply = BigNumber.from(supply).toBigInt()
-            aim.tokensOnChain = t
-            aim.setTokens(t) 
-          })
+          return this.createAim(setValues)
         }
       })
     }, 
@@ -449,5 +474,24 @@ export const useAimNetwork = defineStore('aim-network', {
       this.selectedAim = undefined
       this.selectedFlow = undefined
     },
+    togglePin(aim: Aim) {
+      console.log("Addr", aim.address) 
+      if(aim.address !== undefined) {
+        const pinningsStr = window.localStorage.getItem("pinnedAims")
+        if(pinningsStr !== null) {
+          const pinnings = new Set(pinningsStr.split(','))
+          if(aim.pinned) {
+            pinnings.delete(aim.address) 
+          } else {
+            pinnings.add(aim.address) 
+          }
+          window.localStorage.setItem("pinnedAims", Array.from(pinnings).join(','))
+        } else if (!aim.pinned) {
+          window.localStorage.setItem("pinnedAims", aim.address) 
+        }
+        console.log("new pinnings loc st:", window.localStorage.getItem("pinnedAims"))
+        aim.pinned = !aim.pinned
+      }
+    }
   }, 
 })
