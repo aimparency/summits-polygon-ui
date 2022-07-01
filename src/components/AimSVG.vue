@@ -31,7 +31,6 @@
           :key="i"> {{ line }} </tspan>
       </text>
       <g v-if='selected'>
-  
         <g v-if="aim.address !== undefined"
           transform="translate(-1, -1) scale(0.2)">
           <circle 

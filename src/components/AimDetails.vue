@@ -31,10 +31,10 @@
       placeholder="effort"
       @input="updateEffort"/>
     <MultiSwitch
-      class='state'
-      label="state"
-      :value="aim.state"
-      :options="stateOptions" 
+      class='status'
+      label="status"
+      :value="aim.status"
+      :options="statusOptions" 
       @change='updateState'
       />
         
@@ -176,7 +176,7 @@ export default defineComponent({
       aimNetwork, 
       confirmRemove: false, 
       tokenSliderOrigin: 0n,
-      stateOptions: [
+      statusOptions: [
         {
           value: "untouched", 
           color: "#288"

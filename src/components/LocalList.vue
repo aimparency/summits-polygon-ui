@@ -55,7 +55,7 @@ export default defineComponent({
   computed: {
     aims() {
       // TBD filter
-      return this.aimNetwork.$state.aims
+      return this.aimNetwork.aims
     }
   }, 
   methods: {

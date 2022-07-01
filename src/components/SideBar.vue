@@ -64,7 +64,7 @@ export default defineComponent({
       return this.showAimDetails
     },
     style() {
-      const screenSize = this.ui.$state.screenSize
+      const screenSize = this.ui.screenSize
       const portrait = screenSize[0] > screenSize[1]
       let width = 0
       if(!portrait) {
@@ -77,7 +77,7 @@ export default defineComponent({
       }
     },
     open() : boolean {
-      return this.ui.$state.sideMenuOpen
+      return this.ui.sideMenuOpen
     }
   }, 
   methods: {

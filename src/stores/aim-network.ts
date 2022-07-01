@@ -34,7 +34,7 @@ export class AimOrigin {
   title?: string
   description?: string
   color?: Rgb
-  state?: string 
+  status?: string 
   effort?: number 
 }
 
@@ -48,7 +48,7 @@ export class Aim {
 
   title: string = ""
   description: string = "" 
-  state: string=""
+  status: string=""
   effort: number = 0 
   rgb: [number, number, number] = [0, 0, 0]
 
@@ -124,12 +124,12 @@ export class Aim {
   }
 
   updateState(v: string) {
-    if(v === this.origin.state) { 
-      this.origin.state = undefined
-    } else if(this.origin.state === undefined) {
-      this.origin.state = this.state
+    if(v === this.origin.status) { 
+      this.origin.status = undefined
+    } else if(this.origin.status === undefined) {
+      this.origin.status = this.status
     }
-    this.state = v
+    this.status = v
   }
 
   updateTitle(v: string) {
@@ -264,18 +264,20 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.pendingTransactions += 1
         try {
           let tx = await summitsContract.createAim(
-            aim.title, 
+            {
+              title: aim.title, 
+              description: aim.description, 
+              status: aim.status, 
+              effort: Math.trunc(aim.effort), 
+              color: toRaw(aim.rgb), 
+            },
             aim.tokenName,
             aim.tokenSymbol, 
             aim.tokens, 
             {
               value: price, 
             }
-            // also doch 
           )
-          //  aim.description, 
-          //  Math.trunc(aim.effort), 
-          //  toRaw(aim.rgb), 
           let rc = await tx.wait()
           aim.pendingTransactions -= 1 
           let creationEvent: any = rc.events.find((e: any) => e.event === 'AimCreation') 
@@ -285,6 +287,7 @@ export const useAimNetwork = defineStore('aim-network', {
             aim.tokenSupply = aim.tokens
             aim.tokensOnChain = aim.tokens
             aim.clearOrigin()
+            this.togglePin(aim)
           }
         } catch {
           aim.pendingTransactions -= 1
@@ -301,7 +304,7 @@ export const useAimNetwork = defineStore('aim-network', {
           values.push((aim as any)[name]) 
         }
       })
-      let functionName = 'update' + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
+      let functionName = 'updateAim' + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
       console.log("calling", functionName, "with", values) 
@@ -363,23 +366,21 @@ export const useAimNetwork = defineStore('aim-network', {
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(aimAddr) 
       let dataPromises = []
-      dataPromises.push(aimContract.title())
-      dataPromises.push(aimContract.color())
+      dataPromises.push(aimContract.data())
       dataPromises.push(aimContract.symbol())
       dataPromises.push(aimContract.name())
-      dataPromises.push(aimContract.description())
       dataPromises.push(aimContract.totalSupply())
       dataPromises.push(aimContract.getPermissions())
       dataPromises.push(aimContract.owner())
       dataPromises.push(aimContract.getInvestment())
       return await Promise.all(dataPromises).then(([
-        title, color, symbol, name, description, supply, permissions, owner, tokens
+        data, symbol, name, supply, permissions, owner, tokens
       ]) => {
         const setValues = (aim: Aim) => {
           aim.address = aimAddr
-          aim.title = title 
-          aim.description = description
-          aim.setColor(Array.from(ethers.utils.arrayify(color)) as [number, number, number])
+          aim.title = data.title
+          aim.description = data.description
+          aim.setColor(Array.from(ethers.utils.arrayify(data.color)) as [number, number, number])
           aim.tokenName = name 
           aim.tokenSymbol = symbol
           aim.permissions = permissions
@@ -478,7 +479,7 @@ export const useAimNetwork = defineStore('aim-network', {
       console.log("Addr", aim.address) 
       if(aim.address !== undefined) {
         const pinningsStr = window.localStorage.getItem("pinnedAims")
-        if(pinningsStr !== null) {
+        if(pinningsStr !== null && pinningsStr !== "") {
           const pinnings = new Set(pinningsStr.split(','))
           if(aim.pinned) {
             pinnings.delete(aim.address) 

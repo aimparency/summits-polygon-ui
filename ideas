@@ -1,13 +1,21 @@
+# pinned
+Ok, these Ide files... how do they work? 
+Well, it's just list of ideas, what we could build next. 
+There are always more ideas than time to realize them. 
+Always go for the most exiting one. 
+The order is reversed chronological. Newer ideas on top: 
+
 #2022-07-01
 Ok, welche features wären mir denn jetzt noch am wichtigsten? 
-- pinnen (Local storage array der ids)
-- blacklisten (nervige aims blacklisten können) 
+- D: pinnen (Local storage array der ids)
+- V(ähnlich, aber erstmal nicht so wichtig): blacklisten (nervige aims blacklisten können) 
 - share aims by link (contains the aim addr) 
-- load connections and recoursively load aims (until a certain distance) 
+- load flows and recoursively load aims (until a certain distance) 
   - gestrichelter stroke, wenn die connections eines aims noch nicht geladen werden 
     loadLevel = 0 oder so
-- aim erstellen in einer Transaktion (mit allen werten) 
-  - key-value pairs
+- D: aim erstellen in einer Transaktion (mit allen werten) 
+  - V(benutze structs): key-value pairs
+  - A: aimData struct
   - analoges interface für flow creations
     - dx, dy als float32 als "position" key-value pair
     - description als string 
