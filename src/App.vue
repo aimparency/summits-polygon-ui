@@ -89,4 +89,24 @@ div.scrollspace {
     border-radius: 0.25rem;
     box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.75);
 }
+
+div.spinner{
+  @border: 0.5rem solid @c1; 
+  display: inline-block; 
+  border: 0.5rem solid #8880; 
+  border-radius: 50%;
+  width: 2.5em;
+  height: 2.5em;
+  margin: 0.425rem 0.2rem; 
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+} 
+
+.nowrap {
+  white-space: nowrap; 
+}
 </style>

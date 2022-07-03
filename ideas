@@ -5,8 +5,16 @@ There are always more ideas than time to realize them.
 Always go for the most exiting one. 
 The order is reversed chronological. Newer ideas on top: 
 
+
 #2022-07-03
+- Flow is not being loaded
+  - first mprnc aim is loaded
+  - then the other aim is loaded
+  - the flow from the 1. to the 2. does not get loaded or shown
 - the Graph
+- There is a Bug, that the layout becomes "faster" after "a while" 
+  - It's maybe due to multiple strands of layout functions being executed 
+    - Due to vite hot reloading
 
 #2022-07-02
 - Connections zwischen gepinnten nodes

@@ -54,12 +54,14 @@ import { defineComponent, PropType } from 'vue';
 
 import { Aim, useAimNetwork } from '../stores/aim-network'
 import { useMap } from '../stores/map';
+import { useUi} from '../stores/ui';
 
 export default defineComponent({
   name: 'AimSVG',
   data() {
     return {
       aimNetwork: useAimNetwork(),
+      ui: useUi(), 
       map: useMap()
     }
   },
@@ -96,7 +98,11 @@ export default defineComponent({
   },
   methods: {
     select() {
-      if(!this.map.preventReleaseClick) {
+      console.log("click") 
+      if(this.aimNetwork.selectedAim === this.aim) {
+        console.log("open") 
+        this.ui.sideMenuOpen = true
+      } else if(!this.map.preventReleaseClick) {
         this.aimNetwork.selectAim(this.aim)
       }
     }, 
@@ -128,7 +134,6 @@ export default defineComponent({
       }
     },
     togglePin() {
-      console.log("test") 
       this.aimNetwork.togglePin(this.aim) 
     }
   }

@@ -40,6 +40,7 @@ import Connector from './Connector.vue';
 
 import { Aim, Flow, useAimNetwork } from '../stores/aim-network'
 import { useMap } from '../stores/map'
+import { useUi } from '../stores/ui'
 
 import boxIntersect from 'box-intersect'
 
@@ -133,7 +134,7 @@ export default defineComponent({
       }
     }
     const beginDrag = (aim: Aim, mouse:vec2.T) => {
-      this.aimNetwork.deselect()
+      //this.aimNetwork.deselect()
       this.map.dragBeginning = {
         page: vec2.clone(mouse),
         pos: vec2.clone(aim.pos) 
@@ -290,14 +291,19 @@ export default defineComponent({
         if(this.aimNetwork.selectedAim || this.aimNetwork.selectedFlow) {
           this.aimNetwork.deselect()
         } else {
-          this.aimNetwork.createAndSelectAim((aim: Aim) => {
-            aim.pos = vec2.clone(this.map.mouse.logical)
-            // r * scale soll 100 sein
-            let tR = BigInt(Math.trunc(1000 * 150 / this.map.scale))
-            tR *= tR
-            aim.setTokens(tR)
-            aim.tokensOnChain = 0n
-          })
+          let ui = useUi()
+          if(ui.sideMenuOpen) {
+            ui.sideMenuOpen = false
+          } else {
+            this.aimNetwork.createAndSelectAim((aim: Aim) => {
+              aim.pos = vec2.clone(this.map.mouse.logical)
+              // r * scale soll 100 sein
+              let tR = BigInt(Math.trunc(1000 * 150 / this.map.scale))
+              tR *= tR
+              aim.setTokens(tR)
+              aim.tokensOnChain = 0n
+            })
+          }
         }
       }
     });

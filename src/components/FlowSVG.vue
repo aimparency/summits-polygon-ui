@@ -15,6 +15,8 @@ import { defineComponent, PropType } from 'vue';
 import makeCircularPath from '../make-circular-path';
 import { Flow, useAimNetwork } from '../stores/aim-network';
 
+import { useUi } from '../stores/ui'; 
+
 export default defineComponent({
   name: 'FlowSVG',
   props: {
@@ -25,7 +27,8 @@ export default defineComponent({
   }, 
   data() {
     return {
-      aimNetwork: useAimNetwork()
+      aimNetwork: useAimNetwork(), 
+      ui: useUi(),
     }
   }, 
   computed: {
@@ -54,7 +57,11 @@ export default defineComponent({
   },
   methods: {
     select() {
-      this.aimNetwork.selectFlow(this.flow) 
+      if(this.aimNetwork.selectedFlow == this.flow) {
+        this.ui.sideMenuOpen = true
+      } else {
+        this.aimNetwork.selectFlow(this.flow) 
+      }
     }
   }
 });

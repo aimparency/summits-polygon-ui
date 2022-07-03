@@ -18,6 +18,12 @@
         {{ flow.into.title || "<unnamed>"}} 
       </div>
     </div>
+    <textarea
+      ref='explanation'
+      rows="9"
+      placeholder="flow explanation"
+      :value="flow.explanation"
+      @input="updateExplanation"></textarea>
     <Slider
       name='weight'
       left='0'
@@ -27,14 +33,18 @@
       :from='0'
       :to='0xffff'
       :value='flow.weight'
-      @update='updateShare'/>
+      @update='updateWeight'/>
     <div v-if="flow.pendingTransactions"> 
       <div class="spinner"></div>
     </div>
     <div v-else>
-      <span v-if='dirty'>
+      <span v-if='!flow.published'>
+        <p v-if='flow.into.address == undefined'>Before creating this flow on chain, the receiving aim has to be created on chain</p>
+        <div class='button' tabindex="0" @click="create">create flow on chain</div>
+      </span>
+      <span v-else-if='dirty'>
         <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
-        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit</div>
+        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit changes</div>
       </span>
       <div
         tabindex="0"  
@@ -84,27 +94,23 @@ export default defineComponent({
   }, 
   computed: {
     dirty() : boolean {
-      return !this.flow.published
+      return ( 
+        Object.values(this.flow.origin).filter((v: any) => v !== undefined).length > 0 
+      ) 
     }, 
   }, 
   methods: {
-    keypress(e: KeyboardEvent) {
-      if(e.key == 'Enter' && this.dirty) {
-        this.commit()
-      } 
-    }, 
-    updateShare(v: number) {
-      this.flow.setWeight(v)
+    updateWeight(v: number) {
+      this.flow.updateWeight(v)
     }, 
     reset() {
       this.aimNetwork.resetFlowChanges(this.flow)
     }, 
     commit() {
-      if(this.flow.published) {
-        this.aimNetwork.commitFlowChanges(this.flow) 
-      } else {
-        this.aimNetwork.createFlowOnChain(this.flow) 
-      }
+      this.aimNetwork.commitFlowChanges(this.flow) 
+    }, 
+    create() {
+      this.aimNetwork.createFlowOnChain(this.flow) 
     }, 
     flowClick(flow: Flow) {
       this.aimNetwork.selectFlow(flow)
@@ -115,7 +121,11 @@ export default defineComponent({
       } else {
         this.aimNetwork.removeFlow(this.flow)
       }
-    }
+    },
+    updateExplanation(e: Event) {
+      const v = (<HTMLTextAreaElement>e.target).value
+      this.flow.updateExplanation(v)
+    }, 
   }, 
 });
 </script>

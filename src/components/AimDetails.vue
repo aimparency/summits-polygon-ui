@@ -57,7 +57,6 @@
     </div>
 
     <div >
-      token: 
       <span v-if="aim.address == undefined">
         <input class="tokenInfo" size="13" placeholder="token name" 
           :value="aim.tokenName"
@@ -65,13 +64,13 @@
         <input class="tokenInfo" size="5" placeholder="symbol" 
           :value="aim.tokenSymbol"
           @change="changeTokenSymbol"/>
+        <p> initial investment: </p>
       </span>
-      <span v-else>
-        {{ aim.tokenName }} ({{ aim.tokenSymbol }}) 
-      </span>
+      <div v-else>
+        <h3> investment </h3>
+        <p v-if="aim.address" class="supply">current supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
+      </div>
     </div>
-    <p v-if="aim.address" class="supply">current supply: <b>{{aim.tokenSupply}}</b></p>
-    <p v-else> initial investment: </p>
     <BigIntSlider 
       name='balance'
       :left='tokensSliderMin.toString()'
@@ -101,7 +100,6 @@
         {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.price }} a{{ nativeCurrency.symbol }}
       </div>
     </div>
-
 
     <h3> incoming flows </h3>
     <Slider

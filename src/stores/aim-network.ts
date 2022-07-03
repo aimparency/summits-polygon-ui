@@ -24,7 +24,7 @@ function randomAimColor() {
   }
 }
 
-function clampLoopWeight(v: number) {
+function clampFlowWeight(v: number) {
   return Math.max(Math.min(0xffff, v), 0)
 }
 
@@ -94,7 +94,7 @@ export class Aim {
   }
 
   setLoopWeight(v: number) {
-    this.loopWeight = clampLoopWeight(v) 
+    this.loopWeight = clampFlowWeight(v) 
     this.recalcWeights()
   }
 
@@ -162,12 +162,12 @@ export class Aim {
 
 export class FlowOrigin {
   explanation?: string
-  weigth?: number
+  weight?: number
 }
 
 export class Flow {
   explanation: string = ""
-  weight = 0x7000;
+  weight = 0x7fff;
 
   share = 0; // share get's calculated based on all outgoing weights
 
@@ -186,8 +186,31 @@ export class Flow {
   ) {}
 
   setWeight(v: number) {
-    this.weight = clampLoopWeight(Math.round(v)) 
+    this.weight = v
     this.into.recalcWeights()
+  }
+
+  updateWeight(v: number) {
+    v = clampFlowWeight(Math.round(v)) 
+    if(v === this.origin.weight) {
+      this.origin.weight = undefined
+    } else if (this.origin.weight === undefined) {
+      this.origin.weight = this.weight
+    }
+    this.setWeight(v) 
+  }
+
+  updateExplanation(v: string) {
+    if(v === this.origin.explanation) { 
+      this.origin.explanation = undefined
+    } else if(this.origin.explanation === undefined) {
+      this.origin.explanation = this.explanation
+    }
+    this.explanation = v
+  }
+
+  clearOrigin() {
+    this.origin = new FlowOrigin()
   }
 }
 
@@ -259,7 +282,6 @@ export const useAimNetwork = defineStore('aim-network', {
     async createAimOnChain(aim: Aim) {
       let summitsContract = useWeb3Connection().getSummitsContract()
       let price = aim.tokens * aim.tokens
-      console.log("calling summits create aim with initial_tokens =", aim.tokens)
       if(summitsContract) {
         aim.pendingTransactions += 1
         try {
@@ -307,12 +329,11 @@ export const useAimNetwork = defineStore('aim-network', {
       let functionName = 'updateAim' + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
-      console.log("calling", functionName, "with", values) 
       aim.pendingTransactions += 1
       try {
         let tx = await aimContract[functionName](...values)
         let rc = await tx.wait()
-        for(let name of fields) {
+        for(let name of fields) { // TBD: maybe just assign new AimOrigin() ? 
           delete origin[name]
         }
         aim.pendingTransactions -= 1
@@ -323,7 +344,6 @@ export const useAimNetwork = defineStore('aim-network', {
 
     }, 
     async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
-      console.log("buying tokens") 
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
       aim.pendingTransactions += 1
@@ -344,7 +364,6 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     },
     async sellTokens(aim: Aim, amount: bigint, minPrice: bigint ) {
-      console.log("selling tokens") 
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
       aim.pendingTransactions += 1
@@ -390,8 +409,6 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.tokenSupply = BigNumber.from(supply).toBigInt()
           aim.tokensOnChain = t
           aim.setTokens(t) 
-          console.log("permissions", permissions) 
-          console.log("inflows:", inflows) 
           for(let fromAddr of inflows) {
             if(this.aimAddressToId[fromAddr] !== undefined) {
               this.loadFlow(fromAddr, aimAddr) 
@@ -402,6 +419,7 @@ export const useAimNetwork = defineStore('aim-network', {
               } else {
                 this.flowWaitList[fromAddr] = new Set<string>([aimAddr])
               }
+              this.loadAim(fromAddr) 
             }
           }
           if(this.flowWaitList[aimAddr]) {
@@ -423,15 +441,15 @@ export const useAimNetwork = defineStore('aim-network', {
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(intoAddr) 
       let flowFromChain = await aimContract.inflows(fromAddr) 
-      console.log("Loaded flow", flowFromChain) 
 
       let fromAim = this.aims[this.aimAddressToId[fromAddr]]
       let intoAim = this.aims[this.aimAddressToId[intoAddr]]
 
       this.createFlow(fromAim, intoAim, (flow: Flow) => {
         flow.explanation = flowFromChain.data.explanation
-        flow.weight = flowFromChain.weight
-        flow.dx = 1 // decode bytes
+        flow.weight = flowFromChain.data.weight
+        flow.published = true
+        flow.dx = 1 // decode bytes from flowFromChain.data.d2d
         flow.dy = 1 // decode bytes
       })
     }, 
@@ -467,7 +485,6 @@ export const useAimNetwork = defineStore('aim-network', {
       if(from !== into) {
         if((Aim.Permissions.NETWORK & into.permissions) > 0) {
           let rawFlow = new Flow(from, into) 
-          rawFlow.weight = 0x7fff;
           if(cb) {
             cb(rawFlow) 
           }
@@ -492,25 +509,24 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     async createFlowOnChain(flow: Flow) {
-      console.log("creating flow on chain", flow) 
       if(flow.from.address && flow.into.address) {
-        console.log("made it to here") 
         let aimContract = useWeb3Connection().getAimContract(flow.into.address) 
         flow.pendingTransactions += 1
         try {
           let tx = await aimContract.createInflow(
             flow.from.address, 
-            flow.weight, 
             {
               explanation: flow.explanation, 
+              weight: flow.weight, 
               d2d: new Uint8Array([0,0,0,0,0,0,0,0])
             }
           )
           let rc = await tx.wait()
           flow.pendingTransactions -= 1 
+          flow.published = true
           let creationEvent: any = rc.events.find((e: any) => e.event === 'FlowCreation') 
           if(creationEvent) {
-            console.log("Flow created:", creationEvent.args) 
+            flow.clearOrigin()
           }
         } catch(error: any) {
           console.error(error) 
@@ -519,10 +535,41 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     // edit and remove flows
-    commitFlowChanges(_flow: Flow) {
-      //TBD
+    makeUpdateFunctionCall(obj: any, type: string) : [string, any[]] {
+      let fields: string[] = []
+      let args: any[] = []
+      let origin = obj.origin as any
+      Object.getOwnPropertyNames(origin).forEach((name: string) => {
+        if(origin[name] !== undefined) {
+          fields.push(name)
+          args.push(obj[name]) 
+        }
+      })
+      let functionName = 'update' + type + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
+      return [functionName, args]
     }, 
-    resetFlowChanges(_flow: Flow) {
+    async commitFlowChanges(flow: Flow) {
+      let [functionName, args] = this.makeUpdateFunctionCall(flow, "Flow") 
+      const w3 = useWeb3Connection()
+      const aimContract = w3.getAimContract(flow.into.address!) 
+      flow.pendingTransactions += 1
+      try {
+        let tx = await aimContract[functionName](flow.from.address!, ...args)
+        let rc = await tx.wait()
+        flow.clearOrigin()
+        flow.pendingTransactions -= 1
+      } catch(err)  {
+        console.error("Failed to commit aim changes", err) 
+        flow.pendingTransactions -= 1
+      }
+    }, 
+    resetFlowChanges(flow: Flow) {
+      Object.entries(flow.origin).forEach(([key, value]) => {
+        if(value !== undefined) {
+          (flow as any)[key] = value
+        }
+      })
+      flow.clearOrigin()
     }, 
     removeFlow(flow: Flow) {
       if(this.selectedFlow == flow) {
@@ -547,7 +594,6 @@ export const useAimNetwork = defineStore('aim-network', {
       this.selectedFlow = undefined
     },
     togglePin(aim: Aim) {
-      console.log("Addr", aim.address) 
       if(aim.address !== undefined) {
         const pinningsStr = window.localStorage.getItem("pinnedAims")
         if(pinningsStr !== null && pinningsStr !== "") {
@@ -561,7 +607,6 @@ export const useAimNetwork = defineStore('aim-network', {
         } else if (!aim.pinned) {
           window.localStorage.setItem("pinnedAims", aim.address) 
         }
-        console.log("new pinnings loc st:", window.localStorage.getItem("pinnedAims"))
         aim.pinned = !aim.pinned
       }
     }
