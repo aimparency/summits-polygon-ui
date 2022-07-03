@@ -5,16 +5,8 @@
     :viewBox="viewBox">
     <defs>
       <pattern id="pin" x="0.5" y="0.5" width="1" height="1" patternUnits="userSpaceOnUse">
-        <image 
-          x="0" y="0" 
-          width="1" height="1" 
-          href="pin.svg" />
       </pattern>
       <pattern id="pinned" x="0.5" y="0.5" width="1" height="1" patternUnits="userSpaceOnUse">
-        <image 
-          x="0" y="0" 
-          width="1" height="1" 
-          href="pinned.svg" />
       </pattern>
     </defs>
     <g :transform="transform">

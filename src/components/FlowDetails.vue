@@ -100,7 +100,11 @@ export default defineComponent({
       this.aimNetwork.resetFlowChanges(this.flow)
     }, 
     commit() {
-      this.aimNetwork.commitFlowChanges(this.flow) 
+      if(this.flow.published) {
+        this.aimNetwork.commitFlowChanges(this.flow) 
+      } else {
+        this.aimNetwork.createFlowOnChain(this.flow) 
+      }
     }, 
     flowClick(flow: Flow) {
       this.aimNetwork.selectFlow(flow)

@@ -186,7 +186,7 @@ export class Flow {
   ) {}
 
   setWeight(v: number) {
-    this.weight = clampLoopWeight(v) 
+    this.weight = clampLoopWeight(Math.round(v)) 
     this.into.recalcWeights()
   }
 }
@@ -195,10 +195,11 @@ export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
       aims: {} as {[id: number]: Aim}, 
-      aimAddressToId: markRaw({}) as {[addr: string]: number},
       flows: {} as {[from: string]: {[into: string]: Flow}}, 
       selectedAim: undefined as Aim | undefined,
       selectedFlow: undefined as Flow | undefined, 
+      aimAddressToId: markRaw({}) as {[addr: string]: number},
+      flowWaitList: markRaw({}) as {[addr: string]: Set<string>}, 
     }
   }, 
   actions: {
@@ -229,7 +230,6 @@ export const useAimNetwork = defineStore('aim-network', {
       const pinningsStr = window.localStorage.getItem("pinnedAims")
       if(pinningsStr !== null && pinningsStr !== "") {
         const pinnings = pinningsStr.split(',')
-        console.log("laoding pinned:", pinnings) 
         pinnings.forEach((addr: string) => {
           this.loadAim(addr).then(aim => {
             aim.pinned = true
@@ -373,8 +373,9 @@ export const useAimNetwork = defineStore('aim-network', {
       dataPromises.push(aimContract.getPermissions())
       dataPromises.push(aimContract.owner())
       dataPromises.push(aimContract.getInvestment())
+      dataPromises.push(aimContract.getInflows()) // maybe put this in a later request
       return await Promise.all(dataPromises).then(([
-        data, symbol, name, supply, permissions, owner, tokens
+        data, symbol, name, supply, permissions, owner, tokens, inflows
       ]) => {
         const setValues = (aim: Aim) => {
           aim.address = aimAddr
@@ -389,8 +390,26 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.tokenSupply = BigNumber.from(supply).toBigInt()
           aim.tokensOnChain = t
           aim.setTokens(t) 
+          console.log("permissions", permissions) 
+          console.log("inflows:", inflows) 
+          for(let fromAddr of inflows) {
+            if(this.aimAddressToId[fromAddr] !== undefined) {
+              this.loadFlow(fromAddr, aimAddr) 
+            } else {
+              // put into list
+              if(this.flowWaitList[fromAddr]) {
+                this.flowWaitList[fromAddr].add(aimAddr) 
+              } else {
+                this.flowWaitList[fromAddr] = new Set<string>([aimAddr])
+              }
+            }
+          }
+          if(this.flowWaitList[aimAddr]) {
+            this.flowWaitList[aimAddr].forEach((intoAddr: string) => {
+              this.loadFlow(aimAddr, intoAddr) 
+            })
+          }
         }
-        console.log("on load, aim addr to id = ", this.aimAddressToId) 
         if(this.aimAddressToId[aimAddr] !== undefined) {
           let aim = this.aims[this.aimAddressToId[aimAddr]]
           setValues(aim) 
@@ -398,6 +417,22 @@ export const useAimNetwork = defineStore('aim-network', {
         } else { 
           return this.createAim(setValues)
         }
+      })
+    }, 
+    async loadFlow(fromAddr: string, intoAddr: string) {
+      const w3 = useWeb3Connection()
+      let aimContract = w3.getAimContract(intoAddr) 
+      let flowFromChain = await aimContract.inflows(fromAddr) 
+      console.log("Loaded flow", flowFromChain) 
+
+      let fromAim = this.aims[this.aimAddressToId[fromAddr]]
+      let intoAim = this.aims[this.aimAddressToId[intoAddr]]
+
+      this.createFlow(fromAim, intoAim, (flow: Flow) => {
+        flow.explanation = flowFromChain.data.explanation
+        flow.weight = flowFromChain.weight
+        flow.dx = 1 // decode bytes
+        flow.dy = 1 // decode bytes
       })
     }, 
     resetAimChanges(aim: Aim) {
@@ -423,10 +458,20 @@ export const useAimNetwork = defineStore('aim-network', {
 
     // Flows
     createAndSelectFlow(from: Aim, into: Aim) {
+      let flow = this.createFlow(from, into)
+      if(flow) {
+        this.selectFlow(flow) 
+      }
+    }, 
+    createFlow(from: Aim, into: Aim, cb?: (flow: Flow) => void) : Flow | undefined {
       if(from !== into) {
         if((Aim.Permissions.NETWORK & into.permissions) > 0) {
           let rawFlow = new Flow(from, into) 
           rawFlow.weight = 0x7fff;
+          if(cb) {
+            cb(rawFlow) 
+          }
+
           const bucket = this.flows[from.id] 
           if(bucket) {
             bucket[into.id] = rawFlow
@@ -435,21 +480,47 @@ export const useAimNetwork = defineStore('aim-network', {
               [into.id]: rawFlow
             }
           }
-
-          // is this reactive? Possible pitfall: object gets reactive when added to the store, not before that. It might as well work - let's observe
           const flow = this.flows[from.id][into.id]
 
           from.flowsInto[into.id] = flow 
           into.flowsFrom[from.id] = flow
-          flow.setWeight(0x7fff)
-          this.selectFlow(flow)
+
+          into.recalcWeights()
+
+          return flow
         }
       }
     }, 
-    //TBD: createFlowOnChain()
-
+    async createFlowOnChain(flow: Flow) {
+      console.log("creating flow on chain", flow) 
+      if(flow.from.address && flow.into.address) {
+        console.log("made it to here") 
+        let aimContract = useWeb3Connection().getAimContract(flow.into.address) 
+        flow.pendingTransactions += 1
+        try {
+          let tx = await aimContract.createInflow(
+            flow.from.address, 
+            flow.weight, 
+            {
+              explanation: flow.explanation, 
+              d2d: new Uint8Array([0,0,0,0,0,0,0,0])
+            }
+          )
+          let rc = await tx.wait()
+          flow.pendingTransactions -= 1 
+          let creationEvent: any = rc.events.find((e: any) => e.event === 'FlowCreation') 
+          if(creationEvent) {
+            console.log("Flow created:", creationEvent.args) 
+          }
+        } catch(error: any) {
+          console.error(error) 
+          flow.pendingTransactions -= 1
+        }
+      }
+    }, 
     // edit and remove flows
     commitFlowChanges(_flow: Flow) {
+      //TBD
     }, 
     resetFlowChanges(_flow: Flow) {
     }, 
