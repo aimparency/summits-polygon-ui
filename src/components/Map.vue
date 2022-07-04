@@ -13,16 +13,17 @@
         <stop offset="0%"  :stop-color="color + '2e'" />
         <stop offset="100%" :stop-color="color + '00'" />
       </linearGradient>
-      <pattern id="bg" :width="2" :height="2" patternUnits="userSpaceOnUse"
-        :patternTransform="`scale(${logicalHalfSide}) translate(0,1)`">
-        <path v-for="path, key in summitPaths" :key="key" 
-          :d="path" 
-          :fill="`url(#summit-gradient-${key})`" />
+      <pattern v-for="y, i in summitYs" :id="'range-'+i" 
+        :width="2" :height="1" patternUnits="userSpaceOnUse"
+        :patternTransform="`scale(${logicalHalfSide * y}) translate(${map.offset[0] / logicalHalfSide * map.scale},0)`">
+        <path 
+          :d="summitPath" 
+          :fill="`url(#summit-gradient-${i})`" />
       </pattern>
     </defs>
-    <rect :x="-logicalHalfSide * map.xratio" :y="-logicalHalfSide"
-      :width="2 * logicalHalfSide * map.xratio" :height="2 * logicalHalfSide" 
-      fill="url(#bg)" />
+    <rect v-for="y, i in summitYs" :x="-logicalHalfSide * map.xratio" :y="(y - 1) * logicalHalfSide"
+      :width="2 * logicalHalfSide * map.xratio" :height="y * logicalHalfSide" 
+      :fill="`url(#range-${i})`" />
     <g :transform="transform">
       <FlowSVG v-for="flow in flows" 
         :key="`${flow.from.id}x${flow.into.id}`"
@@ -63,23 +64,18 @@ import * as vec2 from '../vec2'
 const outerMarginFactor = 2
 const hShift = vec2.create()
 
-const summitPaths: string[] = []
+const summitPath: string = [
+  'M', 0, 1,
+  'L', 1, 0,
+  'L', 2, 1,
+  'Z'
+].join(' ') 
 const summitColors: string[] = []
+const summitYs: number[] = []
 
 for (let i = 0; i < 9; i++) {
   summitColors[i] = toHexColor(randomAimColor())
-  
-  const cmds = []
-  const tops = 2 ** i
-  const y = 2 / tops
-  const height = 1 / tops
-  cmds.push("M", 0, y)
-  for(let j = 0; j < tops; j++) {
-    cmds.push("L", (2 * j + 1) / tops, y - height)
-    cmds.push("L", (2 * j + 2) / tops, y)
-  }
-  cmds.push("Z")
-  summitPaths[i] = cmds.join(' ')
+  summitYs[i] = 1 / (2 ** i) 
 }
 
 export default defineComponent({
@@ -91,8 +87,9 @@ export default defineComponent({
   },
   data() {
     return {
+      summitPath,
       summitColors,
-      summitPaths,
+      summitYs, 
       logicalHalfSide: LOGICAL_HALF_SIDE,
       aimNetwork: useAimNetwork(),
       map: useMap(), 
