@@ -48,12 +48,13 @@ export default defineComponent({
   right: 2rem; 
   top: 2rem; 
   text-align: right; 
-  background-color: @mid1;
-  opacity: 0.5; 
+  background-color: shade(@mid1, 35%);
+  opacity: 0.7; 
   padding: 1rem; 
   border-radius: 1rem; 
   &:hover {
     opacity: 1; 
+  background-color: @mid1;
     box-shadow: 0 0 2rem #0008; 
   }
   cursor: pointer; 

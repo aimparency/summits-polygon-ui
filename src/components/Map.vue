@@ -15,7 +15,7 @@
       </linearGradient>
       <pattern v-for="y, i in summitYs" :id="'range-'+i" 
         :width="2" :height="1" patternUnits="userSpaceOnUse"
-        :patternTransform="`scale(${logicalHalfSide * y}) translate(${map.offset[0] / logicalHalfSide * map.scale},0)`">
+        :patternTransform="`scale(${logicalHalfSide * y}) translate(${map.offset[0] * 0.3 / logicalHalfSide * map.scale},0)`">
         <path 
           :d="summitPath" 
           :fill="`url(#summit-gradient-${i})`" />
@@ -73,7 +73,7 @@ const summitPath: string = [
 const summitColors: string[] = []
 const summitYs: number[] = []
 
-for (let i = 0; i < 9; i++) {
+for (let i = 0; i < 6; i++) {
   summitColors[i] = toHexColor(randomAimColor())
   summitYs[i] = 1 / (2 ** i) 
 }
@@ -589,6 +589,6 @@ export default defineComponent({
   top: 0; 
   width: 100vw;
   height:100vh; 
-  background-color: shade(@bg1, 50%);  
+  background-color: shade(@bg1, 55%);  
 }
 </style>
