@@ -48,7 +48,7 @@ export default defineComponent({
   right: 2rem; 
   top: 2rem; 
   text-align: right; 
-  background-color: @bg1;
+  background-color: @mid1;
   opacity: 0.5; 
   padding: 1rem; 
   border-radius: 1rem; 

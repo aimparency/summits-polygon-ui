@@ -17,6 +17,13 @@
         @mouseup='mouseUp'
         @touchend='touchend'
       />
+      <circle v-if='!published'
+        class="unpublished-overlay"
+        cx="0"
+        cy="0"
+        r="1"
+        fill="url(#unpublished)"
+      />
       <text
         dominant-baseline="central"
         text-anchor="middle"
@@ -31,7 +38,7 @@
           :key="i"> {{ line }} </tspan>
       </text>
       <g v-if='selected'>
-        <g v-if="aim.address !== undefined"
+        <g v-if="published"
           transform="translate(-1, -1) scale(0.2)">
           <circle 
             class="button"
@@ -92,15 +99,16 @@ export default defineComponent({
     loading() : boolean {
       return this.aim.pendingTransactions > 0 
     }, 
+    published() : boolean {
+      return this.aim.address !== undefined
+    },
     showTools() : boolean {
       return this.selected && this.map.connectFrom == undefined; 
     }, 
   },
   methods: {
     select() {
-      console.log("click") 
       if(this.aimNetwork.selectedAim === this.aim) {
-        console.log("open") 
         this.ui.sideMenuOpen = true
       } else if(!this.map.preventReleaseClick) {
         this.aimNetwork.selectAim(this.aim)
@@ -144,7 +152,7 @@ export default defineComponent({
 <style scoped lang="less">
 .aim {
   font-family: monospace; 
-  circle {
+  .aim-circle {
     cursor: pointer; 
     transition: stroke-dasharray;  
     stroke-width: 0.075;
@@ -156,6 +164,9 @@ export default defineComponent({
       animation: dash 1.5s linear infinite;
       stroke-linecap: round;
     }
+  }
+  .unpublished-overlay {
+    pointer-events: none; 
   }
   text{
     fill: #fff; 

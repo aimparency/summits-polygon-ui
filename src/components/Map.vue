@@ -4,9 +4,8 @@
     class='aim-map'
     :viewBox="viewBox">
     <defs>
-      <pattern id="pin" x="0.5" y="0.5" width="1" height="1" patternUnits="userSpaceOnUse">
-      </pattern>
-      <pattern id="pinned" x="0.5" y="0.5" width="1" height="1" patternUnits="userSpaceOnUse">
+      <pattern id="unpublished" width="1" height="1" patternTransform="scale(0.8) rotate(-45 0 0)" patternUnits="userSpaceOnUse">
+        <rect x1="0" y1="0" width="1" height="0.5" style="stroke:none; fill:#2222" />
       </pattern>
     </defs>
     <g :transform="transform">
@@ -391,7 +390,8 @@ export default defineComponent({
 
       let aimIndex, boxIndex
 
-      for(let aimId in aims) {
+      for(let aimIdString in aims) {
+        let aimId = parseInt(aimIdString) // has to be a number
         aimIndex = aimIndexToId.length
 
         aim = aims[aimId]

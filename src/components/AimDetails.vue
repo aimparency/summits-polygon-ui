@@ -198,6 +198,9 @@ export default defineComponent({
   mounted() {
     this.updateTokensSliderOrigin()
   },
+  updated() {
+    this.updateTokensSliderOrigin()
+  },
   computed: {
     trade() : undefined | Trade {
       const aim = this.aim

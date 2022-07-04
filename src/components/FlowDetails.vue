@@ -39,8 +39,9 @@
     </div>
     <div v-else>
       <span v-if='!flow.published'>
-        <p v-if='flow.into.address == undefined'>Before creating this flow on chain, the receiving aim has to be created on chain</p>
-        <div class='button' tabindex="0" @click="create">create flow on chain</div>
+        <p v-if='flow.into.address == undefined || flow.from.address == undefined'>
+          Before creating this flow on chain, both involved aims have to be created on chain</p>
+        <div v-else class='button' tabindex="0" @click="create">create flow on chain</div>
       </span>
       <span v-else-if='dirty'>
         <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
