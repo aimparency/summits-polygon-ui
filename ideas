@@ -5,13 +5,16 @@ There are always more ideas than time to realize them.
 Always go for the most exiting one. 
 The order is reversed chronological. Newer ideas on top: 
 
+#2022-07-04
+- share links 
+  - display in aim details
+  - load if url parameter is there
+- diagonal stripes pattern für unpublished aims and flows. 
+  - svg mask, siehe hier: https://stackoverflow.com/questions/43423317/how-to-change-color-of-svg-pattern-on-usage
 
 #2022-07-03
-- Flow is not being loaded
-  - first mprnc aim is loaded
-  - then the other aim is loaded
-  - the flow from the 1. to the 2. does not get loaded or shown
-- the Graph
+- D(was loaded but no weight => NaN path) : Fix: Flow is not being loaded 
+- the Graph? 
 - There is a Bug, that the layout becomes "faster" after "a while" 
   - It's maybe due to multiple strands of layout functions being executed 
     - Due to vite hot reloading
@@ -73,7 +76,7 @@ Ok, welche features wären mir denn jetzt noch am wichtigsten?
 
 - Local storage 
   - store aim addresses locally and load them, when opening the tab again
-    - or maybe allow to "pin" aims, that get loaded automatically
+    - D: or maybe allow to "pin" aims, that get loaded automatically
     - and allow to "blacklist" annoying aims (e.g. wide titles) 
 
 - The Graph natürlich (endlich, hat mal wieder länger gedauert ^^) 
@@ -88,8 +91,8 @@ Ok, welche features wären mir denn jetzt noch am wichtigsten?
     - Zeit mag ich nicht, weil es keinen Sinn ergibt, Sachen in Zeit zu messen. 
 
 - Ok, also, ich würde gern... voranschreiten
-  - aims speichern on chain
-  - aims ändern on chain
+  - D: aims speichern on chain
+  - D: aims ändern on chain
   - dann: subgraph schreiben
   - dauert alles länger als gedacht. Ist aber so. 
 
@@ -97,16 +100,16 @@ Ok, welche features wären mir denn jetzt noch am wichtigsten?
   - vieleicht wäre es gut, wenn es so einen Toleranzbereich gibt, in dem sich nichts verschiebt
   - Aber eh will ich die dx und dy aus den flows verwenden. 
 
-- Flows
-  - man soll es sehen, wenn riesenpfeile ... von kleinen Aims abgehen 
-  - oder doch: zu kleinen Aims zeigen? flows...
-  - "depends on" vs. "contributes to"
+- D: Flows
+  - D: man soll es sehen, wenn riesenpfeile ... von kleinen Aims abgehen 
+    - V: oder doch: zu kleinen Aims zeigen? flows...
+    - D(contributes to): "depends on" vs. "contributes to"
   - contributes to ist schöner. Zukunft, in Richtung
   - kann die Pfeile ja so ändern, dass ich am Ende einen Kreis male "round cap" <<== DAS!
   - daran erkennt man dann auch ganz schön: so groß müsste das Ziel eigentlich sein!
   - größe bemisst sich an into-aim
 
-- Bug fixen
+- V(denke, das ist wegen vite hot reload layout restart): Bug fixen
   - nach langer laufzeit ruckelt es
   - liegt an stack grow bei "layout" funktion. 
 
@@ -128,14 +131,14 @@ Ok, welche features wären mir denn jetzt noch am wichtigsten?
 - "public" optional machen (hardcode true von mir aus bis zum ico)
   - nur wenn public auf blockchain veröffentlichen 
 
-- Datamodel
+- D: Datamodel
   - connections sind selbstständige objekte
   - goals haben eingänge und ausgänge
-  - connections gehören zum benefitting aim
+  - D: connections gehören zum benefitting aim
     - werden also auf der chain veröffentlicht, wenn das receiving aim öffentlich ist
 
-- von gl-vec2 wegwechseln, um mehr precision als Float32 zu haben
-  - vielleicht ne eigene kleine lib bauen
+- D(implemented my own): von gl-vec2 wegwechseln, um mehr precision als Float32 zu haben
+  - D: vielleicht ne eigene kleine lib bauen
     - add, sub, divN, multN
     - alles inplace + returning 
     - clone
