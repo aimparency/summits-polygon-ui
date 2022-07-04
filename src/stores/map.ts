@@ -5,6 +5,8 @@ import { Aim } from './aim-network'
 
 type maybeAim = undefined | Aim
 
+export const LOGICAL_HALF_SIDE = 1000
+
 export const useMap = defineStore('map', {
   state() {
     return {
@@ -15,7 +17,6 @@ export const useMap = defineStore('map', {
         physical: vec2.fromValues(0,0)
       },
       halfSide: 0, 
-      logicalHalfSide: 1000, 
       xratio: 1, 
       yratio: 1, 
       panBeginning: undefined as undefined | { page: vec2.T, offset: vec2.T },
@@ -37,7 +38,7 @@ export const useMap = defineStore('map', {
       vec2.sub(result, result, this.clientOffset) 
       vec2.scale(result, result, 1 / this.halfSide) 
       vec2.sub(result, result, [1,1]) 
-      vec2.scale(result, result, this.logicalHalfSide / this.scale) 
+      vec2.scale(result, result, LOGICAL_HALF_SIDE / this.scale) 
       vec2.sub(result, result, this.offset) 
       return result
     }, 

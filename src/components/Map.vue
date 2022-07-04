@@ -7,7 +7,22 @@
       <pattern id="unpublished" width="1" height="1" patternTransform="scale(0.8) rotate(-45 0 0)" patternUnits="userSpaceOnUse">
         <rect x1="0" y1="0" width="1" height="0.5" style="stroke:none; fill:#2222" />
       </pattern>
+      <linearGradient v-for="color, key in summitColors" :key="key" 
+        :id="'summit-gradient-' + key"
+        gradientTransform="rotate(90)">
+        <stop offset="0%"  :stop-color="color + '2e'" />
+        <stop offset="100%" :stop-color="color + '00'" />
+      </linearGradient>
+      <pattern id="bg" :width="2" :height="2" patternUnits="userSpaceOnUse"
+        :patternTransform="`scale(${logicalHalfSide}) translate(0,1)`">
+        <path v-for="path, key in summitPaths" :key="key" 
+          :d="path" 
+          :fill="`url(#summit-gradient-${key})`" />
+      </pattern>
     </defs>
+    <rect :x="-logicalHalfSide * map.xratio" :y="-logicalHalfSide"
+      :width="2 * logicalHalfSide * map.xratio" :height="2 * logicalHalfSide" 
+      fill="url(#bg)" />
     <g :transform="transform">
       <FlowSVG v-for="flow in flows" 
         :key="`${flow.from.id}x${flow.into.id}`"
@@ -19,10 +34,10 @@
         :key="aim.id"
         :aim="aim"/>
       <!--rect
-        :x="- map.offset[0] - map.logicalHalfSide * map.xratio * 0.5 / map.scale"
-        :y="- map.offset[1] - map.logicalHalfSide * map.yratio * 0.5 / map.scale"
-        :width="map.logicalHalfSide * map.xratio / map.scale"
-        :height="map.logicalHalfSide * map.yratio / map.scale"
+        :x="- map.offset[0] - LOGICAL_HALF_SIDE * map.xratio * 0.5 / map.scale"
+        :y="- map.offset[1] - LOGICAL_HALF_SIDE * map.yratio * 0.5 / map.scale"
+        :width="LOGICAL_HALF_SIDE * map.xratio / map.scale"
+        :height="LOGICAL_HALF_SIDE * map.yratio / map.scale"
         stroke="#0f0"
         fill="none"
       /-->
@@ -37,8 +52,8 @@ import AimSVG from './AimSVG.vue';
 import FlowSVG from './FlowSVG.vue';
 import Connector from './Connector.vue';
 
-import { Aim, Flow, useAimNetwork } from '../stores/aim-network'
-import { useMap } from '../stores/map'
+import { Aim, Flow, useAimNetwork, randomAimColor, toHexColor } from '../stores/aim-network'
+import { useMap, LOGICAL_HALF_SIDE } from '../stores/map'
 import { useUi } from '../stores/ui'
 
 import boxIntersect from 'box-intersect'
@@ -47,6 +62,25 @@ import * as vec2 from '../vec2'
 
 const outerMarginFactor = 2
 const hShift = vec2.create()
+
+const summitPaths: string[] = []
+const summitColors: string[] = []
+
+for (let i = 0; i < 9; i++) {
+  summitColors[i] = toHexColor(randomAimColor())
+  
+  const cmds = []
+  const tops = 2 ** i
+  const y = 2 / tops
+  const height = 1 / tops
+  cmds.push("M", 0, y)
+  for(let j = 0; j < tops; j++) {
+    cmds.push("L", (2 * j + 1) / tops, y - height)
+    cmds.push("L", (2 * j + 2) / tops, y)
+  }
+  cmds.push("Z")
+  summitPaths[i] = cmds.join(' ')
+}
 
 export default defineComponent({
   name: "Map",
@@ -57,6 +91,9 @@ export default defineComponent({
   },
   data() {
     return {
+      summitColors,
+      summitPaths,
+      logicalHalfSide: LOGICAL_HALF_SIDE,
       aimNetwork: useAimNetwork(),
       map: useMap(), 
     }
@@ -91,7 +128,7 @@ export default defineComponent({
         const d = vec2.crSub(pb.page, mouse)
         if(vec2.len2(d) > 25) {
           this.map.preventReleaseClick = true
-          vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
+          vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
           const offset = vec2.clone(pb.offset)
           vec2.sub(offset, offset, d)
           this.map.offset = offset  
@@ -107,7 +144,7 @@ export default defineComponent({
         vec2.sub(d, d, mouse) 
         if(vec2.len2(d) > 25) {
           this.map.preventReleaseClick = true
-          vec2.scale(d, d, this.map.logicalHalfSide / (this.map.halfSide * this.map.scale)) 
+          vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
           const pos = vec2.clone(db.pos)
           vec2.sub(pos, pos, d) 
           aim.pos = pos
@@ -316,7 +353,7 @@ export default defineComponent({
   }, 
   computed: {
     viewBox() : string {
-      return [-1,-1,2,2].map((v: number) => v * this.map.logicalHalfSide).join(' ')
+      return [-1,-1,2,2].map((v: number) => v * LOGICAL_HALF_SIDE).join(' ')
     }, 
     transform() : string {
       return [
@@ -380,8 +417,8 @@ export default defineComponent({
       let aim
       let left, right, top, bottom
 
-      let mapWidth = map.logicalHalfSide * map.xratio * 2 / map.scale
-      let mapHeight = map.logicalHalfSide * map.yratio * 2 / map.scale
+      let mapWidth = LOGICAL_HALF_SIDE * map.xratio * 2 / map.scale
+      let mapHeight = LOGICAL_HALF_SIDE * map.yratio * 2 / map.scale
 
       const sLeft = (-map.offset[0] - mapWidth) 
       const sRight = (-map.offset[0] + mapWidth) 
@@ -501,7 +538,7 @@ export default defineComponent({
         }
       }
 
-      let minShift = 0.1 * (map.logicalHalfSide / map.halfSide) / map.scale
+      let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
       let i
       for(let aimId in aims) {
         i = aimIdToIndex[aimId]

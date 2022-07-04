@@ -11,7 +11,7 @@ This project uses
 After cloning the repository, run `yarn` to install dependencies. 
 
 Then copy `./src/config.ts.example` to `./src/config.ts` and adapt its contents. 
-Also copy the `Summit.json` contract artifact to `./src/`
+Also copy the `Summit.json` contract artifact to `./src/`. You might want to symlink in case you are working on the contracts as well. 
 
 Run `yarn dev` to spin up a dev server. 
 

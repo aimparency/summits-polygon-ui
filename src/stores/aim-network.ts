@@ -11,7 +11,7 @@ import { useMap } from './map'
 import * as vec2 from '../vec2'
 import { markRaw, toRaw } from 'vue'
 
-function randomAimColor() {
+export function randomAimColor() {
   let r,g,b,l:number | undefined
   while(true) {
     r = Math.random() 
@@ -22,6 +22,10 @@ function randomAimColor() {
       return [r,g,b].map(c => Math.floor((0.05 + 0.8 * c / l!) * 255 )) as [number, number, number]
     }
   }
+}
+
+export function toHexColor(rgb: [number, number, number]) {
+  return  '#' + rgb.map(c => ("0" + Math.floor(c).toString(16)).slice(-2)).join('') 
 }
 
 function clampFlowWeight(v: number) {
@@ -89,7 +93,7 @@ export class Aim {
   }
 
   setColor(rgb: [number, number, number]) {
-    this.color = '#' + rgb.map(c => ("0" + Math.floor(c).toString(16)).slice(-2)).join('') 
+    this.color = toHexColor(rgb)
     this.rgb = rgb
   }
 
