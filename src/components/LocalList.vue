@@ -60,8 +60,6 @@ export default defineComponent({
   }, 
   computed: {
     searchResults() {
-      console.log("searching results")
-      // TBD filter
       return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
         key: "title",
         limit: 100, 
@@ -81,7 +79,6 @@ export default defineComponent({
       this.aimNetwork.selectAim(aim)
     },
     updateSearch(event: any) {
-      console.log("change") 
       this.search = event.target.value
     }
   }, 

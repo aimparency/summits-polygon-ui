@@ -106,6 +106,10 @@ div.spinner{
   100% { transform: rotate(360deg); }
 } 
 
+p {
+  margin: 1rem; 
+}
+
 .nowrap {
   white-space: nowrap; 
 }

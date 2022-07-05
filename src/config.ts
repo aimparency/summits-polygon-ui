@@ -14,6 +14,18 @@ export default {
         symbol: 'MATIC'
       }
     }, 
+    goerli: {
+      name: 'Goerli Test Network',
+      chainId: 5,
+      url: 'https://goerli.infura.io/v3/',
+      explorer: 'https://goerli.etherscan.io',
+      contractAddress: '0x0baBF216a5815F0567f400bAF94b72F57eeF07B9', 
+      nativeCurrency: {
+        name: "ETH",
+        decimals: 18,
+        symbol: 'ETH'
+      }
+    }, 
     localnet: {
       name: 'localnet', 
       chainId: 1337, 
@@ -28,5 +40,5 @@ export default {
       }
     }
   } as any, 
-  network: 'localnet'
+  network: 'goerli'
 }

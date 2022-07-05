@@ -236,9 +236,8 @@ export const useAimNetwork = defineStore('aim-network', {
       // check url get parameters
       let urlParams = new URLSearchParams(window.location.search)
       let addr = urlParams.get('loadAim')
-      console.log(addr) 
       if(addr) {
-        this.loadAim(addr)
+        await this.loadAim(addr)
       }
       this.loadPinned() 
     }, 
@@ -268,6 +267,7 @@ export const useAimNetwork = defineStore('aim-network', {
         pinnings.forEach((addr: string) => {
           this.loadAim(addr).then(aim => {
             aim.pinned = true
+          }).catch(err => {
           })
         })
       }
@@ -489,38 +489,38 @@ export const useAimNetwork = defineStore('aim-network', {
 
     // Flows
     createAndSelectFlow(from: Aim, into: Aim) {
-      let flow = this.createFlow(from, into)
-      if(flow) {
-        this.selectFlow(flow) 
-        useUi().sideMenuOpen = true
+      if(from !== into) {
+        if((Aim.Permissions.NETWORK & into.permissions) > 0) {
+          let flow = this.createFlow(from, into)
+          if(flow) {
+            this.selectFlow(flow) 
+            useUi().sideMenuOpen = true
+          }
+        } 
       }
     }, 
     createFlow(from: Aim, into: Aim, cb?: (flow: Flow) => void) : Flow | undefined {
-      if(from !== into) {
-        if((Aim.Permissions.NETWORK & into.permissions) > 0) {
-          let rawFlow = new Flow(from, into) 
-          if(cb) {
-            cb(rawFlow) 
-          }
+      let rawFlow = new Flow(from, into) 
+      if(cb) {
+        cb(rawFlow) 
+      }
 
-          const bucket = this.flows[from.id] 
-          if(bucket) {
-            bucket[into.id] = rawFlow
-          } else {
-            this.flows[from.id] = { 
-              [into.id]: rawFlow
-            }
-          }
-          const flow = this.flows[from.id][into.id]
-
-          from.flowsInto[into.id] = flow 
-          into.flowsFrom[from.id] = flow
-
-          into.recalcWeights()
-
-          return flow
+      const bucket = this.flows[from.id] 
+      if(bucket) {
+        bucket[into.id] = rawFlow
+      } else {
+        this.flows[from.id] = { 
+          [into.id]: rawFlow
         }
       }
+      const flow = this.flows[from.id][into.id]
+
+      from.flowsInto[into.id] = flow 
+      into.flowsFrom[from.id] = flow
+
+      into.recalcWeights()
+
+      return flow
     }, 
     async createFlowOnChain(flow: Flow) {
       if(flow.from.address && flow.into.address) {

@@ -66,10 +66,10 @@
       <span v-if="aim.address == undefined">
         <input class="tokenInfo" size="13" placeholder="token name" 
           :value="aim.tokenName"
-          @change="changeTokenName"/>
+          @input="changeTokenName"/>
         <input class="tokenInfo" size="5" placeholder="symbol" 
           :value="aim.tokenSymbol"
-          @change="changeTokenSymbol"/>
+          @input="changeTokenSymbol"/>
         <p> initial investment: </p>
       </span>
       <div v-else>
@@ -92,10 +92,15 @@
     </div>
     <div v-else-if="aim.address == undefined">
       <div 
-        v-if='aim.title != ""'
+        v-if='aim.title != "" && aim.tokenName != "" && aim.tokenSymbol != ""'
         class='button' 
         tabindex="0" 
         @click="createAimOnChain">create aim on chain</div>
+      <p v-else> 
+        <span class="error">
+          title and token name and symbol are required for creating an aim on chain.
+        </span>
+      </p>
     </div>
     <div v-else-if='trade !== undefined'>
       <div class='button' tabindex="0" @click="resetTokens"> 
@@ -400,11 +405,7 @@ export default defineComponent({
     margin: 1rem auto; 
     padding-top: 2rem; 
   }
-  p.supply {
-    margin:0.5rem; 
-  }
   p.permissions {
-    margin: 1rem; 
     span {
       padding: 0.3rem;
       border-radius: 0.3rem; 
