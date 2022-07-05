@@ -5,14 +5,20 @@ There are always more ideas than time to realize them.
 Always go for the most exiting one. 
 The order is reversed chronological. Newer ideas on top: 
 
+#2022-07-06
+- The Graph in neuem branch
+  - load benefitting aims (threshold 2 % eigene Size oder so) 
+  - Full text search 
+    - search in all fields
+
 #2022-07-05
 - remove flows from chain
 
 #2022-07-04
-- share links 
+- D: share links 
   - display in aim details
   - load if url parameter is there
-- diagonal stripes pattern für unpublished aims and flows. 
+- D: diagonal stripes pattern für unpublished aims and flows. 
   - svg mask, siehe hier: https://stackoverflow.com/questions/43423317/how-to-change-color-of-svg-pattern-on-usage
 
 #2022-07-03

@@ -11,8 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-Summits.json
-Aim.json
 efficient-node-layouting.xopp
 
 # Editor directories and files
