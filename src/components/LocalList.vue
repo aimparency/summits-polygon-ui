@@ -2,6 +2,19 @@
   <div class="local-list"> 
     <h2 class="sidebar-heading">find aims</h2>
     <input type="text" placeholder="search" :value="search" @input="updateSearch"/>
+    <div v-if="searchResults.length > 0" class="results">
+      <AimLi tabindex="0"
+        v-for="result in searchResults"
+        :key="result.obj.id"
+        :aim="result.obj"
+        @click="selectAim(result.obj)"
+        @keypress.space="selectAim(result.obj)"
+        @keypress.enter="selectAim(result.obj)"
+        />
+    </div>
+    <p v-else>
+      No results found
+    </p>
     <div class="buttonList">
       <div tabindex="0" class="button" 
         @keypress.enter="addAim"
@@ -13,16 +26,6 @@
         @click.stop="switchToGlobalSearch">
         search globally
       </div>
-    </div>
-    <div class="results">
-      <AimLi tabindex="0"
-        v-for="result in searchResults"
-        :key="result.obj.id"
-        :aim="result.obj"
-        @click="selectAim(result.obj)"
-        @keypress.space="selectAim(result.obj)"
-        @keypress.enter="selectAim(result.obj)"
-        />
     </div>
   </div>
 </template>
@@ -100,6 +103,9 @@ export default defineComponent({
     box-shadow: 0 0 1rem #0008; 
     margin: 1rem; 
     padding: 0; 
+  }
+  p {
+    margin: 1rem; 
   }
 }
 </style>
