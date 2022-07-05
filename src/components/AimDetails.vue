@@ -198,8 +198,13 @@ export default defineComponent({
   mounted() {
     this.updateTokensSliderOrigin()
   },
-  updated() {
-    this.updateTokensSliderOrigin()
+  watch: {
+    aim: {
+      handler(_new, _old) {
+        this.updateTokensSliderOrigin()
+      },
+      deep: false
+    }
   },
   computed: {
     trade() : undefined | Trade {
