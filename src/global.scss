@@ -1,5 +1,6 @@
 @c1: #f5b; 
 @c2: #3ce; 
+@c3: #2a4;
 
 @danger: #b31;
 
@@ -25,6 +26,7 @@
   display: inline-block; 
   box-shadow: 0 0 1rem #0008; 
   margin: 0.1rem 0.5rem;
+  line-height: 1.5rem;
   padding: 0.5rem 1rem; 
   background-color: shade(@c1, 50%); 
   vertical-align: middle; 

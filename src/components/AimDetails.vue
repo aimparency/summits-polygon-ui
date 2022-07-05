@@ -44,7 +44,7 @@
         class='button' tabindex="0"  
         @click="reset">reset</div>
       <div 
-        v-if="dirty && aim.address !== undefined"
+        v-if="dirty && public"
         class='button'
         tabindex="0"
         @click="commitChanges">commit changes</div>
@@ -54,6 +54,12 @@
         :class='{confirm: confirmRemove}'
         @blur='confirmRemove = false'
         @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+      <div
+        v-if="public"
+        tabindex="0"
+        class='button'
+        :class="{share: !justCopiedToClipboard, copied: justCopiedToClipboard}"
+        @click="share">{{justCopiedToClipboard ? "copied to clipboard!" : ""}}</div>
     </div>
 
     <div >
@@ -192,7 +198,8 @@ export default defineComponent({
           color: "#56b", 
         }
       ],
-      nativeCurrency: config.networks[config.network].nativeCurrency
+      nativeCurrency: config.networks[config.network].nativeCurrency, 
+      justCopiedToClipboard: false,
     }
   }, 
   mounted() {
@@ -207,6 +214,9 @@ export default defineComponent({
     }
   },
   computed: {
+    public() {
+      return this.aim.address !== undefined
+    },
     trade() : undefined | Trade {
       const aim = this.aim
       if( aim.tokens !== aim.tokensOnChain) {
@@ -261,6 +271,15 @@ export default defineComponent({
     }, 
   }, 
   methods: {
+    share() {
+      let url = `${window.location.origin}/?loadAim=${this.aim.address}`
+      navigator.clipboard.writeText(url).then(() => {
+        this.justCopiedToClipboard = true
+        setTimeout(() => {
+          this.justCopiedToClipboard = false
+        }, 3000)
+      })
+    },
     updateTokensSliderOrigin(){
       this.tokenSliderOrigin = this.aim.tokens
     }, 
@@ -344,6 +363,21 @@ export default defineComponent({
   text-align: center; 
   .fieldButtons {
     margin: 1rem; 
+    .share {
+      background-image: url(/share.svg);
+      background-size: 50%;
+      background-repeat: no-repeat;
+      background-position: center;
+      height: 2.5rem; 
+      width: 2.5rem;
+      padding: 0; 
+    }
+    .copied{
+      background-image: none;
+      background-color: shade(@c3, 10%);
+      height: auto;
+      width: auto;
+    }
   }
   .button {
     &.confirm {

@@ -1,7 +1,7 @@
 <template>
   <div class="local-list"> 
-    <h2 class="sidebar-heading">all aims</h2>
-    <input type="text" placeholder="filter..."/>
+    <h2 class="sidebar-heading">find aims</h2>
+    <input type="text" placeholder="search" :value="search" @input="updateSearch"/>
     <div class="buttonList">
       <div tabindex="0" class="button" 
         @keypress.enter="addAim"
@@ -16,12 +16,12 @@
     </div>
     <div class="results">
       <AimLi tabindex="0"
-        v-for="aim in aims"
-        :key="aim.id"
-        :aim="aim"
-        @click="selectAim(aim)"
-        @keypress.space="selectAim(aim)"
-        @keypress.enter="selectAim(aim)"
+        v-for="result in searchResults"
+        :key="result.obj.id"
+        :aim="result.obj"
+        @click="selectAim(result.obj)"
+        @keypress.space="selectAim(result.obj)"
+        @keypress.enter="selectAim(result.obj)"
         />
     </div>
   </div>
@@ -29,6 +29,7 @@
 
 <script lang="ts">
 import { defineComponent } from "vue"
+import fuzzysort from 'fuzzysort'
 
 import { useUi } from "../stores/ui"
 import { Aim, useAimNetwork } from "../stores/aim-network"
@@ -50,12 +51,20 @@ export default defineComponent({
     }
   }, 
   data() {
-    return {}
+    return {
+      search: "",
+    }
   }, 
   computed: {
-    aims() {
+    searchResults() {
+      console.log("searching results")
       // TBD filter
-      return this.aimNetwork.aims
+      return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
+        key: "title",
+        limit: 100, 
+        threshold: -10000,
+        all: true
+      })
     }
   }, 
   methods: {
@@ -67,6 +76,10 @@ export default defineComponent({
     }, 
     selectAim(aim: Aim) {
       this.aimNetwork.selectAim(aim)
+    },
+    updateSearch(event: any) {
+      console.log("change") 
+      this.search = event.target.value
     }
   }, 
   

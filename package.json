@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@types/box-intersect": "^1.0.0",
+    "fuzzysort": "^2.0.1",
     "vue": "^3.2.25"
   },
   "devDependencies": {

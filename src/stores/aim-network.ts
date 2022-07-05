@@ -7,6 +7,7 @@ import { useWeb3Connection } from './web3-connection'
 import { BigNumber, ethers } from 'ethers'
 
 import { useMap } from './map'
+import { useUi } from './ui'
 
 import * as vec2 from '../vec2'
 import { markRaw, toRaw } from 'vue'
@@ -232,6 +233,13 @@ export const useAimNetwork = defineStore('aim-network', {
   actions: {
     async loadInitial() {
       await this.loadHome()
+      // check url get parameters
+      let urlParams = new URLSearchParams(window.location.search)
+      let addr = urlParams.get('loadAim')
+      console.log(addr) 
+      if(addr) {
+        this.loadAim(addr)
+      }
       this.loadPinned() 
     }, 
     async loadHome() {
@@ -271,6 +279,7 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.setColor(randomAimColor())
         modifyAimCb && modifyAimCb(aim)
       })
+      useUi().sideMenuOpen = true
     }, 
     createAim(modifyAimCb?: (aim: Aim) => void) {
       let rawAim = new Aim()
@@ -483,6 +492,7 @@ export const useAimNetwork = defineStore('aim-network', {
       let flow = this.createFlow(from, into)
       if(flow) {
         this.selectFlow(flow) 
+        useUi().sideMenuOpen = true
       }
     }, 
     createFlow(from: Aim, into: Aim, cb?: (flow: Flow) => void) : Flow | undefined {
