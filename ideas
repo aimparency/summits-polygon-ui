@@ -5,7 +5,7 @@ There are always more ideas than time to realize them.
 Always go for the most exiting one. 
 The order is reversed chronological. Newer ideas on top: 
 
-#far future
+#far future backlog
 - next version
   - git... stuff in git repos packen
     - git läuft im browser
@@ -39,6 +39,12 @@ The order is reversed chronological. Newer ideas on top:
   - load benefitting aims (threshold 2 % eigene Size oder so) 
   - Full text search 
     - search in all fields
+- Permissions
+  - Add User
+    - by address
+    - specify role (or..  well a permission 8 bits) 
+  - contract setter
+  - lazy load when selecting 
 
 #2022-07-05
 - remove flows from chain
