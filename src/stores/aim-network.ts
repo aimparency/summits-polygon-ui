@@ -12,6 +12,10 @@ import { useUi } from './ui'
 import * as vec2 from '../vec2'
 import { markRaw, toRaw } from 'vue'
 
+import config from '../config'
+
+const PINNED_AIMS_STORAGE_KEY = "pinnedAims-" + config.network // use different storage TBD: support network switching after page load
+
 export function randomAimColor() {
   let r,g,b,l:number | undefined
   while(true) {
@@ -41,6 +45,14 @@ export class AimOrigin {
   color?: Rgb
   status?: string 
   effort?: number 
+}
+
+export class Member {
+  constructor(
+    public address: string,
+    public permissions: number,
+    public changed = false
+  ){}
 }
 
 export class Aim {
@@ -80,13 +92,14 @@ export class Aim {
   pendingTransactions = 0
 
   static Permissions: {[name: string]: number} = {
-    ALL: 0xff, 
     EDIT: 0x01, 
     NETWORK: 0x02,
     MANAGE: 0x04, 
     //...
-    OWNER: 0x80, 
+    TRANSFER: 0x80, 
   } 
+
+  members?: Member[] 
 
   permissions = 0
 
@@ -249,25 +262,27 @@ export const useAimNetwork = defineStore('aim-network', {
         home.pinned = true
 
         const map = useMap()
-        this.selectedAim = home
 
         // Gleichung: 
         // 100 = scale * home.r
         // scale = 100 / home.r
         map.scale = 200 / home.r
 
+        this.selectAim(home)
+
         // test transaction
         // await summitsContract.test() // test
       }
     }, 
     async loadPinned() {
-      const pinningsStr = window.localStorage.getItem("pinnedAims")
+      const pinningsStr = window.localStorage.getItem(PINNED_AIMS_STORAGE_KEY)
       if(pinningsStr !== null && pinningsStr !== "") {
         const pinnings = pinningsStr.split(',')
         pinnings.forEach((addr: string) => {
           this.loadAim(addr).then(aim => {
             aim.pinned = true
-          }).catch(err => {
+          }).catch(() => {
+            console.log("could not load pinned aim") 
           })
         })
       }
@@ -399,15 +414,15 @@ export const useAimNetwork = defineStore('aim-network', {
       let aimContract = w3.getAimContract(aimAddr) 
       let dataPromises = []
       dataPromises.push(aimContract.data())
-      dataPromises.push(aimContract.symbol())
-      dataPromises.push(aimContract.name())
+      dataPromises.push(aimContract.symbol()) // candidate for lazy load
+      dataPromises.push(aimContract.name()) // candidate for lazyLoadAimDetails
       dataPromises.push(aimContract.totalSupply())
       dataPromises.push(aimContract.getPermissions())
       dataPromises.push(aimContract.owner())
-      dataPromises.push(aimContract.getInvestment())
-      dataPromises.push(aimContract.getInflows()) // maybe put this in a later request
+      dataPromises.push(aimContract.getInvestment()) // candidate for lazy load
+      dataPromises.push(aimContract.getContributors()) 
       return await Promise.all(dataPromises).then(([
-        data, symbol, name, supply, permissions, owner, tokens, inflows
+        data, symbol, name, supply, permissions, owner, tokens, contributors, members
       ]) => {
         const setValues = (aim: Aim) => {
           aim.address = aimAddr
@@ -421,8 +436,9 @@ export const useAimNetwork = defineStore('aim-network', {
           const t = BigNumber.from(tokens).toBigInt()
           aim.tokenSupply = BigNumber.from(supply).toBigInt()
           aim.tokensOnChain = t
+          aim.members = members
           aim.setTokens(t) 
-          for(let fromAddr of inflows) {
+          for(let fromAddr of contributors) {
             if(this.aimAddressToId[fromAddr] !== undefined) {
               this.loadFlow(fromAddr, aimAddr) 
             } else {
@@ -450,6 +466,33 @@ export const useAimNetwork = defineStore('aim-network', {
         }
       })
     }, 
+    lazyLoadAim(aim: Aim) {
+      if(aim.address) {
+        const w3 = useWeb3Connection()
+        let aimContract = w3.getAimContract(aim.address) 
+        let dataPromises = []
+        dataPromises.push(aimContract.getMembers()) 
+        Promise.all(dataPromises).then(([
+          memberAddrs
+        ]) => {
+          console.log(memberAddrs) 
+          let permissionPromises = []
+          for(let memberAddr of memberAddrs) {
+            permissionPromises.push(aimContract.permissions(memberAddr))
+          }
+          Promise.all(permissionPromises).then(permissions => {
+            let members = []
+            for(let i = 0; i < memberAddrs.length; i++) {
+              members.push(new Member(
+                memberAddrs[i], 
+                permissions[i]
+              ))
+            }
+            aim.members = members
+          })
+        })
+      }
+    },
     async loadFlow(fromAddr: string, intoAddr: string) {
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(intoAddr) 
@@ -602,6 +645,7 @@ export const useAimNetwork = defineStore('aim-network', {
     selectAim(aim: Aim) {
       this.selectedFlow = undefined
       this.selectedAim = aim
+      this.lazyLoadAim(aim) 
     },
     deselect() {
       this.selectedAim = undefined
@@ -609,7 +653,7 @@ export const useAimNetwork = defineStore('aim-network', {
     },
     togglePin(aim: Aim) {
       if(aim.address !== undefined) {
-        const pinningsStr = window.localStorage.getItem("pinnedAims")
+        const pinningsStr = window.localStorage.getItem(PINNED_AIMS_STORAGE_KEY)
         if(pinningsStr !== null && pinningsStr !== "") {
           const pinnings = new Set(pinningsStr.split(','))
           if(aim.pinned) {
@@ -617,9 +661,9 @@ export const useAimNetwork = defineStore('aim-network', {
           } else {
             pinnings.add(aim.address) 
           }
-          window.localStorage.setItem("pinnedAims", Array.from(pinnings).join(','))
+          window.localStorage.setItem(PINNED_AIMS_STORAGE_KEY, Array.from(pinnings).join(','))
         } else if (!aim.pinned) {
-          window.localStorage.setItem("pinnedAims", aim.address) 
+          window.localStorage.setItem(PINNED_AIMS_STORAGE_KEY, aim.address) 
         }
         aim.pinned = !aim.pinned
       }

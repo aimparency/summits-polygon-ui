@@ -3,14 +3,6 @@
     class="aim-details"> 
     <h2 class="sidebar-heading">aim details</h2>
     
-    <p class="permissions">
-      permisions: 
-      <span v-for="permission, key in permissions">{{ permission }}</span>
-      <span v-if="permissions.length == 0">
-        none
-      </span>
-    </p>
-
     <textarea
       ref='title'
       rows="4"
@@ -37,6 +29,17 @@
       :options="statusOptions" 
       @change='updateState'
       />
+
+    <p>
+      permisions: 
+      <span class="permission-indicator" 
+        v-for="permission, key in permissions" 
+        :key="key">{{ permission }}</span>
+      <span class="permission-indicator" v-if="permissions.length == 0">
+        none
+      </span>
+    </p>
+
         
     <div class="fieldButtons">
       <div
@@ -111,7 +114,24 @@
         {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.price }} a{{ nativeCurrency.symbol }}
       </div>
     </div>
-
+    <h3> members </h3>
+    <div v-if="aim.members !== undefined">
+      <div v-for="member in aim.members" :key="member.address">
+        {{ member.address }}:
+        <span v-for="v, key in permissionNames"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
+      </div>
+      <p v-if="aim.members.length == 0"> there are no members yet, add one if you want:</p>
+    </div>
+    <input 
+      ref="newMemberAddr"
+      placeholder="member address"
+      >
+    <div class="permission"
+      v-for="_v, key in permissionNames">
+      <input :ref="'newMemberPermission'+key" type='checkbox'/><br/>{{key}}
+    </div>
+    <br/>
+    <div class="button" @click="addMember">add member</div>
     <h3> incoming flows </h3>
     <Slider
       name='loop weight'
@@ -148,7 +168,7 @@
 <script lang="ts">
 import { defineComponent, PropType } from "vue"
 
-import { Aim, Flow, useAimNetwork } from "../stores/aim-network"
+import { Aim, Member, Flow, useAimNetwork } from "../stores/aim-network"
 
 import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
@@ -163,6 +183,8 @@ interface Trade {
   amount: bigint, 
   price: bigint
 }
+
+Permissions
 
 export default defineComponent({
   name: "AimDetails",
@@ -182,6 +204,7 @@ export default defineComponent({
   data() {
     const aimNetwork = useAimNetwork()
     return { 
+      permissionNames: Aim.Permissions, 
       aimNetwork, 
       confirmRemove: false, 
       tokenSliderOrigin: 0n,
@@ -357,6 +380,23 @@ export default defineComponent({
     changeTokenSymbol(e: Event) {
       const v = (<HTMLInputElement>e.target).value
       this.aim.tokenSymbol = v
+    },
+    addMember() {
+      let addr = (this.$refs.newMemberAddr as HTMLInputElement).value.trim()
+      let permissions = 0
+      Object.keys(this.permissionNames).forEach(name => {
+        let el = this.$refs['newMemberPermission' + name] as HTMLInputElement
+        if(el[0].checked) {
+          permissions |= Aim.Permissions[name]
+        }
+      }) 
+
+      let newMember = new Member(addr, permissions, true) 
+      if(this.aim.members == undefined){
+        this.aim.members = [newMember]
+      } else {
+        this.aim.members.push(newMember)
+      }
     }
   }, 
 });
@@ -389,6 +429,16 @@ export default defineComponent({
       background-color: @danger; 
     }
   }
+  .permission {
+    display: inline-block; 
+    input {
+      width: 2.5rem;
+      height: 2.5rem; 
+      vertical-align: middle; 
+      margin: 0.5rem; 
+    }
+    margin: 0.5rem; 
+  }
   .tokenInfo {
     margin: 0.5rem;
     display: inline-block; 
@@ -405,12 +455,11 @@ export default defineComponent({
     margin: 1rem auto; 
     padding-top: 2rem; 
   }
-  p.permissions {
-    span {
-      padding: 0.3rem;
-      border-radius: 0.3rem; 
-      background-color: #fff4; 
-    }
+  .permission-indicator {
+    padding: 0.25rem;
+    margin: 0.25rem; 
+    border-radius: 0.3rem; 
+    background-color: #fff4; 
   }
 }
 
