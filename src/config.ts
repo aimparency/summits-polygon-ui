@@ -40,5 +40,5 @@ export default {
       }
     }
   } as any, 
-  network: 'goerli'
+  network: 'localnet'
 }
