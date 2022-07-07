@@ -5,6 +5,35 @@ There are always more ideas than time to realize them.
 Always go for the most exiting one. 
 The order is reversed chronological. Newer ideas on top: 
 
+#far future
+- next version
+  - git... stuff in git repos packen
+    - git läuft im browser
+    - ein hauptrepo
+    - "dependencies"
+      - lädt andere repos & vergibt alias
+      - aim connections enthalten alias info: also: <repoId>-<aimId>
+        - repo-id 0 ist vielleicht self. 
+    - so kriegt man umsonst
+      - versionskontrolle
+      - off-chain sharing
+    - wenn man die app lädt, 
+      - werden immer automatisch alle repos gepullt 
+        - (ist ja nur text, müsste schnell gehen) 
+      - chains könnten für aim description etc. 
+        - vielleicht auch auf die repos verweisen
+          - repourl/aimId
+          - für alles bis auf investment kram
+          - git als decentral storage so to say
+    - possibilities are huge. There is enough space for all of us. 
+
+- check network, lookup contract id. 
+  - If no contract id is present
+    - Confront user, suggest networks that work 
+      - Switch to it
+
+#2022-07-07
+
 #2022-07-06
 - The Graph in neuem branch
   - load benefitting aims (threshold 2 % eigene Size oder so) 

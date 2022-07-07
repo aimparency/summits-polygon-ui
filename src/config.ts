@@ -34,9 +34,9 @@ export default {
 //      contractAddress: '9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0', 
 //      contractAddress: 'Dc64a140Aa3E981100a9becA4E685f962f0cF6C9', 
       nativeCurrency: {
-        name: "LocalCoin", 
+        name: "LOC", 
         decimals: 18, 
-        symbol: 'LOCAL'
+        symbol: 'LOC'
       }
     }
   } as any, 
