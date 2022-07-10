@@ -127,11 +127,14 @@ export default defineComponent({
       }
     }, 
     touchend(e: TouchEvent) {
+      console.log("touch end") 
       if(this.map.connectFrom && this.map.connecting) {
         var changedTouches = e.changedTouches;
         const el = document.elementFromPoint(changedTouches[0].clientX, changedTouches[0].clientY)
+        console.log("end el", el) 
         if(el && el.classList.contains("aim-circle")) {
-          let aimIdString = (el as SVGCircleElement).dataset.aimId
+          let aimIdString = (el as SVGCircleElement).dataset.aimid
+          console.log("aim id string", aimIdString) 
           if(aimIdString) {
             let connectTo = this.aimNetwork.aims[parseInt(aimIdString)]
             if(connectTo) {
