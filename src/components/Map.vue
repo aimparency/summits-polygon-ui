@@ -101,6 +101,10 @@ export default defineComponent({
   mounted() {
     const canvas = this.$refs.canvas as SVGElement
 
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    }, false);
+
     const updateHalfSide = () => {
       let w = canvas.clientWidth 
       let h = canvas.clientHeight
@@ -167,7 +171,7 @@ export default defineComponent({
       }
     }
     const beginDrag = (aim: Aim, mouse:vec2.T) => {
-      //this.aimNetwork.deselect()
+      this.map.updateMouse(mouse)
       this.map.dragBeginning = {
         page: vec2.clone(mouse),
         pos: vec2.clone(aim.pos) 
