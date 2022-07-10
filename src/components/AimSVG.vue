@@ -122,6 +122,7 @@ export default defineComponent({
       }
     }, 
     mouseUp() {
+      console.log("create flow") 
       if(this.map.connectFrom && this.map.connecting) {
         this.aimNetwork.createAndSelectFlow(this.map.connectFrom, this.aim) 
       }

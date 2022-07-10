@@ -31,7 +31,7 @@
       />
 
     <p>
-      permisions: 
+      permissions: 
       <span class="permission-indicator" 
         v-for="permission, key in permissions" 
         :key="key">{{ permission }}</span>
@@ -115,23 +115,32 @@
       </div>
     </div>
     <h3> members </h3>
+    <div class="member"> 
+      <ShortAddress v-if="aim.owner !== undefined" :address="aim.owner"/>
+      <span v-else>myself</span>: <span class="permission-indicator owner">owner</span></div>
     <div v-if="aim.members !== undefined">
-      <div v-for="member in aim.members" :key="member.address">
-        {{ member.address }}:
-        <span v-for="v, key in permissionNames"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
+      <div v-for="member in aim.members" :key="member.address" class="member">
+        <ShortAddress :address="member.address" />:
+        <span v-for="v, key in aimPermissions"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
       </div>
       <p v-if="aim.members.length == 0"> there are no members yet, add one if you want:</p>
     </div>
-    <input 
-      ref="newMemberAddr"
-      placeholder="member address"
-      >
-    <div class="permission"
-      v-for="_v, key in permissionNames">
-      <input :ref="'newMemberPermission'+key" type='checkbox'/><br/>{{key}}
+    <div class="button saveMembers" v-if="membersChanged && public" @click="commitMembers">
+      commit member changes on chain
     </div>
-    <br/>
-    <div class="button" @click="addMember">add member</div>
+    <div v-if="mayManage">
+      <input 
+        ref="newMemberAddr"
+        class="newMemberAddr"
+        placeholder="member address"
+        >
+      <div class="permission"
+        v-for="permission in grantablePermissions">
+        {{permission}}<br/><input ref="newMemberPermission" type='checkbox'/>
+      </div>
+      <br/>
+      <div class="button" @click="addMember">add member</div>
+    </div>
     <h3> incoming flows </h3>
     <Slider
       name='loop weight'
@@ -175,6 +184,7 @@ import MultiSwitch from './MultiSwitch.vue'
 import BigIntSlider from './BigIntSlider.vue'
 import Slider from './Slider.vue'
 import BackButton from './SideBar/BackButton.vue'
+import ShortAddress from './ShortAddress.vue'
 
 import config from '../config'
 
@@ -194,6 +204,7 @@ export default defineComponent({
     BigIntSlider, 
     Slider, 
     BackButton,
+    ShortAddress
   },
   props: {
     aim: {
@@ -204,7 +215,7 @@ export default defineComponent({
   data() {
     const aimNetwork = useAimNetwork()
     return { 
-      permissionNames: Aim.Permissions, 
+      aimPermissions: Aim.Permissions, 
       aimNetwork, 
       confirmRemove: false, 
       tokenSliderOrigin: 0n,
@@ -242,6 +253,19 @@ export default defineComponent({
     }
   },
   computed: {
+    grantablePermissions() {
+      let list = ['edit', 'network']
+      if ((this.aim.permissions & Aim.Permissions.transfer) > 0) {
+        list.push('manage') 
+      }
+      return list
+    }, 
+    membersChanged() {
+      return this.aim.members && this.aim.members.some(member => member.changed)
+    },
+    mayManage() {
+      return (this.aim.permissions & Aim.Permissions.manage) > 0
+    },
     public() {
       return this.aim.address !== undefined
     },
@@ -269,18 +293,14 @@ export default defineComponent({
       }
     }, 
     permissions() : string[] {
-      if(this.aim.permissions == Aim.Permissions.ALL) {
-        return ['ALL']
-      } else {
-        let permissions: string[] = []
-        for(let name in Aim.Permissions) {
-          let bits = Aim.Permissions[name]
-          if((this.aim.permissions & bits) == bits) {
-            permissions.push(name) 
-          }
+      let permissions: string[] = []
+      for(let name in Aim.Permissions) {
+        let bits = Aim.Permissions[name]
+        if((this.aim.permissions & bits) == bits) {
+          permissions.push(name) 
         }
-        return permissions
       }
+      return permissions
     }, 
     dirty() : boolean {
       return ( 
@@ -350,6 +370,9 @@ export default defineComponent({
         this.aimNetwork.commitAimChanges(this.aim) 
       }
     }, 
+    commitMembers() {
+      this.aimNetwork.commitAimMemberChanges(this.aim) 
+    },
     doTrade() {
       // allow price slip
       if(this.trade !== undefined) {
@@ -383,13 +406,21 @@ export default defineComponent({
     },
     addMember() {
       let addr = (this.$refs.newMemberAddr as HTMLInputElement).value.trim()
+
+      if(addr.length == 40) {
+        addr += "0x"
+      } else if(addr.length != 42) {
+        return
+      }
+
       let permissions = 0
-      Object.keys(this.permissionNames).forEach(name => {
-        let el = this.$refs['newMemberPermission' + name] as HTMLInputElement
-        if(el[0].checked) {
+      let els = this.$refs['newMemberPermission'] as HTMLInputElement[]
+      for(let i = 0; i < this.grantablePermissions.length; i++) {
+        let name = this.grantablePermissions[i]
+        if(els[i].checked) {
           permissions |= Aim.Permissions[name]
         }
-      }) 
+      }
 
       let newMember = new Member(addr, permissions, true) 
       if(this.aim.members == undefined){
@@ -460,6 +491,20 @@ export default defineComponent({
     margin: 0.25rem; 
     border-radius: 0.3rem; 
     background-color: #fff4; 
+    &.owner {
+      background-color: fade(@c2, 50%);
+    }
+  }
+  .member {
+    margin: 0rem 1rem;
+    text-align: left;
+    line-height: 2rem;
+  }
+  .newMemberAddr {
+    margin: 1rem 1rem 0rem 1rem; 
+  }
+  .saveMembers {
+    margin:1rem; 
   }
 }
 

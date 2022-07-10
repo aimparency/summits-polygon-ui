@@ -92,11 +92,11 @@ export class Aim {
   pendingTransactions = 0
 
   static Permissions: {[name: string]: number} = {
-    EDIT: 0x01, 
-    NETWORK: 0x02,
-    MANAGE: 0x04, 
+    edit: 0x01, 
+    network: 0x02,
+    manage: 0x04, 
     //...
-    TRANSFER: 0x80, 
+    transfer: 0x80, 
   } 
 
   members?: Member[] 
@@ -290,7 +290,7 @@ export const useAimNetwork = defineStore('aim-network', {
     // create and load aims
     createAndSelectAim(modifyAimCb?: (aim: Aim) => void) {
       this.selectedAim = this.createAim(aim => {
-        aim.permissions = Aim.Permissions.ALL
+        aim.permissions = 0xff
         aim.setColor(randomAimColor())
         modifyAimCb && modifyAimCb(aim)
       })
@@ -370,6 +370,42 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.pendingTransactions -= 1
       }
 
+    }, 
+    async commitAimMemberChanges(aim: Aim) {
+      if(aim.members) { 
+        let addresses: string[] = []
+        let permissions: number[] = []
+        let includedMembers: Member[] = []
+        aim.members.forEach((member: Member) => {
+          if(member.changed) {
+            addresses.push(member.address)
+            permissions.push(member.permissions)
+            includedMembers.push(member)
+          }
+        })
+        if(addresses.length > 0) {
+          try {
+            const w3 = useWeb3Connection()
+            const aimContract = w3.getAimContract(aim.address!) 
+            aim.pendingTransactions += 1
+            if(addresses.length == 1) {
+              let tx = await aimContract.setPermissions(addresses[0], permissions[0])
+              await tx.wait()
+            } else {
+              let tx = await aimContract.setPermissionsForMultipleMembers(addresses, permissions)
+              await tx.wait()
+            }
+            aim.pendingTransactions -= 1
+            includedMembers.forEach((member: Member) => {
+              member.changed = false
+            })
+          } catch(err) {
+            console.error("Failed to commit aim member changes", err)
+            aim.pendingTransactions -= 1
+          }
+          // set members changed to false for include members
+        }
+      }
     }, 
     async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
       const w3 = useWeb3Connection()
@@ -533,7 +569,7 @@ export const useAimNetwork = defineStore('aim-network', {
     // Flows
     createAndSelectFlow(from: Aim, into: Aim) {
       if(from !== into) {
-        if((Aim.Permissions.NETWORK & into.permissions) > 0) {
+        if((Aim.Permissions.network & into.permissions) > 0) {
           let flow = this.createFlow(from, into)
           if(flow) {
             this.selectFlow(flow) 
