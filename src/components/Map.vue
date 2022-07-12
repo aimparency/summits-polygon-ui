@@ -536,6 +536,7 @@ export default defineComponent({
       }
 
       let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
+      let standstill = true
       let i
       for(let aimId in aims) {
         i = aimIdToIndex[aimId]
@@ -550,12 +551,21 @@ export default defineComponent({
             !(aim == map.dragCandidate && map.dragBeginning)
           ) {
             aim.pos = vec2.crAdd(aim.pos, shift)
+            standstill = false
           }
         } 
       }
-      requestAnimationFrame(() => {
-        this.layout()
-      })
+      if(standstill) {
+        setTimeout(() => {
+          requestAnimationFrame(() => {
+            this.layout()
+          })
+        }, 200)
+      } else {
+        requestAnimationFrame(() => {
+          this.layout()
+        })
+      }
     },
     calcShiftAndApply(
       marginFactor: number, 

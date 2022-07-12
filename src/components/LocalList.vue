@@ -38,6 +38,9 @@ import { useUi } from "../stores/ui"
 import { Aim, useAimNetwork } from "../stores/aim-network"
 
 import AimLi from "./AimLi.vue"
+import { useMap } from "../stores/map"
+
+import * as vec2 from '../vec2'
 
 export default defineComponent({
   name: "LocalList",
@@ -73,7 +76,14 @@ export default defineComponent({
       //TBD
     }, 
     addAim() {
-      this.aimNetwork.createAndSelectAim()
+      let map = useMap()
+      this.aimNetwork.createAndSelectAim(aim => {
+        aim.pos = vec2.crNegate(map.offset) 
+        let tR = BigInt(Math.trunc(1000 * 150 / map.scale))
+        tR *= tR
+        aim.setTokens(tR) 
+        aim.tokensOnChain = 0n
+      })
     }, 
     selectAim(aim: Aim) {
       this.aimNetwork.selectAim(aim)

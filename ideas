@@ -63,6 +63,25 @@ The order is reversed chronological. Newer ideas on top:
   - It's maybe due to multiple strands of layout functions being executed 
     - Due to vite hot reloading
 
+
+#2022-07-11
+- Feedback von David
+  - show ETH price when investing or devesting
+  - rejection explanation, when trying creating a flow without permissions
+    - Hint, div
+      - position fixed, 
+      - where the mouse pointer 
+        - position left / right, top / button depending on location
+      - width 33%
+      - height variable
+  - Auto fill TokenName and Symbol
+    - "can't be changed!"
+- GraphQL auf Polygon
+
+- D: Details
+  - D: Add aim in the middle of the screen 
+  - D: Icon for going back to the List 
+
 #2022-07-02
 - Connections zwischen gepinnten nodes
 

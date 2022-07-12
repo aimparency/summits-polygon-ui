@@ -2,7 +2,6 @@
   <div class="back"
     tabindes="0"
     @click.stop="$emit('click')">
-    &#129144;
   </div>
 </template>
 
@@ -24,12 +23,15 @@ export default defineComponent({
   padding: 0; 
   left: 0.5rem;
   top: 0.5rem; 
-  font-size: 1.8rem; 
   width: @size; 
   height: @size; 
   line-height: @size; 
   font-weight: bold; 
   text-align: center; 
   position: absolute; 
+  background-image: url(/search.svg); 
+  background-repeat: no-repeat; 
+  background-position: center; 
+  background-size: 65%; 
 }
 </style>

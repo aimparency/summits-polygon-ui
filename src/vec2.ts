@@ -73,6 +73,11 @@ export function isZero(a: T) {
   return a[0] == 0 && a[1] == 0
 }
 
+export function negate(out: T, a: T) {
+  out[0] = -a[0]
+  out[1] = -a[1]
+}
+
 /* the following cr-helpers create a vector for the operator result */
 
 export function crAdd(a: T, b: T) {
@@ -96,5 +101,11 @@ export function crScale(a: T, s: number) {
 export function crNormalize(a: T) {
   const r = [0, 0] as T
   normalize(r, a)
+  return r
+}
+
+export function crNegate(a: T) {
+  const r: T = [0, 0]
+  negate(r, a) 
   return r
 }
