@@ -73,6 +73,7 @@ export class Aim {
   tokensOnChain = 0n
   tokenSupply = 0n
 
+  suggestTokenNameAndSymbol = true
   tokenName = ""
   tokenSymbol = ""
 
@@ -575,7 +576,9 @@ export const useAimNetwork = defineStore('aim-network', {
             this.selectFlow(flow) 
             useUi().sideMenuOpen = true
           }
-        } 
+        } else {
+          throw(Error("you need certain permissions for the receiving aim in order to draw a flow")) 
+        }
       }
     }, 
     createFlow(from: Aim, into: Aim, cb?: (flow: Flow) => void) : Flow | undefined {

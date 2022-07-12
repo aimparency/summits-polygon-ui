@@ -9,7 +9,7 @@
 import { defineComponent } from "vue"
 
 export default defineComponent({
-  name: "AimLi",
+  name: "BackButton",
   emits: ['click'],
 });
 </script>

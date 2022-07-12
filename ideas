@@ -32,7 +32,23 @@ The order is reversed chronological. Newer ideas on top:
     - Confront user, suggest networks that work 
       - Switch to it
 
-#2022-07-07
+#2022-07-11
+- Feedback von David
+  - D(was partially done already): show ETH price when investing or devesting
+  - D: rejection explanation, when trying creating a flow without permissions
+    - Hint, div
+      - position fixed, 
+      - where the mouse pointer 
+        - position left / right, top / button depending on location
+      - width 33%
+      - height variable
+  - D: Auto fill TokenName and Symbol
+    - "can't be changed!"
+- GraphQL auf Polygon
+
+- D: Details
+  - D: Add aim in the middle of the screen 
+  - D: Icon for going back to the List 
 
 #2022-07-06
 - The Graph in neuem branch
@@ -64,23 +80,6 @@ The order is reversed chronological. Newer ideas on top:
     - Due to vite hot reloading
 
 
-#2022-07-11
-- Feedback von David
-  - show ETH price when investing or devesting
-  - rejection explanation, when trying creating a flow without permissions
-    - Hint, div
-      - position fixed, 
-      - where the mouse pointer 
-        - position left / right, top / button depending on location
-      - width 33%
-      - height variable
-  - Auto fill TokenName and Symbol
-    - "can't be changed!"
-- GraphQL auf Polygon
-
-- D: Details
-  - D: Add aim in the middle of the screen 
-  - D: Icon for going back to the List 
 
 #2022-07-02
 - Connections zwischen gepinnten nodes

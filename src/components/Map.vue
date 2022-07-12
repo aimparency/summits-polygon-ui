@@ -150,6 +150,7 @@ export default defineComponent({
     }
 
     const beginWhatever = (mouse: vec2.T) => {
+      this.map.updateMouse(mouse) 
       if(this.map.connectFrom) {
         this.map.connecting = true
         this.map.preventReleaseClick = true

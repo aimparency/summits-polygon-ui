@@ -69,7 +69,8 @@ export default defineComponent({
     return {
       aimNetwork: useAimNetwork(),
       ui: useUi(), 
-      map: useMap()
+      map: useMap(),
+      hint: undefined as string | undefined
     }
   },
   props: {
@@ -124,7 +125,7 @@ export default defineComponent({
     mouseUp() {
       console.log("create flow") 
       if(this.map.connectFrom && this.map.connecting) {
-        this.aimNetwork.createAndSelectFlow(this.map.connectFrom, this.aim) 
+        this.callCreateFlow(this.map.connectFrom, this.aim) 
       }
     }, 
     touchend(e: TouchEvent) {
@@ -132,16 +133,23 @@ export default defineComponent({
         var changedTouches = e.changedTouches;
         const el = document.elementFromPoint(changedTouches[0].clientX, changedTouches[0].clientY)
         if(el && el.classList.contains("aim-circle")) {
-          let aimIdString = (el as SVGCircleElement).dataset.aimId
+          let aimIdString = (el as SVGCircleElement).dataset.aimid
           if(aimIdString) {
             let connectTo = this.aimNetwork.aims[parseInt(aimIdString)]
             if(connectTo) {
-              this.aimNetwork.createAndSelectFlow(this.map.connectFrom, connectTo) 
+              this.callCreateFlow(this.map.connectFrom, connectTo)
             }
           }
         }
       }
     },
+    callCreateFlow(from: Aim, to: Aim) {
+      try {
+        this.aimNetwork.createAndSelectFlow(from, to) 
+      } catch(err: any) {
+        this.ui.setError(err.toString()) 
+      }
+    }, 
     togglePin() {
       this.aimNetwork.togglePin(this.aim) 
     }

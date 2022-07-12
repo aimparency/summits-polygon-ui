@@ -2,6 +2,7 @@
   <Map/>
   <ConnectionStatus/>
   <SideBar/>
+  <Hint/>
 </template>
 
 <script lang="ts">
@@ -14,6 +15,7 @@ import { useUi } from "./stores/ui";
 import ConnectionStatus from "./components/ConnectionStatus.vue";
 import Map from "./components/Map.vue";
 import SideBar from "./components/SideBar.vue";
+import Hint from "./components/Hint.vue";
 
 export default defineComponent({
   name: "App",
@@ -21,6 +23,7 @@ export default defineComponent({
     ConnectionStatus, 
     Map,
     SideBar,
+    Hint
   },
   setup() {
     useWeb3Connection().connect(() => {

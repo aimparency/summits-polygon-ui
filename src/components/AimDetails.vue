@@ -66,15 +66,17 @@
     </div>
 
     <div >
-      <span v-if="aim.address == undefined">
+      <template v-if="aim.address == undefined">
         <input class="tokenInfo" size="13" placeholder="token name" 
           :value="aim.tokenName"
           @input="changeTokenName"/>
         <input class="tokenInfo" size="5" placeholder="symbol" 
           :value="aim.tokenSymbol"
           @input="changeTokenSymbol"/>
-        <p> initial investment: </p>
-      </span>
+        <br/>
+        <span> (cannot be changed later) </span>
+        <h3> initial investment </h3>
+      </template>
       <div v-else>
         <h3> investment </h3>
         <p v-if="aim.address" class="supply">current supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
@@ -98,7 +100,7 @@
         v-if='aim.title != "" && aim.tokenName != "" && aim.tokenSymbol != ""'
         class='button' 
         tabindex="0" 
-        @click="createAimOnChain">create aim on chain</div>
+        @click="createAimOnChain">create aim on chain for {{ createPrice }}{{nativeCurrency.symbol}} </div>
       <p v-else> 
         <span class="error">
           title and token name and symbol are required for creating an aim on chain.
@@ -111,7 +113,7 @@
       </div>
       <div
         class='button' tabindex="0" @click="doTrade"> 
-        {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.price }} a{{ nativeCurrency.symbol }}
+        {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }}{{ nativeCurrency.symbol }}
       </div>
     </div>
     <h3> members </h3>
@@ -188,13 +190,14 @@ import ShortAddress from './ShortAddress.vue'
 
 import config from '../config'
 
+import { humanizeAmount } from '../tools'
+
 interface Trade {
   verb: string, 
   amount: bigint, 
-  price: bigint
+  price: bigint, 
+  humanPrice: string
 }
-
-Permissions
 
 export default defineComponent({
   name: "AimDetails",
@@ -253,6 +256,9 @@ export default defineComponent({
     }
   },
   computed: {
+    createPrice() {
+      return humanizeAmount(this.aim.tokens ** 2n)
+    }, 
     grantablePermissions() {
       let list = ['edit', 'network']
       if ((this.aim.permissions & Aim.Permissions.transfer) > 0) {
@@ -277,17 +283,20 @@ export default defineComponent({
         let newSupply = aim.tokenSupply + amount
         let volPricePost = newSupply * newSupply
         let price = volPricePost - volPricePre
+        let humanPrice = humanizeAmount(price)
         if( amount > 0n ) {
           return {
             verb: 'buy', 
             amount,
-            price
+            price, 
+            humanPrice
           }
         } else {
           return {
             verb: 'sell', 
             amount: -amount, 
-            price: -price
+            price: -price, 
+            humanPrice
           }
         }
       }
@@ -340,6 +349,12 @@ export default defineComponent({
     updateTitle(e: Event) {
       const v = (<HTMLTextAreaElement>e.target).value
       this.aim.updateTitle(v) 
+      if(v && this.aim.suggestTokenNameAndSymbol) {
+        let firstWord = this.aim.title.split(/(\s+)/)[0]
+        this.aim.tokenName = firstWord[0].toUpperCase() + firstWord.slice(1) + "Token"
+        let konsonants = firstWord.replace(/[aeiou]|[^a-z]/gi, '')
+        this.aim.tokenSymbol = konsonants.toUpperCase().slice(0, 6) 
+      }
     }, 
     updateDescription(e: Event) {
       const v = (<HTMLTextAreaElement>e.target).value
@@ -399,10 +414,12 @@ export default defineComponent({
     changeTokenName(e: Event) {
       const v = (<HTMLInputElement>e.target).value
       this.aim.tokenName = v
+      this.aim.suggestTokenNameAndSymbol = false
     }, 
     changeTokenSymbol(e: Event) {
       const v = (<HTMLInputElement>e.target).value
       this.aim.tokenSymbol = v
+      this.aim.suggestTokenNameAndSymbol = false
     },
     addMember() {
       let addr = (this.$refs.newMemberAddr as HTMLInputElement).value.trim()
