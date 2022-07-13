@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 efficient-node-layouting.xopp
+src/Aim.json
+src/Summits.json
+src/config.ts
+
+inkscape
 
 # Editor directories and files
 .vscode/*
