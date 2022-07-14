@@ -12,9 +12,10 @@ import { useUi } from './ui'
 import * as vec2 from '../vec2'
 import { markRaw, toRaw } from 'vue'
 
-import config from '../config'
-
-const PINNED_AIMS_STORAGE_KEY = "pinnedAims-" + config.network // use different storage TBD: support network switching after page load
+function getPinnedAimsStorageKey() {
+  const w3c = useWeb3Connection()
+  return "pinnedAims-" + w3c.network.id
+}
 
 export function randomAimColor() {
   let r,g,b,l:number | undefined
@@ -276,7 +277,7 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     async loadPinned() {
-      const pinningsStr = window.localStorage.getItem(PINNED_AIMS_STORAGE_KEY)
+      const pinningsStr = window.localStorage.getItem(getPinnedAimsStorageKey())
       if(pinningsStr !== null && pinningsStr !== "") {
         const pinnings = pinningsStr.split(',')
         pinnings.forEach((addr: string) => {
@@ -692,7 +693,7 @@ export const useAimNetwork = defineStore('aim-network', {
     },
     togglePin(aim: Aim) {
       if(aim.address !== undefined) {
-        const pinningsStr = window.localStorage.getItem(PINNED_AIMS_STORAGE_KEY)
+        const pinningsStr = window.localStorage.getItem(getPinnedAimsStorageKey())
         if(pinningsStr !== null && pinningsStr !== "") {
           const pinnings = new Set(pinningsStr.split(','))
           if(aim.pinned) {
@@ -700,9 +701,9 @@ export const useAimNetwork = defineStore('aim-network', {
           } else {
             pinnings.add(aim.address) 
           }
-          window.localStorage.setItem(PINNED_AIMS_STORAGE_KEY, Array.from(pinnings).join(','))
+          window.localStorage.setItem(getPinnedAimsStorageKey(), Array.from(pinnings).join(','))
         } else if (!aim.pinned) {
-          window.localStorage.setItem(PINNED_AIMS_STORAGE_KEY, aim.address) 
+          window.localStorage.setItem(getPinnedAimsStorageKey(), aim.address) 
         }
         aim.pinned = !aim.pinned
       }

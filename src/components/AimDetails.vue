@@ -188,9 +188,8 @@ import Slider from './Slider.vue'
 import BackButton from './SideBar/BackButton.vue'
 import ShortAddress from './ShortAddress.vue'
 
-import config from '../config'
-
 import { humanizeAmount } from '../tools'
+import { useWeb3Connection } from "../stores/web3-connection"
 
 interface Trade {
   verb: string, 
@@ -217,6 +216,7 @@ export default defineComponent({
   },
   data() {
     const aimNetwork = useAimNetwork()
+    const w3c = useWeb3Connection()
     return { 
       aimPermissions: Aim.Permissions, 
       aimNetwork, 
@@ -240,7 +240,7 @@ export default defineComponent({
           color: "#56b", 
         }
       ],
-      nativeCurrency: config.networks[config.network].nativeCurrency, 
+      nativeCurrency: w3c.nativeCurrency.symbol, 
       justCopiedToClipboard: false,
     }
   }, 
