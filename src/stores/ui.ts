@@ -12,7 +12,7 @@ export class Hint {
   ) {}
 } 
 
-let closeTimeout: number | null = null 
+let closeTimeout: ReturnType<typeof setTimeout> | null = null 
 
 export const useUi = defineStore('ui', {
   state() {
@@ -44,7 +44,6 @@ export const useUi = defineStore('ui', {
         pos = vec2.clone(useMap().mouse.physical)
       }
       this.hint = new Hint(msg, pos, color)
-      console.log("AGAIN") 
       closeTimeout = setTimeout(() => {
         this.closeHint()
       }, duration)

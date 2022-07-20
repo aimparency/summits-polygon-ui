@@ -9,28 +9,40 @@
 
 <script lang="ts">
 import { defineComponent } from 'vue'
+import { useWeb3Connection } from '../stores/web3-connection'
 
 export default defineComponent({
   emits: ['update', 'drag-end'],
   props: {
-    address: String,
+    address: {
+      type: String,
+      required: true,
+    }
   },
   data() {
+    let w3c = useWeb3Connection()
     return {
       expanded: false,
-      justCopiedToClipboard: false
+      justCopiedToClipboard: false, 
+      myeself: w3c.address
     }
   },
   computed: {
     shortAddress() {
+      if(this.address == this.myeself) {
+        return 'myself'
+      }
       return this.address.substring(0, 6) + '...' + this.address.slice(-4)
     },
   },
-  mounted () {
-  },
+  watch: {
+    address() {
+      this.expanded = false
+      this.justCopiedToClipboard = false
+    },
+  }, 
   methods: {
     toggle() {
-      console.log("toggle") 
       if(this.expanded) {
         navigator.clipboard.writeText(this.address).then(() => {
           this.justCopiedToClipboard = true
@@ -50,7 +62,8 @@ export default defineComponent({
   cursor: pointer;
   white-space: nowrap;
   background-color: fade(@c1, 50%);
-  padding: 0.25rem; 
+  padding: 0.25rem;  
+  vertical-align: middle;
   border-radius: 0.3rem;
   user-select: none; 
 }

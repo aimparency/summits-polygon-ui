@@ -113,6 +113,11 @@ p {
   margin: 1rem; 
 }
 
+h3 {
+  margin: 1rem auto; 
+  padding-top: 2rem; 
+}
+
 .nowrap {
   white-space: nowrap; 
 }

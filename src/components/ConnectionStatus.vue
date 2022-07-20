@@ -2,7 +2,7 @@
   <div 
     @click="click"
     class="connection-status">
-    <h3>web3 connection</h3>
+    <h4>web3 connection</h4>
     <p v-if="web3Connection.network"> network: {{ web3Connection.network.name }} </p>
     <p v-else class="warning">no connection</p>
     <p v-if="web3Connection.address"> address: {{ address }} </p>

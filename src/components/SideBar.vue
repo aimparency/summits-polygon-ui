@@ -104,27 +104,29 @@ export default defineComponent({
     transform: translate(-100%, 0); 
     .toggle {
       box-shadow: 0 0 2rem black; 
-      left: 100%; 
+      left: calc(100% + 1rem); 
     }
   }
   .container {
     overflow-y: auto;
     overflow-y: overlay;
     height: 100%; 
+    text-align: center; 
   }
   .toggle {
-    left: calc(100% - @size);
+    top: 1rem; 
+    left: calc(100% - @size - 1rem);
     font-size: 1.8rem; 
     .clickable(); 
     background-color: @mid2; 
     border-bottom-right-radius: @secondaryradius; 
+    box-shadow: 0 0 2rem black; 
     width: @size; 
     height: @size; 
     line-height: @size; 
     font-weight: bold; 
     text-align: center; 
     position: absolute; 
-    top: 0; 
     transition: left 0.2s ease-out; 
   }
   transition: transform 0.2s ease-out;

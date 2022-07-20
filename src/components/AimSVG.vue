@@ -123,7 +123,6 @@ export default defineComponent({
       }
     }, 
     mouseUp() {
-      console.log("create flow") 
       if(this.map.connectFrom && this.map.connecting) {
         this.callCreateFlow(this.map.connectFrom, this.aim) 
       }

@@ -1,8 +1,14 @@
 <template>
   <div 
     class="flow-details"> 
-    <h2 class="sidebar-heading">flow details</h2>
+    <h3>flow details</h3>
     <!-- TBD details (cid) -->
+    <textarea
+      ref='explanation'
+      rows="9"
+      placeholder="flow explanation"
+      :value="flow.explanation"
+      @input="updateExplanation"></textarea>
     <div class='aims'>
       <div
         tabindex="0"
@@ -18,12 +24,6 @@
         {{ flow.into.title || "<unnamed>"}} 
       </div>
     </div>
-    <textarea
-      ref='explanation'
-      rows="9"
-      placeholder="flow explanation"
-      :value="flow.explanation"
-      @input="updateExplanation"></textarea>
     <Slider
       name='weight'
       left='0'

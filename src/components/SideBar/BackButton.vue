@@ -21,8 +21,8 @@ export default defineComponent({
   .button();
   margin:0; 
   padding: 0; 
-  left: 0.5rem;
-  top: 0.5rem; 
+  left: 1rem;
+  top: 1rem; 
   width: @size; 
   height: @size; 
   line-height: @size; 

@@ -14,7 +14,7 @@ import { markRaw, toRaw } from 'vue'
 
 function getPinnedAimsStorageKey() {
   const w3c = useWeb3Connection()
-  return "pinnedAims-" + w3c.network.id
+  return "pinnedAims-" + w3c.network!.chainId + "-" + w3c.address
 }
 
 export function randomAimColor() {
@@ -49,11 +49,36 @@ export class AimOrigin {
 }
 
 export class Member {
+
   constructor(
     public address: string,
     public permissions: number,
-    public changed = false
-  ){}
+    public permissionsOrigin?: number,
+  ) {}
+
+  updatePermissions(permissions: number) {
+    if(permissions === this.permissionsOrigin) {
+      this.permissionsOrigin = undefined
+    } else if(this.permissionsOrigin == undefined) {
+      this.permissionsOrigin = this.permissions
+    }
+    this.permissions = permissions
+  }
+
+  reset() {
+    if(this.permissionsOrigin) {
+      this.permissions = this.permissionsOrigin
+      this.permissionsOrigin = undefined
+    }
+  }
+
+  persist() {
+    this.permissionsOrigin = undefined
+  }
+
+  changed() {
+    return this.permissionsOrigin != undefined
+  }
 }
 
 export class Aim {
@@ -83,11 +108,14 @@ export class Aim {
   color = "000000"
 
   loadLevel = 0 // 0 means: don't load neighbors
+  sourroundingAims: string [] = []
   
   flowsFrom: { [aimId: string]: Flow } = {}
   flowsInto: { [aimId: string]: Flow } = {}
 
-  loopWeight = 0x8000; // half of uint16
+  loopWeight = 0x8000 // half of uint16
+  loopWeightOrigin = undefined as number | undefined
+  loopShare = 1
 
   origin = new AimOrigin()
 
@@ -101,7 +129,7 @@ export class Aim {
     transfer: 0x80, 
   } 
 
-  members?: Member[] 
+  members: Member[] = []
 
   permissions = 0
 
@@ -127,6 +155,7 @@ export class Aim {
     for(let key in flows) {
       flows[key].share = flows[key].weight / totalWeight
     }
+    this.loopShare = this.loopWeight / totalWeight
   }
 
   setTokens(v: bigint) {
@@ -141,6 +170,16 @@ export class Aim {
 
   updateTokens(v: bigint) {
     this.setTokens(v) 
+  }
+
+  updateLoopWeight(v: number) {
+    v = clampFlowWeight(Math.round(v)) 
+    if(v === this.loopWeightOrigin) {
+      this.loopWeightOrigin = undefined
+    } else if(this.loopWeightOrigin === undefined) {
+      this.loopWeightOrigin = this.loopWeight
+    }
+    this.setLoopWeight(v)
   }
 
   updateState(v: string) {
@@ -284,7 +323,7 @@ export const useAimNetwork = defineStore('aim-network', {
           this.loadAim(addr).then(aim => {
             aim.pinned = true
           }).catch(() => {
-            console.log("could not load pinned aim") 
+            console.warn("Could not load pinned aim") 
           })
         })
       }
@@ -323,6 +362,7 @@ export const useAimNetwork = defineStore('aim-network', {
               effort: Math.trunc(aim.effort), 
               color: toRaw(aim.rgb), 
             },
+            aim.loopWeight, 
             aim.tokenName,
             aim.tokenSymbol, 
             aim.tokens, 
@@ -339,6 +379,7 @@ export const useAimNetwork = defineStore('aim-network', {
             aim.tokenSupply = aim.tokens
             aim.tokensOnChain = aim.tokens
             aim.clearOrigin()
+            aim.loopWeightOrigin = undefined
             this.togglePin(aim)
           }
         } catch {
@@ -379,7 +420,7 @@ export const useAimNetwork = defineStore('aim-network', {
         let permissions: number[] = []
         let includedMembers: Member[] = []
         aim.members.forEach((member: Member) => {
-          if(member.changed) {
+          if(member.changed()) {
             addresses.push(member.address)
             permissions.push(member.permissions)
             includedMembers.push(member)
@@ -399,7 +440,7 @@ export const useAimNetwork = defineStore('aim-network', {
             }
             aim.pendingTransactions -= 1
             includedMembers.forEach((member: Member) => {
-              member.changed = false
+              member.persist()
             })
           } catch(err) {
             console.error("Failed to commit aim member changes", err)
@@ -407,6 +448,15 @@ export const useAimNetwork = defineStore('aim-network', {
           }
           // set members changed to false for include members
         }
+      }
+    }, 
+    async commitLoopWeight(aim: Aim) {
+      if(aim.loopWeightOrigin && aim.loopWeightOrigin !== aim.loopWeight) {
+        const w3 = useWeb3Connection()
+        const aimContract = w3.getAimContract(aim.address!) 
+        let tx = await aimContract.setLoopWeight(aim.loopWeight)
+        await tx.wait()
+        aim.loopWeightOrigin = undefined
       }
     }, 
     async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
@@ -447,20 +497,25 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.pendingTransactions -= 1
       }
     }, 
-    async loadAim(aimAddr: string) {
-      const w3 = useWeb3Connection()
+    async loadAim(aimAddr: string) { const w3 = useWeb3Connection()
+      if(this.aimAddressToId[aimAddr] !== undefined) {
+        console.warn("Skipping already loaded aim", aimAddr)
+        return this.aims[this.aimAddressToId[aimAddr]]
+      }
       let aimContract = w3.getAimContract(aimAddr) 
       let dataPromises = []
       dataPromises.push(aimContract.data())
-      dataPromises.push(aimContract.symbol()) // candidate for lazy load
-      dataPromises.push(aimContract.name()) // candidate for lazyLoadAimDetails
+      dataPromises.push(aimContract.symbol()) 
+      dataPromises.push(aimContract.name()) 
       dataPromises.push(aimContract.totalSupply())
       dataPromises.push(aimContract.getPermissions())
       dataPromises.push(aimContract.owner())
-      dataPromises.push(aimContract.getInvestment()) // candidate for lazy load
+      dataPromises.push(aimContract.loopWeight()) 
+      dataPromises.push(aimContract.getInvestment()) 
       dataPromises.push(aimContract.getContributors()) 
+      dataPromises.push(aimContract.getConfirmedReceivers()) 
       return await Promise.all(dataPromises).then(([
-        data, symbol, name, supply, permissions, owner, tokens, contributors, members
+        data, symbol, name, supply, permissions, owner, loopWeight, tokens, contributors, receivers 
       ]) => {
         const setValues = (aim: Aim) => {
           aim.address = aimAddr
@@ -474,19 +529,17 @@ export const useAimNetwork = defineStore('aim-network', {
           const t = BigNumber.from(tokens).toBigInt()
           aim.tokenSupply = BigNumber.from(supply).toBigInt()
           aim.tokensOnChain = t
-          aim.members = members
+          aim.setLoopWeight(loopWeight) 
           aim.setTokens(t) 
           for(let fromAddr of contributors) {
             if(this.aimAddressToId[fromAddr] !== undefined) {
               this.loadFlow(fromAddr, aimAddr) 
             } else {
-              // put into list
               if(this.flowWaitList[fromAddr]) {
                 this.flowWaitList[fromAddr].add(aimAddr) 
               } else {
                 this.flowWaitList[fromAddr] = new Set<string>([aimAddr])
               }
-              this.loadAim(fromAddr) 
             }
           }
           if(this.flowWaitList[aimAddr]) {
@@ -494,16 +547,36 @@ export const useAimNetwork = defineStore('aim-network', {
               this.loadFlow(aimAddr, intoAddr) 
             })
           }
+
+          for(let intoAddr of receivers) {
+            if(this.aimAddressToId[intoAddr] !== undefined) {
+              this.loadFlow(aimAddr, intoAddr) 
+            } 
+          }
+          aim.sourroundingAims = receivers.concat(contributors)
         }
-        if(this.aimAddressToId[aimAddr] !== undefined) {
-          let aim = this.aims[this.aimAddressToId[aimAddr]]
-          setValues(aim) 
-          return aim
-        } else { 
-          return this.createAim(setValues)
-        }
+        return this.createAim(setValues)
       })
     }, 
+    async raiseLoadLevel(aim: Aim, level: number) {
+      if(level > 0 && level > aim.loadLevel) {
+        aim.loadLevel = level
+        for(let addr of aim.sourroundingAims) {
+          let aimId = this.aimAddressToId[addr] 
+          let sourroundingAim = undefined
+          if(aimId) {
+            sourroundingAim = this.aims[aimId]
+          }
+          if(sourroundingAim) {
+            this.raiseLoadLevel(sourroundingAim, level - 1)
+          } else {
+            this.loadAim(addr).then((newAim: Aim) => {
+              this.raiseLoadLevel(newAim, level - 1)
+            })
+          }
+        }
+      }
+    },
     lazyLoadAim(aim: Aim) {
       if(aim.address) {
         const w3 = useWeb3Connection()
@@ -513,7 +586,6 @@ export const useAimNetwork = defineStore('aim-network', {
         Promise.all(dataPromises).then(([
           memberAddrs
         ]) => {
-          console.log(memberAddrs) 
           let permissionPromises = []
           for(let memberAddr of memberAddrs) {
             permissionPromises.push(aimContract.permissions(memberAddr))
@@ -521,10 +593,12 @@ export const useAimNetwork = defineStore('aim-network', {
           Promise.all(permissionPromises).then(permissions => {
             let members = []
             for(let i = 0; i < memberAddrs.length; i++) {
-              members.push(new Member(
-                memberAddrs[i], 
-                permissions[i]
-              ))
+              if(permissions[i] > 0) {
+                members.push(new Member(
+                  memberAddrs[i], 
+                  permissions[i]
+                ))
+              }
             }
             aim.members = members
           })
@@ -534,7 +608,7 @@ export const useAimNetwork = defineStore('aim-network', {
     async loadFlow(fromAddr: string, intoAddr: string) {
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(intoAddr) 
-      let flowFromChain = await aimContract.inflows(fromAddr) 
+      let flowFromChain = await aimContract.contributions(fromAddr) 
 
       let fromAim = this.aims[this.aimAddressToId[fromAddr]]
       let intoAim = this.aims[this.aimAddressToId[intoAddr]]
@@ -626,7 +700,7 @@ export const useAimNetwork = defineStore('aim-network', {
             flow.clearOrigin()
           }
         } catch(error: any) {
-          console.error(error) 
+          console.error(`Failed to create flow: ${error}`) 
           flow.pendingTransactions -= 1
         }
       }

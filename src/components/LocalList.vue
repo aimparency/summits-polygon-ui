@@ -1,6 +1,6 @@
 <template>
   <div class="local-list"> 
-    <h2 class="sidebar-heading">find aims</h2>
+    <h3>find aims</h3>
     <input type="text" placeholder="search" :value="search" @input="updateSearch"/>
     <div v-if="searchResults.length > 0" class="results">
       <AimLi tabindex="0"
@@ -106,6 +106,7 @@ export default defineComponent({
     margin: 0.5rem; 
   }
   .results {
+    text-align: left; 
     background-color: #0008; 
     box-shadow: 0 0 1rem #0008; 
     margin: 1rem; 

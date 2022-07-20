@@ -41,7 +41,6 @@ export default defineComponent({
           corner += "left"
         }
         corner += "-radius"
-        console.log(corner) 
         style[corner] = "0"
         style['background-color'] = hint.color
         return style

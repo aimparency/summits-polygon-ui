@@ -1,7 +1,7 @@
 <template>
   <div 
     class="aim-details"> 
-    <h2 class="sidebar-heading">aim details</h2>
+    <h3>aim details</h3>
     
     <textarea
       ref='title'
@@ -30,16 +30,6 @@
       @change='updateState'
       />
 
-    <p>
-      permissions: 
-      <span class="permission-indicator" 
-        v-for="permission, key in permissions" 
-        :key="key">{{ permission }}</span>
-      <span class="permission-indicator" v-if="permissions.length == 0">
-        none
-      </span>
-    </p>
-
         
     <div class="fieldButtons">
       <div
@@ -66,6 +56,7 @@
     </div>
 
     <div >
+      <h3> initial investment </h3>
       <template v-if="aim.address == undefined">
         <input class="tokenInfo" size="13" placeholder="token name" 
           :value="aim.tokenName"
@@ -74,8 +65,6 @@
           :value="aim.tokenSymbol"
           @input="changeTokenSymbol"/>
         <br/>
-        <span> (cannot be changed later) </span>
-        <h3> initial investment </h3>
       </template>
       <div v-else>
         <h3> investment </h3>
@@ -103,7 +92,7 @@
         @click="createAimOnChain">create aim on chain for {{ createPrice }}{{nativeCurrency.symbol}} </div>
       <p v-else> 
         <span class="error">
-          title and token name and symbol are required for creating an aim on chain.
+          Title and token name and symbol are required for creating an aim on chain.
         </span>
       </p>
     </div>
@@ -116,35 +105,71 @@
         {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }}{{ nativeCurrency.symbol }}
       </div>
     </div>
-    <h3> members </h3>
-    <div class="member"> 
-      <ShortAddress v-if="aim.owner !== undefined" :address="aim.owner"/>
-      <span v-else>myself</span>: <span class="permission-indicator owner">owner</span></div>
-    <div v-if="aim.members !== undefined">
+    <h3> permissions </h3>
+    <p>
+      my permissions: 
+      <span class="permission-indicator" 
+        v-for="permission, key in permissions" 
+        :key="key">{{ permission }}</span>
+      <span class="permission-indicator" v-if="permissions.length == 0">
+        none
+      </span>
+    </p>
+
+    <div v-if="aim.address == undefined">
+      <p> Aim has to be saved on chain before managing members. </p>
+    </div>
+    <div class="memberSection" v-else >
+      <div> 
+        <span>owner</span>: 
+        <ShortAddress :address="aim.owner ?? myself"/>
+      </div>
+      <h4 v-if="aim.members.length > 0" class="member"> 
+        members
+      </h4>
       <div v-for="member in aim.members" :key="member.address" class="member">
+        <div class="editButton" tabindex="0" @click="editMember(member)"></div>
         <ShortAddress :address="member.address" />:
         <span v-for="v, key in aimPermissions"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
       </div>
-      <p v-if="aim.members.length == 0"> there are no members yet, add one if you want:</p>
-    </div>
-    <div class="button saveMembers" v-if="membersChanged && public" @click="commitMembers">
-      commit member changes on chain
-    </div>
-    <div v-if="mayManage">
-      <input 
-        ref="newMemberAddr"
-        class="newMemberAddr"
-        placeholder="member address"
-        >
-      <div class="permission"
-        v-for="permission in grantablePermissions">
-        {{permission}}<br/><input ref="newMemberPermission" type='checkbox'/>
+      <p v-if="aim.members.length == 0">there are no members</p>
+      <div v-if="membersChanged && public" class="memberChangesActions"> 
+        <div class="button" @click="resetMembers">
+          discard 
+        </div>
+        <div class="button" @click="commitMembers">
+          commit 
+        </div> 
       </div>
-      <br/>
-      <div class="button" @click="addMember">add member</div>
+      <div v-if="mayManage" class="memberEditor">
+        <div> add or edit member: 
+        <input 
+          ref="newMemberAddr"
+          class="newMemberAddr"
+          placeholder="member address"
+          :value="memberAddr"
+          @input="inputMemberAddress"
+          >
+        </div>
+        <p class="permissionToggles"> permissions: 
+          <span 
+            v-for="selected, permission in permissionGranting"
+            class="permission-indicator toggleable" :class="{selected}"
+            @click="permissionGranting[permission] = !permissionGranting[permission]">
+            {{permission}}
+          </span>
+          <span
+            class="permission-indicator toggleable"
+            @click="resetPermissionGranting"
+            >x</span>
+        </p>
+        <p class="memberAddrError" v-if="memberAddrError">{{memberAddrError}}</p>
+        <div class="button" @click="addMember">{{memberEditing ? "change permissions" : "add member"}}</div>
+      </div>
     </div>
     <h3> incoming flows </h3>
     <Slider
+      v-if='mayNetwork'
       name='loop weight'
       left='0'
       right='100'
@@ -154,6 +179,15 @@
       :to='0xffff'
       :value='aim.loopWeight'
       @update='updateLoopWeight'/>
+    <p v-else> loop weight: {{ Math.floor(100 * aim.loopWeight / 0xffff) }}% </p>
+    <div 
+      v-if='aim.address && aim.loopWeightOrigin'
+      class='button' 
+      tabindex="0" 
+      @click="commitLoopWeight">
+        update loop weight on chain 
+    </div>
+    <p> loop share: {{ Math.floor(100 * aim.loopShare) }}% </p>
     <div 
       class="flow button" 
       v-for="(flow, aimId) in aim.flowsFrom" 
@@ -185,11 +219,12 @@ import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
 import BigIntSlider from './BigIntSlider.vue'
 import Slider from './Slider.vue'
-import BackButton from './SideBar/BackButton.vue'
 import ShortAddress from './ShortAddress.vue'
+import BackButton from './SideBar/BackButton.vue'
 
 import { humanizeAmount } from '../tools'
 import { useWeb3Connection } from "../stores/web3-connection"
+import { ethers } from "ethers"
 
 interface Trade {
   verb: string, 
@@ -205,8 +240,8 @@ export default defineComponent({
     MultiSwitch,
     BigIntSlider, 
     Slider, 
-    BackButton,
-    ShortAddress
+    ShortAddress, 
+    BackButton, 
   },
   props: {
     aim: {
@@ -240,38 +275,50 @@ export default defineComponent({
           color: "#56b", 
         }
       ],
-      nativeCurrency: w3c.nativeCurrency.symbol, 
+      nativeCurrency: w3c.nativeCurrency!.symbol, 
+      myself: w3c.address,
       justCopiedToClipboard: false,
+      permissionGranting: {} as {[key: string]: boolean},
+      memberAddr: "", 
     }
   }, 
   mounted() {
-    this.updateTokensSliderOrigin()
+    this.init()
   },
   watch: {
     aim: {
       handler(_new, _old) {
-        this.updateTokensSliderOrigin()
+        this.init()
       },
       deep: false
     }
   },
   computed: {
+    memberAddrError() {
+      if(this.memberAddr != "" && !(ethers.utils.isAddress(this.memberAddr))) {
+        return "member address is not valid" 
+      }     
+    }, 
+    memberEditing() {
+      for(let member of this.aim.members) {
+        if(member.address == this.memberAddr) {
+          return true
+        }
+      }
+      return false
+    }, 
     createPrice() {
       return humanizeAmount(this.aim.tokens ** 2n)
     }, 
-    grantablePermissions() {
-      let list = ['edit', 'network']
-      if ((this.aim.permissions & Aim.Permissions.transfer) > 0) {
-        list.push('manage') 
-      }
-      return list
-    }, 
     membersChanged() {
-      return this.aim.members && this.aim.members.some(member => member.changed)
+      return this.aim.members && this.aim.members.some(member => member.changed())
     },
     mayManage() {
       return (this.aim.permissions & Aim.Permissions.manage) > 0
     },
+    mayNetwork() {
+      return (this.aim.permissions & Aim.Permissions.network) > 0
+    }, 
     public() {
       return this.aim.address !== undefined
     },
@@ -328,6 +375,29 @@ export default defineComponent({
     }, 
   }, 
   methods: {
+    init() {
+      this.resetPermissionGranting()
+      this.updateTokensSliderOrigin()
+      this.memberAddr = ""
+      {
+        (this.$refs.title as HTMLInputElement).focus();
+      }
+    }, 
+    resetPermissionGranting() {
+      let list = []
+      for(let permission of ['edit', 'network']) {
+        if((this.aim.permissions & Aim.Permissions[permission]) > 0) {
+          list.push(permission)
+        }
+      }
+      if ((this.aim.permissions & Aim.Permissions.transfer) > 0) { // owner can appoint managers
+        list.push('manage') 
+      }
+      this.permissionGranting = {}
+      for(let permission of list) {
+        this.permissionGranting[permission] = false
+      }
+    },
     share() {
       let url = `${window.location.origin}/?loadAim=${this.aim.address}`
       navigator.clipboard.writeText(url).then(() => {
@@ -352,8 +422,15 @@ export default defineComponent({
       if(v && this.aim.suggestTokenNameAndSymbol) {
         let firstWord = this.aim.title.split(/(\s+)/)[0]
         this.aim.tokenName = firstWord[0].toUpperCase() + firstWord.slice(1) + "Token"
-        let konsonants = firstWord.replace(/[aeiou]|[^a-z]/gi, '')
-        this.aim.tokenSymbol = konsonants.toUpperCase().slice(0, 6) 
+        let konsonants = v.replace(/[aejiouy]|[^a-z]/gi, '').toUpperCase()
+        if(konsonants.length > 5) {
+          this.aim.tokenSymbol = konsonants.slice(0, 3) + konsonants.slice(-2)
+        } else {
+          this.aim.tokenSymbol = konsonants
+        }
+        if(this.aim.tokenSymbol == "") {
+          this.aim.tokenSymbol = firstWord.slice(0, 3).toUpperCase()
+        }
       }
     }, 
     updateDescription(e: Event) {
@@ -388,6 +465,20 @@ export default defineComponent({
     commitMembers() {
       this.aimNetwork.commitAimMemberChanges(this.aim) 
     },
+    editMember(member: Member) {
+      this.memberAddr = member.address
+      this.resetPermissionGranting()
+      for(let permission in this.permissionGranting) {
+        if(member.permissions & Aim.Permissions[permission]) {
+          this.permissionGranting[permission] = true
+        }
+      }
+    },
+    resetMembers() {
+      for(let member of this.aim.members) {
+        member.reset()
+      }
+    }, 
     doTrade() {
       // allow price slip
       if(this.trade !== undefined) {
@@ -409,7 +500,10 @@ export default defineComponent({
       }
     },
     updateLoopWeight(v: number) {
-      this.aim.setLoopWeight(v)
+      this.aim.updateLoopWeight(v)
+    }, 
+    commitLoopWeight(v: number) {
+      this.aimNetwork.commitLoopWeight(this.aim)
     }, 
     changeTokenName(e: Event) {
       const v = (<HTMLInputElement>e.target).value
@@ -421,28 +515,27 @@ export default defineComponent({
       this.aim.tokenSymbol = v
       this.aim.suggestTokenNameAndSymbol = false
     },
+    inputMemberAddress(e: Event) {
+      const v = (<HTMLInputElement>e.target).value
+      this.memberAddr = v
+    },
     addMember() {
-      let addr = (this.$refs.newMemberAddr as HTMLInputElement).value.trim()
-
-      if(addr.length == 40) {
-        addr += "0x"
-      } else if(addr.length != 42) {
+      if(!ethers.utils.isAddress(this.memberAddr)) {
         return
       }
 
       let permissions = 0
-      let els = this.$refs['newMemberPermission'] as HTMLInputElement[]
-      for(let i = 0; i < this.grantablePermissions.length; i++) {
-        let name = this.grantablePermissions[i]
-        if(els[i].checked) {
-          permissions |= Aim.Permissions[name]
+      Object.keys(this.permissionGranting).forEach(permission => {
+        if(this.permissionGranting[permission]) {
+          permissions |= Aim.Permissions[permission]
         }
-      }
+      })
 
-      let newMember = new Member(addr, permissions, true) 
-      if(this.aim.members == undefined){
-        this.aim.members = [newMember]
+      let member = this.aim.members.find(m => m.address == this.memberAddr)
+      if(member !== undefined) {
+        member.updatePermissions(permissions)
       } else {
+        let newMember = new Member(this.memberAddr, permissions, 0x0000)
         this.aim.members.push(newMember)
       }
     }
@@ -499,15 +592,26 @@ export default defineComponent({
   textarea {
     resize: vertical; 
   }
-  h3 {
-    margin: 1rem auto; 
-    padding-top: 2rem; 
-  }
   .permission-indicator {
+    cursor: default; 
+    &.toggleable{
+      padding: 0.3rem;
+      cursor: pointer;
+      user-select: none; 
+      background-color: #fff0; 
+      border: 0.2rem solid #fff4;
+      box-sizing: border-box;
+    }
+    &.selected {
+      padding: 0.5rem;
+      background-color: #fff4; 
+      border: none; 
+    }
     padding: 0.25rem;
     margin: 0.25rem; 
     border-radius: 0.3rem; 
     background-color: #fff4; 
+    vertical-align: middle;
     &.owner {
       background-color: fade(@c2, 50%);
     }
@@ -517,11 +621,32 @@ export default defineComponent({
     text-align: left;
     line-height: 2rem;
   }
-  .newMemberAddr {
-    margin: 1rem 1rem 0rem 1rem; 
+  .addMemberError {
+    color: @error; 
   }
-  .saveMembers {
+  .newMemberAddr {
+    margin: 0.5rem;
+  }
+  .permissionToggles {
+    margin-bottom: 1.5rem;
+  }
+  .memberEditor {
+    background-color: #0004; 
+    padding: 1rem 0rem; 
     margin:1rem; 
+  }
+  .editButton {
+    display: inline-block;
+    width: 2.5rem; 
+    height: 2.5rem; 
+    vertical-align: bottom;
+    background-image: url(/edit.svg);
+    background-size: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+  .memberChangesActions {
+    margin: 1rem; 
   }
 }
 

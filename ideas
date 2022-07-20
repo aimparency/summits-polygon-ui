@@ -29,10 +29,22 @@ The order is reversed chronological. Newer ideas on top:
           - git als decentral storage so to say
     - possibilities are huge. There is enough space for all of us. 
 
+#2022-07-19
+- edit member button
+  => loads addr and checkings into the form
+  => button reads "change member"
+- button for changing loop weight
+  - extra smart contract function for it 
+- raiseLevel etc. 
+- confirmAims
+  - combine addresses from local knowledge and lazy load indexer info
+
+#2022-07-12
 - check network, lookup contract id. 
   - If no contract id is present
     - Confront user, suggest networks that work 
       - Switch to it
+- If no network info - hint user to change the network
 
 #2022-07-11
 - D: Feedback von David
