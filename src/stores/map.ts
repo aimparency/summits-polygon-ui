@@ -26,6 +26,11 @@ export const useMap = defineStore('map', {
       clientOffset: vec2.create(),
       connectFrom: undefined as maybeAim,
       dragCandidate: undefined as maybeAim, 
+      anim: {
+        duration: 0.5, 
+        t0: 0, 
+        update: undefined as undefined | (() => void),
+      }
     }
   }, 
   actions: {
@@ -54,6 +59,25 @@ export const useMap = defineStore('map', {
     }, 
     startDragging(aim: Aim) {
       this.dragCandidate = aim
+    }, 
+    centerOnAim(aim: Aim) {
+      // Gleichung: 
+      // 100 = scale * home.r
+      // scale = 100 / home.r
+      const offset0 = vec2.clone(this.offset) 
+      const scale0 = this.scale
+      this.anim.t0 = Date.now()
+      this.anim.update = () => {
+        let progress = (Date.now() - this.anim.t0) / 1000 / this.anim.duration 
+        if(progress >= 1) {
+          progress = 1
+          this.anim.update = undefined
+        } else {
+          progress = (1 - Math.cos(progress * Math.PI)) / 2
+        }
+        vec2.add(this.offset, vec2.crScale(offset0, 1 - progress), vec2.crScale(aim.pos, -progress))
+        this.scale = scale0 * (1 - progress) + 200 / aim.r * progress 
+      }
     }
   }
 })

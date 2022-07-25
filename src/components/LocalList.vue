@@ -53,7 +53,8 @@ export default defineComponent({
   setup() {
     return { 
       aimNetwork: useAimNetwork(),
-      ui: useUi()
+      ui: useUi(), 
+      map: useMap(),
     }
   }, 
   data() {
@@ -63,12 +64,18 @@ export default defineComponent({
   }, 
   computed: {
     searchResults() {
-      return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
-        key: "title",
-        limit: 100, 
-        threshold: -10000,
-        all: true
-      })
+      //console.log('searching for', this.search)
+      //if(this.search == '') {
+      //  return Object.values(this.aimNetwork.aims)
+      //} else {
+      console.log(Object.values(this.aimNetwork.aims).length) 
+        return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
+          key: "title",
+          limit: 100, 
+          threshold: -10000,
+          all: true
+        })
+      //}
     }
   }, 
   methods: {
@@ -87,6 +94,7 @@ export default defineComponent({
     }, 
     selectAim(aim: Aim) {
       this.aimNetwork.selectAim(aim)
+      this.map.centerOnAim(aim) 
     },
     updateSearch(event: any) {
       this.search = event.target.value

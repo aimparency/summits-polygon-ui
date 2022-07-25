@@ -1,6 +1,6 @@
 <template>
-  <div class="aim-li"> 
-    {{ aim.title || '<unnamed>' }}
+  <div class="aim-li" :class="{faded: aim.title == ''}"> 
+    {{ aim.title ?? '<unnamed>' }}
   </div>
 </template>
 
@@ -30,5 +30,8 @@ export default defineComponent({
   display: block; 
   margin: 0; 
   border-bottom: 0.2rem solid shade(@c1, 70%) ;
+  &.faded {
+    color: #aaa;
+  }
 }
 </style>

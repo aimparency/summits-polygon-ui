@@ -303,11 +303,8 @@ export const useAimNetwork = defineStore('aim-network', {
         home.pinned = true
 
         const map = useMap()
+        map.centerOnAim(home) 
 
-        // Gleichung: 
-        // 100 = scale * home.r
-        // scale = 100 / home.r
-        map.scale = 200 / home.r
 
         this.selectAim(home)
 

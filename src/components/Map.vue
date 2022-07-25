@@ -342,6 +342,8 @@ export default defineComponent({
       }
     });
   
+    this.transformAnim() 
+
     this.layout()
 
     // DEBUG
@@ -392,6 +394,14 @@ export default defineComponent({
     }, 
   },
   methods: {
+    transformAnim() {
+      if(this.map.anim.update !== undefined) {
+        this.map.anim.update()
+      }
+      requestAnimationFrame(() => {
+        this.transformAnim()
+      })
+    },
     layout() {
       let aims = toRaw(this.aimNetwork.aims) // expecting slight performance boost from toRaw
       let map = this.map
