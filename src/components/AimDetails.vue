@@ -8,6 +8,7 @@
       rows="4"
       class='title' 
       placeholder="aim title"
+      :disabled="!mayEdit"
       :value="aim.title"
       @input="updateTitle"></textarea>
     <textarea
@@ -15,61 +16,65 @@
       rows="9"
       class='description' 
       placeholder="aim description"
+      :disabled="!mayEdit"
       :value="aim.description"
       @input="updateDescription"></textarea>
     <input 
       class='effort' 
       :value='aim.effort == 0 ? "" : aim.effort'
       placeholder="effort"
+      :disabled="!mayEdit"
       @input="updateEffort"/>
     <MultiSwitch
       class='status'
       label="status"
+      :disabled="!mayEdit"
       :value="aim.status"
       :options="statusOptions" 
       @change='updateState'
       />
 
         
-    <div class="fieldButtons">
+    <div class="fieldButtons" v-if="mayEdit">
       <div
         v-if="dirty" 
         class='button' tabindex="0"  
-        @click="reset">reset</div>
+        @click="reset">Reset</div>
       <div 
         v-if="dirty && public"
         class='button'
         tabindex="0"
-        @click="commitChanges">commit changes</div>
+        @click="commitChanges">Commit</div>
+    </div>
+    <div class="fieldButtons">
       <div
         tabindex="0"  
         class='button' 
         :class='{confirm: confirmRemove}'
         @blur='confirmRemove = false'
-        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+        @click="remove">{{ confirmRemove ? "Confirm removal" : "Remove aim" }}</div>
       <div
         v-if="public"
         tabindex="0"
         class='button'
         :class="{share: !justCopiedToClipboard, copied: justCopiedToClipboard}"
-        @click="share">{{justCopiedToClipboard ? "copied to clipboard!" : ""}}</div>
+        @click="share">{{justCopiedToClipboard ? "Copied to clipboard!" : ""}}</div>
     </div>
 
-    <div >
-      <h3> initial investment </h3>
-      <template v-if="aim.address == undefined">
-        <input class="tokenInfo" size="13" placeholder="token name" 
-          :value="aim.tokenName"
-          @input="changeTokenName"/>
-        <input class="tokenInfo" size="5" placeholder="symbol" 
-          :value="aim.tokenSymbol"
-          @input="changeTokenSymbol"/>
-        <br/>
-      </template>
-      <div v-else>
-        <h3> investment </h3>
-        <p v-if="aim.address" class="supply">current supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
-      </div>
+    <div v-if="aim.address == undefined">
+      <h3> Initial investment </h3>
+      <input class="tokenInfo" size="13" placeholder="token name" 
+        :value="aim.tokenName"
+        @input="changeTokenName"/>
+      <input class="tokenInfo" size="5" placeholder="symbol" 
+        :value="aim.tokenSymbol"
+        @input="changeTokenSymbol"/>
+    </div>
+    <div v-else>
+      <h3> investment </h3>
+    </div>
+    <div>
+      <p v-if="aim.address" class="supply">total supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
     </div>
     <BigIntSlider 
       name='balance'
@@ -89,7 +94,7 @@
         v-if='aim.title != "" && aim.tokenName != "" && aim.tokenSymbol != ""'
         class='button' 
         tabindex="0" 
-        @click="createAimOnChain">create aim on chain for {{ createPrice }}{{nativeCurrency.symbol}} </div>
+        @click="createAimOnChain">Create aim on chain for {{ createPrice }} {{nativeCurrency.symbol}} </div>
       <p v-else> 
         <span class="error">
           Title and token name and symbol are required for creating an aim on chain.
@@ -98,11 +103,11 @@
     </div>
     <div v-else-if='trade !== undefined'>
       <div class='button' tabindex="0" @click="resetTokens"> 
-        reset
+        Reset 
       </div>
       <div
         class='button' tabindex="0" @click="doTrade"> 
-        {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }}{{ nativeCurrency.symbol }}
+        {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }} {{ nativeCurrency.symbol }}
       </div>
     </div>
     <h3> permissions </h3>
@@ -135,18 +140,18 @@
       <p v-if="aim.members.length == 0">there are no members</p>
       <div v-if="membersChanged && public" class="memberChangesActions"> 
         <div class="button" @click="resetMembers">
-          discard 
+          Reset 
         </div>
         <div class="button" @click="commitMembers">
-          commit 
+          Commit 
         </div> 
       </div>
-      <div v-if="mayManage" class="memberEditor">
+      <div v-if="mayManage" class="editSection">
         <div> add or edit member: 
         <input 
           ref="newMemberAddr"
           class="newMemberAddr"
-          placeholder="member address"
+          placeholder="account address"
           :value="memberAddr"
           @input="inputMemberAddress"
           >
@@ -163,8 +168,19 @@
             @click="resetPermissionGranting"
             >x</span>
         </p>
-        <p class="memberAddrError" v-if="memberAddrError">{{memberAddrError}}</p>
-        <div class="button" @click="addMember">{{memberEditing ? "change permissions" : "add member"}}</div>
+        <p class="error" v-if="memberAddrError">{{memberAddrError}}</p>
+        <div v-else-if="memberAddr !== ''">
+          <div class="button" tabindex=0 @click="addMember">{{memberEditing ? "Change permissions" : "Add member"}}</div>
+          <div 
+            class=button
+            tabindex=0
+            :class="{confirm: confirmTransfer}"
+            v-if="mayTransfer" 
+            @blur='confirmTransfer = false'
+            @click="transferOwnership">
+            {{ confirmTransfer ? "Confirm transfer" : "Transfer ownership" }}
+          </div>
+        </div>
       </div>
     </div>
     <h3> incoming flows </h3>
@@ -185,9 +201,9 @@
       class='button' 
       tabindex="0" 
       @click="commitLoopWeight">
-        update loop weight on chain 
+        Commit 
     </div>
-    <p> loop share: {{ Math.floor(100 * aim.loopShare) }}% </p>
+    <p> Loop share: {{ Math.floor(100 * aim.loopShare) }}% </p>
     <div 
       class="flow button" 
       v-for="(flow, aimId) in aim.flowsFrom" 
@@ -215,7 +231,6 @@ import { defineComponent, PropType } from "vue"
 
 import { Aim, Member, Flow, useAimNetwork } from "../stores/aim-network"
 
-import AimLi from "./AimLi.vue"
 import MultiSwitch from './MultiSwitch.vue'
 import BigIntSlider from './BigIntSlider.vue'
 import Slider from './Slider.vue'
@@ -236,7 +251,6 @@ interface Trade {
 export default defineComponent({
   name: "AimDetails",
   components: {
-    AimLi,
     MultiSwitch,
     BigIntSlider, 
     Slider, 
@@ -256,6 +270,7 @@ export default defineComponent({
       aimPermissions: Aim.Permissions, 
       aimNetwork, 
       confirmRemove: false, 
+      confirmTransfer: false, 
       tokenSliderOrigin: 0n,
       statusOptions: [
         {
@@ -275,7 +290,7 @@ export default defineComponent({
           color: "#56b", 
         }
       ],
-      nativeCurrency: w3c.nativeCurrency!.symbol, 
+      nativeCurrency: w3c.nativeCurrency!, 
       myself: w3c.address,
       justCopiedToClipboard: false,
       permissionGranting: {} as {[key: string]: boolean},
@@ -296,7 +311,7 @@ export default defineComponent({
   computed: {
     memberAddrError() {
       if(this.memberAddr != "" && !(ethers.utils.isAddress(this.memberAddr))) {
-        return "member address is not valid" 
+        return "enter a valid account address"
       }     
     }, 
     memberEditing() {
@@ -316,9 +331,15 @@ export default defineComponent({
     mayManage() {
       return (this.aim.permissions & Aim.Permissions.manage) > 0
     },
+    mayTransfer() {
+      return (this.aim.permissions & Aim.Permissions.transfer) > 0
+    }, 
     mayNetwork() {
       return (this.aim.permissions & Aim.Permissions.network) > 0
     }, 
+    mayEdit() {
+      return (this.aim.permissions & Aim.Permissions.edit) > 0
+    },
     public() {
       return this.aim.address !== undefined
     },
@@ -333,14 +354,14 @@ export default defineComponent({
         let humanPrice = humanizeAmount(price)
         if( amount > 0n ) {
           return {
-            verb: 'buy', 
+            verb: 'Buy', 
             amount,
             price, 
             humanPrice
           }
         } else {
           return {
-            verb: 'sell', 
+            verb: 'Sell', 
             amount: -amount, 
             price: -price, 
             humanPrice
@@ -482,7 +503,7 @@ export default defineComponent({
     doTrade() {
       // allow price slip
       if(this.trade !== undefined) {
-        if(this.trade.verb == "buy") {
+        if(this.trade.verb == "Buy") {
           this.aimNetwork.buyTokens(this.aim, this.trade.amount, this.trade.price) 
         } else {
           this.aimNetwork.sellTokens(this.aim, this.trade.amount, this.trade.price) 
@@ -502,7 +523,7 @@ export default defineComponent({
     updateLoopWeight(v: number) {
       this.aim.updateLoopWeight(v)
     }, 
-    commitLoopWeight(v: number) {
+    commitLoopWeight() {
       this.aimNetwork.commitLoopWeight(this.aim)
     }, 
     changeTokenName(e: Event) {
@@ -535,10 +556,17 @@ export default defineComponent({
       if(member !== undefined) {
         member.updatePermissions(permissions)
       } else {
-        let newMember = new Member(this.memberAddr, permissions, 0x0000)
+        let newMember = new Member(this.memberAddr, permissions, 0x00)
         this.aim.members.push(newMember)
       }
-    }
+    }, 
+    transferOwnership() {
+      if(!this.confirmTransfer) {
+        this.confirmTransfer = true
+      } else {
+        this.aimNetwork.transferAim(this.aim, this.memberAddr)
+      }
+    },
   }, 
 });
 </script>
@@ -621,7 +649,7 @@ export default defineComponent({
     text-align: left;
     line-height: 2rem;
   }
-  .addMemberError {
+  .error{
     color: @error; 
   }
   .newMemberAddr {
@@ -630,7 +658,7 @@ export default defineComponent({
   .permissionToggles {
     margin-bottom: 1.5rem;
   }
-  .memberEditor {
+  .editSection{
     background-color: #0004; 
     padding: 1rem 0rem; 
     margin:1rem; 

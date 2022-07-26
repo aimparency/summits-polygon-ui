@@ -93,6 +93,7 @@ export default defineComponent({
       logicalHalfSide: LOGICAL_HALF_SIDE,
       aimNetwork: useAimNetwork(),
       map: useMap(), 
+      breakFromAnimLoop: false,
     }
   }, 
   props: {
@@ -345,12 +346,10 @@ export default defineComponent({
     this.transformAnim() 
 
     this.layout()
-
-    // DEBUG
-    // for(let i = 0; i < 19; i++) {
-    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 3000)
-    // }
   }, 
+  beforeUnmount() {
+    this.breakFromAnimLoop = true
+  },
   computed: {
     viewBox() : string {
       return [-1,-1,2,2].map((v: number) => v * LOGICAL_HALF_SIDE).join(' ')
@@ -398,9 +397,11 @@ export default defineComponent({
       if(this.map.anim.update !== undefined) {
         this.map.anim.update()
       }
-      requestAnimationFrame(() => {
-        this.transformAnim()
-      })
+      if(!this.breakFromAnimLoop) {
+        requestAnimationFrame(() => {
+          this.transformAnim()
+        })
+      }
     },
     layout() {
       let aims = toRaw(this.aimNetwork.aims) // expecting slight performance boost from toRaw
@@ -566,16 +567,18 @@ export default defineComponent({
           }
         } 
       }
-      if(standstill) {
-        setTimeout(() => {
+      if(!this.breakFromAnimLoop) {
+        if(standstill) {
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              this.layout()
+            })
+          }, 200)
+        } else {
           requestAnimationFrame(() => {
             this.layout()
           })
-        }, 200)
-      } else {
-        requestAnimationFrame(() => {
-          this.layout()
-        })
+        }
       }
     },
     calcShiftAndApply(

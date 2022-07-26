@@ -64,18 +64,12 @@ export default defineComponent({
   }, 
   computed: {
     searchResults() {
-      //console.log('searching for', this.search)
-      //if(this.search == '') {
-      //  return Object.values(this.aimNetwork.aims)
-      //} else {
-      console.log(Object.values(this.aimNetwork.aims).length) 
-        return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
-          key: "title",
-          limit: 100, 
-          threshold: -10000,
-          all: true
-        })
-      //}
+      return fuzzysort.go(this.search, Object.values(this.aimNetwork.aims), {
+        key: "title",
+        limit: 100, 
+        threshold: -10000,
+        all: true
+      })
     }
   }, 
   methods: {

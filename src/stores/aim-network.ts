@@ -400,7 +400,7 @@ export const useAimNetwork = defineStore('aim-network', {
       aim.pendingTransactions += 1
       try {
         let tx = await aimContract[functionName](...values)
-        let rc = await tx.wait()
+        await tx.wait()
         for(let name of fields) { // TBD: maybe just assign new AimOrigin() ? 
           delete origin[name]
         }
@@ -467,7 +467,7 @@ export const useAimNetwork = defineStore('aim-network', {
             value: maxPrice
           }
         )
-        let rc = await tx.wait()
+        await tx.wait()
         aim.tokenSupply += amount
         aim.tokensOnChain = aim.tokens
         aim.pendingTransactions -= 1
@@ -485,7 +485,7 @@ export const useAimNetwork = defineStore('aim-network', {
           amount, 
           minPrice
         )
-        let rc = await tx.wait()
+        await tx.wait()
         aim.tokenSupply -= amount
         aim.tokensOnChain = aim.tokens
         aim.pendingTransactions -= 1
@@ -505,7 +505,7 @@ export const useAimNetwork = defineStore('aim-network', {
       dataPromises.push(aimContract.symbol()) 
       dataPromises.push(aimContract.name()) 
       dataPromises.push(aimContract.totalSupply())
-      dataPromises.push(aimContract.getPermissions())
+      dataPromises.push(aimContract.getCallersPermissions())
       dataPromises.push(aimContract.owner())
       dataPromises.push(aimContract.loopWeight()) 
       dataPromises.push(aimContract.getInvestment()) 
@@ -638,7 +638,26 @@ export const useAimNetwork = defineStore('aim-network', {
       } 
       delete this.aims[aim.id]
     },
-
+    async transferAim(aim: Aim, newOwnerAddr: string) {
+      const w3 = useWeb3Connection()
+      const aimContract = w3.getAimContract(aim.address!) 
+      try {
+        let tx = await aimContract.transferOwnership(newOwnerAddr)
+        await tx.wait()
+        aim.permissions = 0x7f 
+        let member = aim.members.find(member => member.address == w3.address)
+        if(member !== undefined) {
+          member.permissions = 0x7f
+          member.permissionsOrigin = undefined
+        } else {
+          aim.members.push(new Member(w3.address, 0x7f))
+        }
+        aim.owner = newOwnerAddr
+        console.log("changed locally according to commit") 
+      } catch(err)  {
+        console.error("Failed to transfer aim", err) 
+      }
+    },
     // Flows
     createAndSelectFlow(from: Aim, into: Aim) {
       if(from !== into) {
@@ -723,7 +742,7 @@ export const useAimNetwork = defineStore('aim-network', {
       flow.pendingTransactions += 1
       try {
         let tx = await aimContract[functionName](flow.from.address!, ...args)
-        let rc = await tx.wait()
+        await tx.wait()
         flow.clearOrigin()
         flow.pendingTransactions -= 1
       } catch(err)  {
