@@ -32,7 +32,11 @@ The order is reversed chronological. Newer ideas on top:
 #2022-07-27
 - Saubere Implementierung vom rekursiven Laden. 
   - Load
+    - laedt contributors und contributions
+      - um sauber connecten zu koennen
+      - aber laed nicht die neighbor aims
   - RaiseLevel
+    - laedt die neighbor aims
 
 #2022-07-19
 - edit member button

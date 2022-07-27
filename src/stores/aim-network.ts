@@ -236,7 +236,7 @@ export class Flow {
 
   published = false
 
-  d = vec2.create()
+  relativeDelta = vec2.create()
 
   confirmed = false
   confirmedOnChain = false
@@ -279,7 +279,7 @@ export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
       aims: {} as {[id: number]: Aim}, 
-      flows: {} as {[from: string]: {[into: string]: Flow}}, 
+      flows: {} as {[from: number]: {[into: number]: Flow}}, 
       selectedAim: undefined as Aim | undefined,
       selectedFlow: undefined as Flow | undefined, 
       aimAddressToId: markRaw({}) as {[addr: string]: number},
@@ -527,6 +527,7 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     async loadAim(aimAddr: string) { 
+      console.log("loading", aimAddr)
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(aimAddr) 
       let dataPromises = []
@@ -620,10 +621,10 @@ export const useAimNetwork = defineStore('aim-network', {
         for(let addr of aim.neighborAddrs) {
           let aimId = this.aimAddressToId[addr] 
           let neighbor = undefined
-          if(aimId) {
+          if(aimId !== undefined) {
             neighbor = this.aims[aimId]
           }
-          if(neighbor) {
+          if(neighbor !== undefined) {
             this.raiseLoadLevel(neighbor, level - 1)
           } else {
             this.loadAim(addr).then((newAim: Aim) => {
@@ -673,7 +674,6 @@ export const useAimNetwork = defineStore('aim-network', {
         flow.explanation = flowFromChain.data.explanation
         flow.weight = flowFromChain.data.weight
         flow.published = true
-        flow.d = vec2.crScale(vec2.crSub(intoAim.pos, fromAim.pos), 1 / Math.sqrt(intoAim.r * fromAim.r))
       })
     }, 
     resetAimChanges(aim: Aim) {
@@ -722,6 +722,11 @@ export const useAimNetwork = defineStore('aim-network', {
         if((Aim.Permissions.network & into.permissions) > 0) {
           let flow = this.createFlow(from, into)
           if(flow) {
+            let rSum = into.r + from.r 
+            if(rSum > 0) {
+              flow.relativeDelta = vec2.crScale(vec2.crSub(into.pos, from.pos), 1 / rSum)
+            }
+
             this.selectFlow(flow) 
             useUi().sideMenuOpen = true
           }

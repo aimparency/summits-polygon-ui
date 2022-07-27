@@ -404,13 +404,17 @@ export default defineComponent({
       }
     },
     layout() {
-      let aims = toRaw(this.aimNetwork.aims) // expecting slight performance boost from toRaw
-      let map = this.map
+      const force = 0.09
 
-      /* there is 
+      /* in the following there is 
         - aimId: the string
         - aimIndex: the index of an aim in all the following arrays like r[]
         - boxIndex: the index of an aim in the boxes array */
+
+      let aims = this.aimNetwork.aims
+      let aimIds = Object.keys(aims) as unknown as number[]
+
+      let map = this.map
 
       let aimIdToIndex: {[aimId: number]: number} = {}
       let aimIndexToId: number[] = []
@@ -434,12 +438,9 @@ export default defineComponent({
       const sTop = (-map.offset[1] - mapHeight) 
       const sBottom = (-map.offset[1] + mapHeight) 
 
-      let aimIndex, boxIndex
+      let aimIndex = 0, boxIndex = 0
 
-      for(let aimIdString in aims) {
-        let aimId = parseInt(aimIdString) // has to be a number
-        aimIndex = aimIndexToId.length
-
+      for(let aimId of aimIds) {
         aim = aims[aimId]
         tr = aim.r
 
@@ -454,11 +455,11 @@ export default defineComponent({
           top < sBottom &&
           bottom > sTop
         ) {
-          boxIndex = boxes.length
           relevantAims.add(aimIndex) 
           boxToAimIndex[boxIndex] = aimIndex
           tr *= outerMarginFactor
           boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
+          boxIndex++
         }
 
         aimIdToIndex[aimId] = aimIndex
@@ -466,9 +467,38 @@ export default defineComponent({
         shifts.push(vec2.create())
         r.push(aim.r)
         pos.push(aim.pos)
+        aimIndex++
       }
 
+      // handle connected aims
 
+      let iFrom, iInto 
+      let delta = vec2.create()
+      let fromTargetPos = vec2.create()
+      let intoTargetPos = vec2.create()
+      let weights = new Array<number>(aimIds.length)
+      let targetPos = new Array<vec2.T>(aimIds.length)
+      for(let fromId in flows) {
+        let bucket = flows[fromId]
+        for(let intoId in bucket) {
+          let flow = bucket[intoId]
+          iFrom = aimIdToIndex[fromId as unknown as number]
+          iInto = aimIdToIndex[intoId as unknown as number]
+
+          vec2.scale(delta, flow.relativeDelta, flow.from.r + flow.into.r) 
+          vec2.add(intoTargetPos, flow.from.pos, delta)
+          vec2.sub(fromTargetPos, flow.into.pos, delta)
+
+
+          weights[iFrom] += into.r
+          
+
+          weights[iInto] += from.r
+          
+        }
+      }
+
+      // handle close aims
       let intersections = boxIntersect(boxes) 
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
@@ -496,7 +526,7 @@ export default defineComponent({
         }
         if(d < rSum) {
           this.calcShiftAndApply(
-            1, 0.9, 
+            1, 
             d, ab, 
             rA, rB, rSum, 
             shiftA, shiftB
@@ -504,47 +534,12 @@ export default defineComponent({
         } 
         if (d < rSum * outerMarginFactor) {
           this.calcShiftAndApply(
-            outerMarginFactor, 0.09,
+            outerMarginFactor, 
             d, ab, 
             rA, rB, rSum, 
             shiftA, shiftB
           )
         } 
-      }
-
-      let flows = toRaw(this.aimNetwork.flows) // benchmark proof this performance optimization
-
-      for(let fromId in flows) {
-        let bucket = flows[fromId]
-        for(let intoId in bucket) {
-          let flow = bucket[intoId]
-          iA = aimIdToIndex[flow.from.id]
-          iB = aimIdToIndex[flow.into.id]
-
-          if(relevantAims.has(iA) || relevantAims.has(iB)) {
-            shiftA = shifts[iA]
-            rA = r[iA] 
-            posA = pos[iA]
-            shiftB = shifts[iB]
-            rB = r[iB] 
-            posB = pos[iB]
-
-            ab = vec2.crSub(posB, posA) 
-            rSum = rA + rB
-            d = vec2.len(ab)
-
-            // vec2.scale(ab, ab, 1 - rSum * outerMarginFactor / d) 
-
-            if(d > rSum * outerMarginFactor * 1) {
-              this.calcShiftAndApply(
-                outerMarginFactor, 0.02,
-                d - outerMarginFactor, ab, 
-                rA, rB, rSum, 
-                shiftA, shiftB
-              )
-            }
-          }
-        }
       }
 
       let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
@@ -553,6 +548,7 @@ export default defineComponent({
       for(let aimId in aims) {
         i = aimIdToIndex[aimId]
         const shift = shifts[i]
+        vec2.scale(shift, shift, force)
         if(shift[0] < -minShift ||
           shift[0] > minShift ||
           shift[1] < -minShift ||
@@ -581,9 +577,9 @@ export default defineComponent({
         }
       }
     },
+
     calcShiftAndApply(
       marginFactor: number, 
-      force: number, 
       d: number, 
       ab: vec2.T, 
       rA: number, 
@@ -592,7 +588,7 @@ export default defineComponent({
       shiftA: vec2.T, 
       shiftB: vec2.T
     ) {
-      const amount = (marginFactor - d / rSum) * force / rSum 
+      const amount = (marginFactor - d / rSum) / rSum 
 
       vec2.scale(hShift, ab, -rB * amount) 
       vec2.add(shiftA, shiftA, hShift)
