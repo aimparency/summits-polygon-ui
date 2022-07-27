@@ -35,7 +35,7 @@
       />
 
         
-    <div class="fieldButtons" v-if="mayEdit">
+    <div class="fieldButtons">
       <div
         v-if="dirty" 
         class='button' tabindex="0"  
@@ -45,14 +45,14 @@
         class='button'
         tabindex="0"
         @click="commitChanges">Commit</div>
-    </div>
-    <div class="fieldButtons">
       <div
         tabindex="0"  
+        v-if="aim.address === undefined"
         class='button' 
         :class='{confirm: confirmRemove}'
         @blur='confirmRemove = false'
         @click="remove">{{ confirmRemove ? "Confirm removal" : "Remove aim" }}</div>
+      <!-- v-else blacklist button -->
       <div
         v-if="public"
         tabindex="0"
@@ -91,13 +91,13 @@
     </div>
     <div v-else-if="aim.address == undefined">
       <div 
-        v-if='aim.title != "" && aim.tokenName != "" && aim.tokenSymbol != ""'
+        v-if='aim.tokenName != "" && aim.tokenSymbol != ""'
         class='button' 
         tabindex="0" 
         @click="createAimOnChain">Create aim on chain for {{ createPrice }} {{nativeCurrency.symbol}} </div>
       <p v-else> 
         <span class="error">
-          Title and token name and symbol are required for creating an aim on chain.
+          Token name and symbol are required for creating an aim on chain.
         </span>
       </p>
     </div>
@@ -183,7 +183,7 @@
         </div>
       </div>
     </div>
-    <h3> incoming flows </h3>
+    <h3> flows </h3>
     <Slider
       v-if='mayNetwork'
       name='loop weight'
@@ -203,7 +203,10 @@
       @click="commitLoopWeight">
         Commit 
     </div>
-    <p> Loop share: {{ Math.floor(100 * aim.loopShare) }}% </p>
+    <p class=flowDirection> incoming flows </p>
+    <div class="flow loop">
+      loop share: {{ Math.floor(100 * aim.loopShare) }}%
+    </div>
     <div 
       class="flow button" 
       v-for="(flow, aimId) in aim.flowsFrom" 
@@ -212,15 +215,35 @@
       {{ (100 * flow.share).toFixed(0) }}% : 
       {{ flow.from.title || "[unnamed]"}} 
     </div>
-    <h3> outgoing flows </h3>
+    <p class=flowDirection> outgoing flows </p>
+    <div class="flow loop">
+      loop share: TBD 
+    </div>
     <div 
-      class="flow button" 
+      class="outflow button" 
       v-for="(flow, aimId) in aim.flowsInto" 
       @click="flowClick(flow)" 
       :key="aimId">
       {{ (100 * flow.share).toFixed(0) }}%: 
       {{ flow.into.title || "[unnamed]"}} 
+      <div 
+        class=confirmButton
+        v-if='mayNetwork && flow.published && flow.into.address !== undefined && flow.from.address !== undefined'
+        @click.stop="toggleFlowConfirm(flow)"
+        :class="{confirmed: flow.confirmed}">
+      </div>
     </div>
+    <p/>
+    <div v-if="flowConfirmationsChanged && mayNetwork">
+      <div
+        class='button' tabindex="0"  
+        @click="reset">Reset</div>
+      <div 
+        class='button'
+        tabindex="0"
+        @click="commitConfirmations">Commit</div>
+    </div>
+
     <div class="scrollspace"/>
     <BackButton @click="aimNetwork.deselect"/>
   </div>
@@ -309,6 +332,17 @@ export default defineComponent({
     }
   },
   computed: {
+    flowConfirmationsChanged() {
+      let v = Object.values(this.aim.flowsInto)
+      for(let flow of v) {
+        console.log(flow) 
+        if (flow.confirmed !== flow.confirmedOnChain) {
+          console.log("changed")
+          return true
+        }
+      }
+      return false; 
+    }, 
     memberAddrError() {
       if(this.memberAddr != "" && !(ethers.utils.isAddress(this.memberAddr))) {
         return "enter a valid account address"
@@ -486,6 +520,9 @@ export default defineComponent({
     commitMembers() {
       this.aimNetwork.commitAimMemberChanges(this.aim) 
     },
+    commitConfirmations() {
+      this.aimNetwork.commitContributionConfirmations(this.aim) 
+    },
     editMember(member: Member) {
       this.memberAddr = member.address
       this.resetPermissionGranting()
@@ -567,6 +604,9 @@ export default defineComponent({
         this.aimNetwork.transferAim(this.aim, this.memberAddr)
       }
     },
+    toggleFlowConfirm(flow: Flow) {
+      flow.confirmed = !flow.confirmed
+    },
   }, 
 });
 </script>
@@ -613,9 +653,43 @@ export default defineComponent({
     display: inline-block; 
     width: auto; 
   }
+  .flowDirection {
+    text-align: left; 
+    margin: 1.5rem 1rem 0.5rem 2rem; 
+  }
   .flow {
     text-align: left; 
     display: block; 
+    margin: 0 1rem; 
+    &.loop {
+      background-color: @mid2; 
+      padding: 0.5rem 1rem; 
+      margin: 0rem 1rem; 
+    }
+  }
+  .outflow {
+    .flow(); 
+    position:relative; 
+    @cbSize: 2.5rem;  
+    padding-right: @cbSize + 1rem; 
+    .confirmButton {
+      width: @cbSize; 
+      height: @cbSize; 
+      right: 0rem; 
+      top: 0rem; 
+      position: absolute;
+      background-color: #fff4; 
+      background-image: url(./unconfirmed.svg);
+      background-size: 70%;
+      background-position: center;
+      background-repeat: no-repeat;
+      &.confirmed {
+        background-image: url(./confirmed.svg);
+      }
+      &:hover {
+        background-color: #fff8; 
+      }
+    }
   }
   textarea {
     resize: vertical; 

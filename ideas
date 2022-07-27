@@ -29,6 +29,11 @@ The order is reversed chronological. Newer ideas on top:
           - git als decentral storage so to say
     - possibilities are huge. There is enough space for all of us. 
 
+#2022-07-27
+- Saubere Implementierung vom rekursiven Laden. 
+  - Load
+  - RaiseLevel
+
 #2022-07-19
 - edit member button
   => loads addr and checkings into the form

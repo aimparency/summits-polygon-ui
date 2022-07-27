@@ -108,7 +108,7 @@ export class Aim {
   color = "000000"
 
   loadLevel = 0 // 0 means: don't load neighbors
-  sourroundingAims: string [] = []
+  neighborAddrs: string [] = []
   
   flowsFrom: { [aimId: string]: Flow } = {}
   flowsInto: { [aimId: string]: Flow } = {}
@@ -236,8 +236,10 @@ export class Flow {
 
   published = false
 
-  dx = 0
-  dy = 0
+  d = vec2.create()
+
+  confirmed = false
+  confirmedOnChain = false
 
   constructor(
     public from: Aim,
@@ -289,9 +291,13 @@ export const useAimNetwork = defineStore('aim-network', {
       await this.loadHome()
       // check url get parameters
       let urlParams = new URLSearchParams(window.location.search)
-      let addr = urlParams.get('loadAim')
-      if(addr) {
-        await this.loadAim(addr)
+      try {
+        let addr = urlParams.get('loadAim')
+        if(addr) {
+          await this.loadAim(addr)
+        }
+      } catch(e) {
+        useUi().setWarning("could not load aim from sharer link", vec2.create())
       }
       this.loadPinned() 
     }, 
@@ -301,10 +307,10 @@ export const useAimNetwork = defineStore('aim-network', {
         const baseAimAddr = await summitsContract.baseAim()
         let home = await this.loadAim(baseAimAddr) 
         home.pinned = true
+        this.raiseLoadLevel(home, 2) 
 
         const map = useMap()
         map.centerOnAim(home) 
-
 
         this.selectAim(home)
 
@@ -456,6 +462,32 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.loopWeightOrigin = undefined
       }
     }, 
+    async commitContributionConfirmations(aim: Aim) {
+      if(aim.address !== undefined) {
+        let intoAddresses: string[] = []
+        let values: boolean[] = []
+        Object.values(aim.flowsInto).forEach((flow: Flow) => {
+          if(flow.confirmed != flow.confirmedOnChain) {
+            if(flow.into.address !== undefined) {
+              intoAddresses.push(flow.into.address) 
+              values.push(flow.confirmed)
+            }
+          }
+        })
+        const w3 = useWeb3Connection()
+        const aimContract = w3.getAimContract(aim.address!)
+        console.log("Committing contribution confirmations", intoAddresses, values, aim.address, aimContract)
+        try {
+          let tx = await aimContract.setContributionConfirmations(intoAddresses, values)
+          await tx.wait()
+          intoAddresses.forEach((intoAddr: string) => {
+            aim.flowsInto[intoAddr].confirmedOnChain = aim.flowsInto[intoAddr].confirmed
+          })
+        } catch (err) {
+          console.error("Failed to commit contribution confirmations", err)
+        }
+      }
+    }, 
     async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
@@ -494,11 +526,8 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.pendingTransactions -= 1
       }
     }, 
-    async loadAim(aimAddr: string) { const w3 = useWeb3Connection()
-      if(this.aimAddressToId[aimAddr] !== undefined) {
-        console.warn("Skipping already loaded aim", aimAddr)
-        return this.aims[this.aimAddressToId[aimAddr]]
-      }
+    async loadAim(aimAddr: string) { 
+      const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(aimAddr) 
       let dataPromises = []
       dataPromises.push(aimContract.data())
@@ -510,9 +539,9 @@ export const useAimNetwork = defineStore('aim-network', {
       dataPromises.push(aimContract.loopWeight()) 
       dataPromises.push(aimContract.getInvestment()) 
       dataPromises.push(aimContract.getContributors()) 
-      dataPromises.push(aimContract.getConfirmedReceivers()) 
+      dataPromises.push(aimContract.getConfirmedContributions()) 
       return await Promise.all(dataPromises).then(([
-        data, symbol, name, supply, permissions, owner, loopWeight, tokens, contributors, receivers 
+        data, symbol, name, supply, permissions, owner, loopWeight, tokens, contributors, contributions 
       ]) => {
         const setValues = (aim: Aim) => {
           aim.address = aimAddr
@@ -528,8 +557,19 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.tokensOnChain = t
           aim.setLoopWeight(loopWeight) 
           aim.setTokens(t) 
+
+          let addedWeights = 0
+          let addedPos = vec2.create()
+          const addPos = (aimAddr: string) => {
+            let aim = this.aims[this.aimAddressToId[aimAddr]]
+            if(aim) {   
+              addedWeights += aim.r
+              vec2.add(addedPos, addedPos, aim.pos)
+            }
+          }
           for(let fromAddr of contributors) {
             if(this.aimAddressToId[fromAddr] !== undefined) {
+              addPos(fromAddr) 
               this.loadFlow(fromAddr, aimAddr) 
             } else {
               if(this.flowWaitList[fromAddr]) {
@@ -541,31 +581,50 @@ export const useAimNetwork = defineStore('aim-network', {
           }
           if(this.flowWaitList[aimAddr]) {
             this.flowWaitList[aimAddr].forEach((intoAddr: string) => {
+              addPos(intoAddr) 
               this.loadFlow(aimAddr, intoAddr) 
             })
           }
 
-          for(let intoAddr of receivers) {
+          for(let intoAddr of contributions) {
             if(this.aimAddressToId[intoAddr] !== undefined) {
+              addPos(intoAddr) 
               this.loadFlow(aimAddr, intoAddr) 
             } 
           }
-          aim.sourroundingAims = receivers.concat(contributors)
+          if(addedWeights > 0) { 
+            // place aim between neighbors
+            vec2.scale(aim.pos, addedPos, 1.0 / addedWeights)
+          } else {
+            aim.pos = vec2.fromValues(
+              aim.r * (Math.random() - 0.5), 
+              aim.r * (Math.random() - 0.5)
+            ) 
+          }
+
+          aim.neighborAddrs = contributions.concat(contributors)
         }
-        return this.createAim(setValues)
+        const aimId = this.aimAddressToId[aimAddr]
+        if(aimId !== undefined) {
+          let aim = this.aims[aimId]!
+          setValues(aim)
+          return aim
+        } else {
+          return this.createAim(setValues)
+        }
       })
     }, 
     async raiseLoadLevel(aim: Aim, level: number) {
       if(level > 0 && level > aim.loadLevel) {
         aim.loadLevel = level
-        for(let addr of aim.sourroundingAims) {
+        for(let addr of aim.neighborAddrs) {
           let aimId = this.aimAddressToId[addr] 
-          let sourroundingAim = undefined
+          let neighbor = undefined
           if(aimId) {
-            sourroundingAim = this.aims[aimId]
+            neighbor = this.aims[aimId]
           }
-          if(sourroundingAim) {
-            this.raiseLoadLevel(sourroundingAim, level - 1)
+          if(neighbor) {
+            this.raiseLoadLevel(neighbor, level - 1)
           } else {
             this.loadAim(addr).then((newAim: Aim) => {
               this.raiseLoadLevel(newAim, level - 1)
@@ -610,12 +669,11 @@ export const useAimNetwork = defineStore('aim-network', {
       let fromAim = this.aims[this.aimAddressToId[fromAddr]]
       let intoAim = this.aims[this.aimAddressToId[intoAddr]]
 
-      this.createFlow(fromAim, intoAim, (flow: Flow) => {
+      return this.createFlow(fromAim, intoAim, (flow: Flow) => {
         flow.explanation = flowFromChain.data.explanation
         flow.weight = flowFromChain.data.weight
         flow.published = true
-        flow.dx = 1 // decode bytes from flowFromChain.data.d2d
-        flow.dy = 1 // decode bytes
+        flow.d = vec2.crScale(vec2.crSub(intoAim.pos, fromAim.pos), 1 / Math.sqrt(intoAim.r * fromAim.r))
       })
     }, 
     resetAimChanges(aim: Aim) {
@@ -776,6 +834,7 @@ export const useAimNetwork = defineStore('aim-network', {
       this.selectedFlow = undefined
       this.selectedAim = aim
       this.lazyLoadAim(aim) 
+      this.raiseLoadLevel(aim, 2) 
     },
     deselect() {
       this.selectedAim = undefined

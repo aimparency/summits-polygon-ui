@@ -19,13 +19,14 @@
 .clickable {
   cursor: pointer; 
   user-select: none; 
+  box-shadow: 0 0 1rem #0008; 
 }
+
 
 .button {
   border-radius: @buttonradius; 
   .clickable();
   display: inline-block; 
-  box-shadow: 0 0 1rem #0008; 
   margin: 0.1rem 0.5rem;
   line-height: 1.5rem;
   padding: 0.5rem 1rem; 
