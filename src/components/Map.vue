@@ -470,30 +470,42 @@ export default defineComponent({
       }
 
       // handle connected aims
+      let flows = this.aimNetwork.flows
 
-      // let iFrom, iInto 
-      // let delta = vec2.create()
-      // let fromTargetPos = vec2.create()
-      // let intoTargetPos = vec2.create()
-      // let weights = new Array<number>(aimIds.length)
-      // let targetPos = new Array<vec2.T>(aimIds.length)
-      // for(let fromId in flows) {
-      //   let bucket = flows[fromId]
-      //   for(let intoId in bucket) {
-      //     let flow = bucket[intoId]
+      let delta = vec2.create()
+      let targetPos = vec2.create()
+      let targetShift = vec2.create()
+      let weights = new Array<number>(aimIds.length)
+      for(let fromId of Object.keys(flows) as unknown as number[]) {
+        let bucket = flows[fromId]
+        for(let intoId of Object.keys(bucket) as unknown as number[]) {
+          let flow = bucket[intoId]
 
-      //     vec2.scale(delta, flow.relativeDelta, flow.from.r + flow.into.r) 
-      //     vec2.add(intoTargetPos, flow.from.pos, delta)
-      //     vec2.sub(fromTargetPos, flow.into.pos, delta)
+          vec2.scale(delta, flow.relativeDelta, flow.from.r + flow.into.r) 
 
+          // into aim
+          vec2.add(targetPos, flow.from.pos, delta)
+          vec2.sub(targetShift, targetPos, flow.into.pos)
+          vec2.scale(targetShift, targetShift, flow.from.r)
 
-      //     weights[iFrom] += into.r
-      //     
+          weights[intoId] += flow.from.r
+          vec2.add(shifts[intoId], shifts[intoId], targetShift)
+          
+          // from aim
+          vec2.sub(targetPos, flow.into.pos, delta)
+          vec2.sub(targetShift, targetPos, flow.from.pos)
+          vec2.scale(targetShift, targetShift, flow.into.r)
 
-      //     weights[iInto] += from.r
-      //     
-      //   }
-      // }
+          weights[fromId] += flow.into.r
+          vec2.add(shifts[fromId], shifts[fromId], targetShift)
+        }
+      }
+
+      for(let aimId of aimIds) {
+        if(weights[aimId] > 0) {
+          vec2.scale(shifts[aimId], shifts[aimId], 1 / weights[aimId])
+        }
+      }
 
       // handle close aims
       let intersections = boxIntersect(boxes) 
@@ -541,7 +553,6 @@ export default defineComponent({
 
       let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
       let standstill = true
-      let i
       for(let aimId of aimIds) {
         const shift = shifts[aimId]
         vec2.scale(shift, shift, force)

@@ -670,9 +670,12 @@ export const useAimNetwork = defineStore('aim-network', {
       let fromAim = this.aims[this.aimAddressToId[fromAddr]]
       let intoAim = this.aims[this.aimAddressToId[intoAddr]]
 
+      let relativeDelta = new Float32Array(ethers.utils.arrayify(flowFromChain.data.d2d).buffer)
+
       return this.createFlow(fromAim, intoAim, (flow: Flow) => {
         flow.explanation = flowFromChain.data.explanation
         flow.weight = flowFromChain.data.weight
+        flow.relativeDelta = vec2.fromValues(relativeDelta[0], relativeDelta[1])
         flow.published = true
       })
     }, 
@@ -724,7 +727,8 @@ export const useAimNetwork = defineStore('aim-network', {
           if(flow) {
             let rSum = into.r + from.r 
             if(rSum > 0) {
-              flow.relativeDelta = vec2.crScale(vec2.crSub(into.pos, from.pos), 1 / rSum)
+              flow.relativeDelta = markRaw(vec2.crScale(vec2.crSub(into.pos, from.pos), 1 / rSum))
+              console.log("create flow with relative delta: ", flow.relativeDelta)
             }
 
             this.selectFlow(flow) 
@@ -763,12 +767,13 @@ export const useAimNetwork = defineStore('aim-network', {
         let aimContract = useWeb3Connection().getAimContract(flow.into.address) 
         flow.pendingTransactions += 1
         try {
+          let d2d = new Float32Array(flow.relativeDelta)
           let tx = await aimContract.createInflow(
             flow.from.address, 
             {
               explanation: flow.explanation, 
               weight: flow.weight, 
-              d2d: new Uint8Array([0,0,0,0,0,0,0,0])
+              d2d: new Uint8Array(d2d.buffer)
             }
           )
           let rc = await tx.wait()
