@@ -7,27 +7,22 @@ The order is reversed chronological. Newer ideas on top:
 
 #features left
 
-#far future backlog
-- next version
-  - git... stuff in git repos packen
-    - git läuft im browser
-    - ein hauptrepo
-    - "dependencies"
-      - lädt andere repos & vergibt alias
-      - aim connections enthalten alias info: also: <repoId>-<aimId>
-        - repo-id 0 ist vielleicht self. 
-    - so kriegt man umsonst
-      - versionskontrolle
-      - off-chain sharing
-    - wenn man die app lädt, 
-      - werden immer automatisch alle repos gepullt 
-        - (ist ja nur text, müsste schnell gehen) 
-      - chains könnten für aim description etc. 
-        - vielleicht auch auf die repos verweisen
-          - repourl/aimId
-          - für alles bis auf investment kram
-          - git als decentral storage so to say
-    - possibilities are huge. There is enough space for all of us. 
+#2022-07-29
+- Towards V0.2 release
+  - flows position aendern
+    - einzelner flow
+    - weisse handles zeigen 
+      - (unausgefuellte kreise) stroke
+      - linie dazwischen
+  - ongoing transaction indicators
+    - for every area (data, members, loopWeight, ...)  
+  - finance tests
+  - uncommited list 
+    - button with number
+    - on tab close => show dialogue
+      - button discard
+      - links to aims and flows
+      - if dialogue shown close
 
 #2022-07-27
 - Saubere Implementierung vom rekursiven Laden. 
@@ -72,6 +67,28 @@ The order is reversed chronological. Newer ideas on top:
 - D: Details
   - D: Add aim in the middle of the screen 
   - D: Icon for going back to the List 
+
+#far future backlog
+- next version
+  - git... stuff in git repos packen
+    - git läuft im browser
+    - ein hauptrepo
+    - "dependencies"
+      - lädt andere repos & vergibt alias
+      - aim connections enthalten alias info: also: <repoId>-<aimId>
+        - repo-id 0 ist vielleicht self. 
+    - so kriegt man umsonst
+      - versionskontrolle
+      - off-chain sharing
+    - wenn man die app lädt, 
+      - werden immer automatisch alle repos gepullt 
+        - (ist ja nur text, müsste schnell gehen) 
+      - chains könnten für aim description etc. 
+        - vielleicht auch auf die repos verweisen
+          - repourl/aimId
+          - für alles bis auf investment kram
+          - git als decentral storage so to say
+    - possibilities are huge. There is enough space for all of us. 
 
 #2022-07-06
 - The Graph in neuem branch
