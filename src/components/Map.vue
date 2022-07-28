@@ -47,7 +47,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRaw } from "vue";
+import { defineComponent, markRaw, toRaw } from "vue";
 
 import AimSVG from './AimSVG.vue';
 import FlowSVG from './FlowSVG.vue';
@@ -94,6 +94,11 @@ export default defineComponent({
       aimNetwork: useAimNetwork(),
       map: useMap(), 
       breakFromAnimLoop: false,
+      reusableLayoutCalcArrays: markRaw({
+        r: new Array<number>(),
+        pos: new Array<vec2.T>(), 
+        shifts: new Array<vec2.T>(),
+      })
     }
   }, 
   props: {
@@ -416,16 +421,12 @@ export default defineComponent({
 
       let map = this.map
 
-      let aimIdToIndex: {[aimId: number]: number} = {}
-      let aimIndexToId: number[] = []
-      let r: number[] = []
-      let tr
-      let pos: vec2.T[] = []
-      let shifts :vec2.T[] = []
-
-      let boxes: number[][] = []
-      const boxToAimIndex: number[] = []
-      const relevantAims = new Set()
+      let r = this.reusableLayoutCalcArrays.r
+      let pos = this.reusableLayoutCalcArrays.pos
+      let shifts = this.reusableLayoutCalcArrays.shifts
+      r.length = aimIds.length
+      pos.length = aimIds.length
+      shifts.length = aimIds.length
 
       let aim
       let left, right, top, bottom
@@ -438,8 +439,10 @@ export default defineComponent({
       const sTop = (-map.offset[1] - mapHeight) 
       const sBottom = (-map.offset[1] + mapHeight) 
 
-      let aimIndex = 0, boxIndex = 0
-
+      let tr
+      let boxIndex = 0
+      let boxes: number[][] = []
+      const boxToAimId: number[] = []
       for(let aimId of aimIds) {
         aim = aims[aimId]
         tr = aim.r
@@ -455,48 +458,42 @@ export default defineComponent({
           top < sBottom &&
           bottom > sTop
         ) {
-          relevantAims.add(aimIndex) 
-          boxToAimIndex[boxIndex] = aimIndex
+          boxToAimId[boxIndex] = aimId
           tr *= outerMarginFactor
           boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
           boxIndex++
         }
 
-        aimIdToIndex[aimId] = aimIndex
-        aimIndexToId[aimIndex] = aimId 
-        shifts.push(vec2.create())
-        r.push(aim.r)
-        pos.push(aim.pos)
-        aimIndex++
+        shifts[aimId] = vec2.create()
+        r[aimId] = aim.r
+        pos[aimId] = aim.pos
       }
 
       // handle connected aims
 
-      let iFrom, iInto 
-      let delta = vec2.create()
-      let fromTargetPos = vec2.create()
-      let intoTargetPos = vec2.create()
-      let weights = new Array<number>(aimIds.length)
-      let targetPos = new Array<vec2.T>(aimIds.length)
-      for(let fromId in flows) {
-        let bucket = flows[fromId]
-        for(let intoId in bucket) {
-          let flow = bucket[intoId]
-          iFrom = aimIdToIndex[fromId as unknown as number]
-          iInto = aimIdToIndex[intoId as unknown as number]
+      // let iFrom, iInto 
+      // let delta = vec2.create()
+      // let fromTargetPos = vec2.create()
+      // let intoTargetPos = vec2.create()
+      // let weights = new Array<number>(aimIds.length)
+      // let targetPos = new Array<vec2.T>(aimIds.length)
+      // for(let fromId in flows) {
+      //   let bucket = flows[fromId]
+      //   for(let intoId in bucket) {
+      //     let flow = bucket[intoId]
 
-          vec2.scale(delta, flow.relativeDelta, flow.from.r + flow.into.r) 
-          vec2.add(intoTargetPos, flow.from.pos, delta)
-          vec2.sub(fromTargetPos, flow.into.pos, delta)
+      //     vec2.scale(delta, flow.relativeDelta, flow.from.r + flow.into.r) 
+      //     vec2.add(intoTargetPos, flow.from.pos, delta)
+      //     vec2.sub(fromTargetPos, flow.into.pos, delta)
 
 
-          weights[iFrom] += into.r
-          
+      //     weights[iFrom] += into.r
+      //     
 
-          weights[iInto] += from.r
-          
-        }
-      }
+      //     weights[iInto] += from.r
+      //     
+      //   }
+      // }
 
       // handle close aims
       let intersections = boxIntersect(boxes) 
@@ -505,8 +502,8 @@ export default defineComponent({
       let ab, rSum, d
 
       for(let intersection of intersections) {
-        iA = boxToAimIndex[intersection[0]]
-        iB = boxToAimIndex[intersection[1]]
+        iA = boxToAimId[intersection[0]]
+        iB = boxToAimId[intersection[1]]
         shiftA = shifts[iA]
         rA = r[iA] 
         posA = pos[iA]
@@ -545,15 +542,14 @@ export default defineComponent({
       let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
       let standstill = true
       let i
-      for(let aimId in aims) {
-        i = aimIdToIndex[aimId]
-        const shift = shifts[i]
+      for(let aimId of aimIds) {
+        const shift = shifts[aimId]
         vec2.scale(shift, shift, force)
         if(shift[0] < -minShift ||
           shift[0] > minShift ||
           shift[1] < -minShift ||
           shift[1] > minShift) {
-          aim = this.aimNetwork.aims[aimIndexToId[i]]
+          aim = this.aimNetwork.aims[aimId]
           if(
             !(aim == this.aimNetwork.selectedAim) &&
             !(aim == map.dragCandidate && map.dragBeginning)
