@@ -9,6 +9,9 @@ The order is reversed chronological. Newer ideas on top:
 
 #2022-07-29
 - Towards V0.2 release
+  - outflows computed list
+    - confirmed based on set at aim
+    - compute share (in absolute terms? in ETH?) 
   - flows position aendern
     - einzelner flow
     - weisse handles zeigen 
@@ -16,7 +19,7 @@ The order is reversed chronological. Newer ideas on top:
       - linie dazwischen
   - ongoing transaction indicators
     - for every area (data, members, loopWeight, ...)  
-  - finance tests
+  - P(other repo): finance tests
   - uncommited list 
     - button with number
     - on tab close => show dialogue

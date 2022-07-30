@@ -34,6 +34,9 @@
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
         :aim="aim"/>
+      <FlowHandle v-if="aimNetwork.selectedFlow !== undefined"
+        :flow="aimNetwork.selectedFlow"/>
+
       <!--rect
         :x="- map.offset[0] - LOGICAL_HALF_SIDE * map.xratio * 0.5 / map.scale"
         :y="- map.offset[1] - LOGICAL_HALF_SIDE * map.yratio * 0.5 / map.scale"
@@ -52,6 +55,7 @@ import { defineComponent, markRaw, toRaw } from "vue";
 import AimSVG from './AimSVG.vue';
 import FlowSVG from './FlowSVG.vue';
 import Connector from './Connector.vue';
+import FlowHandle from './FlowHandleSVG.vue';
 
 import { Aim, Flow, useAimNetwork, randomAimColor, toHexColor } from '../stores/aim-network'
 import { useMap, LOGICAL_HALF_SIDE } from '../stores/map'
@@ -83,7 +87,8 @@ export default defineComponent({
   components: {
     AimSVG, 
     FlowSVG, 
-    Connector
+    Connector, 
+    FlowHandle, 
   },
   data() {
     return {
@@ -125,60 +130,70 @@ export default defineComponent({
     window.addEventListener("resize", updateHalfSide)
     updateHalfSide()
 
-    const updatePan = (mouse: vec2.T) => {
+    const updatePan = (d: vec2.T) => {
       const pb = this.map.panBeginning; 
       if(pb !== undefined) {
-        const d = vec2.crSub(pb.page, mouse)
-        if(vec2.len2(d) > 25) {
-          this.map.preventReleaseClick = true
-          vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
-          const offset = vec2.clone(pb.offset)
-          vec2.sub(offset, offset, d)
-          this.map.offset = offset  
-        }
+        vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
+        const offset = vec2.clone(pb.offset)
+        vec2.sub(offset, offset, d)
+        this.map.offset = offset  
       }
     }
 
-    const updateDrag = (mouse: vec2.T) => {
+    const updateDrag = (d: vec2.T) => {
       const db = this.map.dragBeginning;
       const aim = this.map.dragCandidate; 
       if(db && aim) {
-        const d = vec2.clone(db.page)
-        vec2.sub(d, d, mouse) 
-        if(vec2.len2(d) > 25) {
-          this.map.preventReleaseClick = true
-          vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
-          const pos = vec2.clone(db.pos)
-          vec2.sub(pos, pos, d) 
-          aim.pos = pos
-        }
+        vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
+        const pos = vec2.clone(db.pos)
+        vec2.sub(pos, pos, d) 
+        aim.pos = pos
       }
     }
 
+    const updateLayout = (d: vec2.T) => {
+      const lc = this.map.layoutCandidate
+      if(lc) {
+        this.map.cursorMoved = true
+        vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
+        const handlePos = vec2.crSub(lc.start, d)
+        const arm = vec2.crSub(handlePos, lc.M) 
+        vec2.scale(lc.flow.relativeDelta, arm, lc.dScale)
+      }
+    }
+
+    // I think it's not nice that mousedown etc. events have to reach the map component. 
     const beginWhatever = (mouse: vec2.T) => {
       this.map.updateMouse(mouse) 
       if(this.map.connectFrom) {
         this.map.connecting = true
-        this.map.preventReleaseClick = true
+        this.map.cursorMoved = true
       } else if(this.map.dragCandidate) {
         beginDrag(this.map.dragCandidate, mouse)
+      } else if(this.map.layoutCandidate) {
+        beginLayout(mouse)
       } else {
         beginPan(mouse) 
       }
     }
 
     const beginPan = (mouse: vec2.T) => {
+      this.map.mousePhysBegin = vec2.clone(mouse)
       this.map.panBeginning = {
-        page: vec2.clone(mouse), 
         offset: vec2.clone(this.map.offset)
       }
     }
     const beginDrag = (aim: Aim, mouse:vec2.T) => {
       //this.aimNetwork.deselect()
+      this.map.mousePhysBegin = vec2.clone(mouse)
       this.map.dragBeginning = {
-        page: vec2.clone(mouse),
         pos: vec2.clone(aim.pos) 
       }
+    }
+
+    const beginLayout = (mouse:vec2.T) => {
+      this.map.mousePhysBegin = vec2.clone(mouse)
+      this.map.layouting = true
     }
 
     const endWhatever = () : void => {
@@ -187,8 +202,10 @@ export default defineComponent({
         endPan(); 
       } else if (this.map.dragBeginning) {
         endDrag();
+      } else if(this.map.layouting) {
+        endLayout();
       }
-      setTimeout(() => { this.map.preventReleaseClick = false })
+      setTimeout(() => { this.map.cursorMoved = false })
     }
 
     const endPan = () => {
@@ -196,19 +213,29 @@ export default defineComponent({
     }
 
     const endDrag = () => {
-      if(this.map.preventReleaseClick && this.map.dragCandidate) {
-        //TBD: this.aimNetwork.relocate()
-      }
       delete this.map.dragBeginning; 
       delete this.map.dragCandidate; 
     }
 
+    const endLayout = () => {
+      this.map.layouting = false; 
+      delete this.map.layoutCandidate;
+    }
+
     const updateWhatever = (mouse: vec2.T) : void => {
       this.map.updateMouse(mouse)
-      if(this.map.panBeginning) {
-        updatePan(mouse); 
-      } else if (this.map.dragBeginning) {
-        updateDrag(mouse); 
+      const d = vec2.crSub(this.map.mousePhysBegin, mouse)
+      if(vec2.len2(d) > 25 || this.map.cursorMoved) {
+        this.map.cursorMoved = true
+        if(this.map.panBeginning) {
+          updatePan(d); 
+        } else if (this.map.dragBeginning) {
+          updateDrag(d); 
+        } else if (this.map.layouting) {
+          updateLayout(d); 
+        } else {
+          this.map.cursorMoved = false
+        }
       }
     }
 
@@ -327,7 +354,7 @@ export default defineComponent({
     canvas.addEventListener("touchcancel", finishTouch) 
 
     canvas.addEventListener("click", () => {
-      if(!this.map.preventReleaseClick) {
+      if(!this.map.cursorMoved) {
         if(this.aimNetwork.selectedAim || this.aimNetwork.selectedFlow) {
           this.aimNetwork.deselect()
         } else {
@@ -409,7 +436,9 @@ export default defineComponent({
       }
     },
     layout() {
-      const force = 0.09
+      const flowForce = 0.2
+
+      const globalForce = 0.09
 
       /* in the following there is 
         - aimId: the string
@@ -475,7 +504,6 @@ export default defineComponent({
       let delta = vec2.create()
       let targetPos = vec2.create()
       let targetShift = vec2.create()
-      let weights = new Array<number>(aimIds.length)
       for(let fromId of Object.keys(flows) as unknown as number[]) {
         let bucket = flows[fromId]
         for(let intoId of Object.keys(bucket) as unknown as number[]) {
@@ -486,25 +514,23 @@ export default defineComponent({
           // into aim
           vec2.add(targetPos, flow.from.pos, delta)
           vec2.sub(targetShift, targetPos, flow.into.pos)
+
           vec2.scale(targetShift, targetShift, flow.from.r)
 
-          weights[intoId] += flow.from.r
           vec2.add(shifts[intoId], shifts[intoId], targetShift)
           
           // from aim
           vec2.sub(targetPos, flow.into.pos, delta)
           vec2.sub(targetShift, targetPos, flow.from.pos)
+
           vec2.scale(targetShift, targetShift, flow.into.r)
 
-          weights[fromId] += flow.into.r
           vec2.add(shifts[fromId], shifts[fromId], targetShift)
         }
       }
 
       for(let aimId of aimIds) {
-        if(weights[aimId] > 0) {
-          vec2.scale(shifts[aimId], shifts[aimId], 1 / weights[aimId])
-        }
+        vec2.scale(shifts[aimId], shifts[aimId], flowForce)
       }
 
       // handle close aims
@@ -555,7 +581,7 @@ export default defineComponent({
       let standstill = true
       for(let aimId of aimIds) {
         const shift = shifts[aimId]
-        vec2.scale(shift, shift, force)
+        vec2.scale(shift, shift, globalForce)
         if(shift[0] < -minShift ||
           shift[0] > minShift ||
           shift[1] < -minShift ||

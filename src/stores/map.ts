@@ -1,11 +1,18 @@
 import { defineStore } from 'pinia'
 
 import * as vec2 from '../vec2'
-import { Aim } from './aim-network'
+import { Aim, Flow } from './aim-network'
 
 type maybeAim = undefined | Aim
 
 export const LOGICAL_HALF_SIDE = 1000
+
+export interface LayoutCandidate {
+  M: vec2.T, 
+  start: vec2.T, 
+  dScale: number,
+  flow: Flow
+}
 
 export const useMap = defineStore('map', {
   state() {
@@ -19,13 +26,16 @@ export const useMap = defineStore('map', {
       halfSide: 0, 
       xratio: 1, 
       yratio: 1, 
-      panBeginning: undefined as undefined | { page: vec2.T, offset: vec2.T },
-      dragBeginning: undefined as undefined | { page: vec2.T, pos: vec2.T },
+      mousePhysBegin: vec2.create(), // start physical coordinates of mouse for drag actions
+      panBeginning: undefined as undefined | { offset: vec2.T },
+      dragBeginning: undefined as undefined | { pos: vec2.T },
+      layouting: false,
       connecting: false, 
-      preventReleaseClick: false,
+      cursorMoved: false,
       clientOffset: vec2.create(),
       connectFrom: undefined as maybeAim,
       dragCandidate: undefined as maybeAim, 
+      layoutCandidate: undefined as undefined | LayoutCandidate,
       anim: {
         duration: 0.5, 
         t0: 0, 
@@ -59,6 +69,9 @@ export const useMap = defineStore('map', {
     }, 
     startDragging(aim: Aim) {
       this.dragCandidate = aim
+    }, 
+    startLayouting(c: LayoutCandidate) {
+      this.layoutCandidate = c
     }, 
     centerOnAim(aim: Aim) {
       // Gleichung: 

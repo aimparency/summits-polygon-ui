@@ -111,7 +111,7 @@ export default defineComponent({
     select() {
       if(this.aimNetwork.selectedAim === this.aim) {
         this.ui.sideMenuOpen = true
-      } else if(!this.map.preventReleaseClick) {
+      } else if(!this.map.cursorMoved) {
         this.aimNetwork.selectAim(this.aim)
       }
     }, 

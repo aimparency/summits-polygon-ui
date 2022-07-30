@@ -120,7 +120,6 @@ export default defineComponent({
     .clickable(); 
     background-color: @mid2; 
     border-bottom-right-radius: @secondaryradius; 
-    box-shadow: 0 0 2rem black; 
     width: @size; 
     height: @size; 
     line-height: @size; 
