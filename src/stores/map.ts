@@ -8,7 +8,7 @@ type maybeAim = undefined | Aim
 export const LOGICAL_HALF_SIDE = 1000
 
 export interface LayoutCandidate {
-  M: vec2.T, 
+  fromWeight: number, 
   start: vec2.T, 
   dScale: number,
   flow: Flow

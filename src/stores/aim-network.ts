@@ -14,7 +14,6 @@ import { markRaw, toRaw } from 'vue'
 
 function getPinnedAimsStorageKey() {
   const w3c = useWeb3Connection()
-  console.log(JSON.stringify(w3c))
   return "pinnedAims-" + w3c.network!.chainId + "-" + w3c.address
 }
 
@@ -308,6 +307,7 @@ export const useAimNetwork = defineStore('aim-network', {
         const baseAimAddr = await summitsContract.baseAim()
         let home = await this.loadAim(baseAimAddr) 
         home.pinned = true
+
         this.raiseLoadLevel(home, 2) 
 
         const map = useMap()

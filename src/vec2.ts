@@ -114,3 +114,10 @@ export function crNegate(a: T) {
   negate(r, a) 
   return r
 }
+
+export function crMix(a: T, b: T, aWeight: number) {
+  const r: T = [0, 0]
+  r[0] = a[0] * aWeight + b[0] * (1 - aWeight)
+  r[1] = a[1] * aWeight + b[1] * (1 - aWeight)
+  return r
+}

@@ -154,10 +154,15 @@ export default defineComponent({
     const updateLayout = (d: vec2.T) => {
       const lc = this.map.layoutCandidate
       if(lc) {
-        this.map.cursorMoved = true
         vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
-        const handlePos = vec2.crSub(lc.start, d)
-        const arm = vec2.crSub(handlePos, lc.M) 
+        vec2.crSub(lc.start, d)
+
+        const M = vec2.crMix(
+          lc.flow.from.pos, 
+          lc.flow.into.pos, 
+          lc.fromWeight
+        )
+        const arm = vec2.crSub(handlePos, M) 
         vec2.scale(lc.flow.relativeDelta, arm, lc.dScale)
       }
     }
@@ -445,7 +450,7 @@ export default defineComponent({
       }
     },
     layout() {
-      const flowForce = 0.3
+      const flowForce = 0.5
 
       const globalForce = 0.14
 

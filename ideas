@@ -16,8 +16,8 @@ The order is reversed chronological. Newer ideas on top:
 
 #2022-07-31
 - D: UI Price negatives Vorzeichen raus
-- confirmations als Set am aim
-  - outflow computed
+- D: confirmations als Set am aim
+  - D: outflow computed
 - flow commit delta
   - calc M on the flow such that handle stays under cursor
 - commitment seriality enforcement per commit type

@@ -1,12 +1,12 @@
 <template>
   <circle class="handle" 
     :class="{dragging: map.layouting}"
-    :cx="fromPos[0]" :cy="fromPos[1]" :r="flow.from.r / 2" 
+    :cx="fromPos[0]" :cy="fromPos[1]" :r="flow.from.r" 
     @mousedown="startLayouting(true)" 
     @touchstart="startLayouting(true)"
     @click.stop
     :stroke-width="flow.from.r * 0.05" />
-  <circle class="handle" :cx="intoPos[0]" :cy="intoPos[1]" :r="flow.into.r / 2" 
+  <circle class="handle" :cx="intoPos[0]" :cy="intoPos[1]" :r="flow.into.r"
     :class="{dragging: map.layouting}"
     @mousedown="startLayouting(false)" 
     @touchstart="startLayouting(false)"
@@ -62,7 +62,7 @@ export default defineComponent({
   methods: {
     startLayouting(from: boolean) {
       this.map.startLayouting({
-        M: this.M, 
+        fromWeight: this.flow.from.r / (this.flow.from.r + this.flow.into.r), 
         start: from ? this.fromPos : this.intoPos, 
         // scale * measured logical new from=>M should equal new relativeDelta
         // hinrichtung: d = relativeDelta * (r1 + r2) / (r1 + r2) * rInto
@@ -82,12 +82,13 @@ export default defineComponent({
   stroke: #fff8;
   stroke-linecap: round;
   transition: fill 0.2s, stroke 0.2s;
+  &.line {
+    pointer-events: none;
+    stroke: #fff0; 
+  }
   &:hover , &.dragging{
     fill: #fffa; 
     stroke: #fff; 
-  }
-  &.line {
-    pointer-events: none;
   }
   cursor: pointer; 
 }
