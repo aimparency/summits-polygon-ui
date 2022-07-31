@@ -7,6 +7,13 @@ The order is reversed chronological. Newer ideas on top:
 
 #features left
 
+#far future
+- neighbor guard
+  - only how confirmed aims if they really have a connection from the stating aim
+  - only load contributing aims when a certain token * share threshold is reached
+
+#2022-08-01
+
 #2022-07-31
 - D: UI Price negatives Vorzeichen raus
 - confirmations als Set am aim
@@ -15,6 +22,8 @@ The order is reversed chronological. Newer ideas on top:
   - calc M on the flow such that handle stays under cursor
 - commitment seriality enforcement per commit type
 - feature: list uncommitted changes
+- A: pinned aims should also load fringe (maybe 1 instead of 2?) 
+- A: force should not feel quadratic for aim size
 
 #2022-07-29
 - Towards V0.2 release

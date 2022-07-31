@@ -102,7 +102,6 @@ export default defineComponent({
       reusableLayoutCalcArrays: markRaw({
         r: new Array<number>(),
         pos: new Array<vec2.T>(), 
-        shifts: new Array<vec2.T>(),
         boxes: new Array<number[]>(),
       })
     }
@@ -446,18 +445,19 @@ export default defineComponent({
       }
     },
     layout() {
-      const flowForce = 0.2
+      const flowForce = 0.3
 
-      const globalForce = 0.09
+      const globalForce = 0.14
 
       let aims = this.aimNetwork.aims
       let aimIds = Object.keys(aims) as unknown as number[]
 
       let map = this.map
 
+      let shifts = []
+
       let r = this.reusableLayoutCalcArrays.r
       let positions = this.reusableLayoutCalcArrays.pos
-      let shifts = this.reusableLayoutCalcArrays.shifts
 
       let boxes = this.reusableLayoutCalcArrays.boxes
       boxes.length = aimIds.length
@@ -485,6 +485,7 @@ export default defineComponent({
       let flows = this.aimNetwork.flows
 
       let delta = vec2.create()
+      let rSum
       let targetPos = vec2.create()
       let targetShift = vec2.create()
       for(let fromId of Object.keys(flows) as unknown as number[]) {
@@ -492,13 +493,15 @@ export default defineComponent({
         for(let intoId of Object.keys(bucket) as unknown as number[]) {
           let flow = bucket[intoId]
 
-          vec2.scale(delta, flow.relativeDelta, flow.from.r + flow.into.r) 
+          let rSum = flow.from.r + flow.into.r
+
+          vec2.scale(delta, flow.relativeDelta, rSum) 
 
           // into aim
           vec2.add(targetPos, flow.from.pos, delta)
           vec2.sub(targetShift, targetPos, flow.into.pos)
 
-          vec2.scale(targetShift, targetShift, flow.from.r)
+          vec2.scale(targetShift, targetShift, flow.from.r / rSum)
 
           vec2.add(shifts[intoId], shifts[intoId], targetShift)
           
@@ -506,7 +509,7 @@ export default defineComponent({
           vec2.sub(targetPos, flow.into.pos, delta)
           vec2.sub(targetShift, targetPos, flow.from.pos)
 
-          vec2.scale(targetShift, targetShift, flow.into.r)
+          vec2.scale(targetShift, targetShift, flow.into.r / rSum)
 
           vec2.add(shifts[fromId], shifts[fromId], targetShift)
         }
@@ -520,7 +523,7 @@ export default defineComponent({
       let intersections = boxIntersect(boxes) 
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
-      let ab, rSum, d
+      let ab, d
 
       for(let intersection of intersections) {
         iA = boxIndexToAimId[intersection[0]]
@@ -568,10 +571,10 @@ export default defineComponent({
       }
 
       let viewMinShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
-      let minShift = 0
+      let shift, minShift = 0
       let standstill = true
       for(let aimId of aimIds) {
-        const shift = shifts[aimId]
+        shift = shifts[aimId]
         vec2.scale(shift, shift, globalForce)
         minShift = Math.max(viewMinShift, r[aimId] * 0.001)
         // TBD minShift = max(minShift, flow aim distance order radius)

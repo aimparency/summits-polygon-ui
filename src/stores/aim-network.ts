@@ -14,6 +14,7 @@ import { markRaw, toRaw } from 'vue'
 
 function getPinnedAimsStorageKey() {
   const w3c = useWeb3Connection()
+  console.log(w3c)
   return "pinnedAims-" + w3c.network!.chainId + "-" + w3c.address
 }
 
@@ -241,9 +242,6 @@ export class Flow {
 
   relativeDelta = vec2.create()
 
-  confirmed = false
-  confirmedOnChain = false
-
   constructor(
     public from: Aim,
     public into: Aim 
@@ -328,6 +326,7 @@ export const useAimNetwork = defineStore('aim-network', {
         pinnings.forEach((addr: string) => {
           this.loadAim(addr).then(aim => {
             aim.pinned = true
+            this.raiseLoadLevel(aim, 2) 
           }).catch(() => {
             console.warn("Could not load pinned aim") 
           })
@@ -469,13 +468,9 @@ export const useAimNetwork = defineStore('aim-network', {
       if(aim.address !== undefined) {
         let intoAddresses: string[] = []
         let values: boolean[] = []
-        Object.values(aim.outflows).forEach((flow: Flow) => {
-          if(flow.confirmed != flow.confirmedOnChain) {
-            if(flow.into.address !== undefined) {
-              intoAddresses.push(flow.into.address) 
-              values.push(flow.confirmed)
-            }
-          }
+        aim.contributionConfirmationSwitches.forEach((addr: string) => {
+          intoAddresses.push(addr)
+          values.push(!aim.contributionConfirmationsOnChain.has(addr))
         })
         const w3 = useWeb3Connection()
         const aimContract = w3.getAimContract(aim.address!)
@@ -483,9 +478,14 @@ export const useAimNetwork = defineStore('aim-network', {
         try {
           let tx = await aimContract.setContributionConfirmations(intoAddresses, values)
           await tx.wait()
-          intoAddresses.forEach((intoAddr: string) => {
-            aim.outflows[intoAddr].confirmedOnChain = aim.outflows[intoAddr].confirmed
-          })
+          aim.contributionConfirmationSwitches.forEach((addr: string) => {
+            if(aim.contributionConfirmationsOnChain.has(addr)) {
+              aim.contributionConfirmationsOnChain.delete(addr)
+            } else {
+              aim.contributionConfirmationsOnChain.add(addr)
+            }
+          }) 
+          aim.contributionConfirmationSwitches = new Set<string>()
         } catch (err) {
           console.error("Failed to commit contribution confirmations", err)
         }
@@ -561,6 +561,7 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.tokensOnChain = t
           aim.setLoopWeight(loopWeight) 
           aim.setTokens(t) 
+          aim.contributionConfirmationsOnChain = new Set<string>(contributions)
 
           let addedWeights = 0
           let addedPos = vec2.create()

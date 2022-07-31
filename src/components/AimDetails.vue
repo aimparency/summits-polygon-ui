@@ -226,23 +226,22 @@
       :key="aimId">
       {{ (100 * outflow.share).toFixed(0) }}%: 
       {{ outflow.title }} 
-      {{ !mayNetwork }}
       <div 
         class=confirmButton
         v-if='outflow.showConfirmedness'
-        @click.stop="toggleFlowConfirm(outflow.flow)"
+        @click.stop="toggleContributionConfirmation(outflow.flow)"
         :class="{confirmed: outflow.confirmed, deactivated: !mayNetwork}">
       </div>
     </div>
     <p/>
-    <div v-if="flowConfirmationsChanged && mayNetwork">
+    <div v-if="contributionConfirmationsChanged && mayNetwork">
       <div
         class='button' tabindex="0"  
         @click="reset">Reset</div>
       <div 
         class='button'
         tabindex="0"
-        @click="commitConfirmations">Commit</div>
+        @click="commitContributionConfirmations">Commit</div>
     </div>
 
     <div class="scrollspace"/>
@@ -341,7 +340,7 @@ export default defineComponent({
     }
   },
   computed: {
-    flowConfirmationsChanged() {
+    contributionConfirmationsChanged() {
       return this.aim.contributionConfirmationSwitches.size > 0
     }, 
     outflows() : Outflow[] {
@@ -353,8 +352,10 @@ export default defineComponent({
       for(let flow of v) {
         into = flow.into
         absOutflow = flow.share * Number(into.tokenSupply + into.tokens - into.tokensOnChain)
+        console.log(flow.share) 
+        console.log("absOutflow", absOutflow)
         absOutflowSum += absOutflow
-        confirmAvailable = from.address !== undefined && into.address !== undefined,
+        confirmAvailable = from.address !== undefined && into.address !== undefined && flow.published
         results.push({
           title: into.title, 
           flow: flow, 
@@ -543,7 +544,7 @@ export default defineComponent({
     commitMembers() {
       this.aimNetwork.commitAimMemberChanges(this.aim) 
     },
-    commitConfirmations() {
+    commitContributionConfirmations() {
       this.aimNetwork.commitContributionConfirmations(this.aim) 
     },
     editMember(member: Member) {
@@ -627,7 +628,7 @@ export default defineComponent({
         this.aimNetwork.transferAim(this.aim, this.memberAddr)
       }
     },
-    toggleFlowConfirm(flow: Flow) {
+    toggleContributionConfirmation(flow: Flow) {
       if(this.mayNetwork && flow.into.address !== undefined) {
         if(this.aim.contributionConfirmationSwitches.has(flow.into.address)) {
           this.aim.contributionConfirmationSwitches.delete(flow.into.address)

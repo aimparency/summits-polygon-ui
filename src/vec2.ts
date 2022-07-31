@@ -78,6 +78,11 @@ export function negate(out: T, a: T) {
   out[1] = -a[1]
 }
 
+export function mix(out: T, a: T, b: T, aWeight: number) {
+  out[0] = a[0] * aWeight + b[0] * (1 - aWeight)
+  out[1] = a[1] * aWeight + b[1] * (1 - aWeight)
+}
+
 /* the following cr-helpers create a vector for the operator result */
 
 export function crAdd(a: T, b: T) {
