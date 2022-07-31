@@ -128,7 +128,15 @@ export class Aim {
 
   origin = new AimOrigin()
 
-  pendingTransactions = 0
+  pendingTransactions = {
+    creation: false, 
+    data: false, 
+    members: false,
+    investment: false,
+    contributionConfirmations: false,
+    loopWeight: false, 
+    transfer: false,
+  } 
 
   static Permissions: {[name: string]: number} = {
     edit: 0x01, 
@@ -252,7 +260,7 @@ export class Flow {
 
   origin = new FlowOrigin()
 
-  pendingTransactions = 0
+  transactionPending = false
 
   published = false
 
@@ -380,7 +388,7 @@ export const useAimNetwork = defineStore('aim-network', {
       let summitsContract = useWeb3Connection().getSummitsContract()
       let price = aim.tokens * aim.tokens
       if(summitsContract) {
-        aim.pendingTransactions += 1
+        aim.pendingTransactions.creation = true
         try {
           let tx = await summitsContract.createAim(
             {
@@ -399,7 +407,7 @@ export const useAimNetwork = defineStore('aim-network', {
             }
           )
           let rc = await tx.wait()
-          aim.pendingTransactions -= 1 
+          aim.pendingTransactions.creation = false
           let creationEvent: any = rc.events.find((e: any) => e.event === 'AimCreation') 
           if(creationEvent) {
             aim.address = creationEvent.args.aimAddress
@@ -411,7 +419,7 @@ export const useAimNetwork = defineStore('aim-network', {
             this.togglePin(aim)
           }
         } catch {
-          aim.pendingTransactions -= 1
+          aim.pendingTransactions.creation = false
         }
       }
     }, 
@@ -428,17 +436,17 @@ export const useAimNetwork = defineStore('aim-network', {
       let functionName = 'updateAim' + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
-      aim.pendingTransactions += 1
+      aim.pendingTransactions.data = true
       try {
         let tx = await aimContract[functionName](...values)
         await tx.wait()
         for(let name of fields) { // TBD: maybe just assign new AimOrigin() ? 
           delete origin[name]
         }
-        aim.pendingTransactions -= 1
+      aim.pendingTransactions.data = false
       } catch(err)  {
         console.error("Failed to commit aim changes", err) 
-        aim.pendingTransactions -= 1
+        aim.pendingTransactions.data = false
       }
 
     }, 
@@ -458,7 +466,7 @@ export const useAimNetwork = defineStore('aim-network', {
           try {
             const w3 = useWeb3Connection()
             const aimContract = w3.getAimContract(aim.address!) 
-            aim.pendingTransactions += 1
+            aim.pendingTransactions.members = true
             if(addresses.length == 1) {
               let tx = await aimContract.setPermissions(addresses[0], permissions[0])
               await tx.wait()
@@ -466,13 +474,16 @@ export const useAimNetwork = defineStore('aim-network', {
               let tx = await aimContract.setPermissionsForMultipleMembers(addresses, permissions)
               await tx.wait()
             }
-            aim.pendingTransactions -= 1
             includedMembers.forEach((member: Member) => {
               member.persist()
+              if(member.address == w3.address) { 
+                aim.permissions = member.permissions
+              }
             })
+            aim.pendingTransactions.members = false
           } catch(err) {
             console.error("Failed to commit aim member changes", err)
-            aim.pendingTransactions -= 1
+            aim.pendingTransactions.members = false
           }
           // set members changed to false for include members
         }
@@ -495,9 +506,10 @@ export const useAimNetwork = defineStore('aim-network', {
           intoAddresses.push(addr)
           values.push(!aim.contributionConfirmationsOnChain.has(addr))
         })
-        const w3 = useWeb3Connection()
-        const aimContract = w3.getAimContract(aim.address!)
         try {
+          const w3 = useWeb3Connection()
+          const aimContract = w3.getAimContract(aim.address!)
+          aim.pendingTransactions.contributionConfirmations = true
           let tx = await aimContract.setContributionConfirmations(intoAddresses, values)
           await tx.wait()
           aim.contributionConfirmationSwitches.forEach((addr: string) => {
@@ -508,16 +520,18 @@ export const useAimNetwork = defineStore('aim-network', {
             }
           }) 
           aim.contributionConfirmationSwitches = new Set<string>()
+          aim.pendingTransactions.contributionConfirmations = false
         } catch (err) {
           console.error("Failed to commit contribution confirmations", err)
+          aim.pendingTransactions.contributionConfirmations = false
         }
       }
     }, 
     async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
-      const w3 = useWeb3Connection()
-      const aimContract = w3.getAimContract(aim.address!) 
-      aim.pendingTransactions += 1
       try {
+        const w3 = useWeb3Connection()
+        const aimContract = w3.getAimContract(aim.address!) 
+        aim.pendingTransactions.investment = true
         let tx = await aimContract.buy(
           amount, 
           {
@@ -527,16 +541,16 @@ export const useAimNetwork = defineStore('aim-network', {
         await tx.wait()
         aim.tokenSupply += amount
         aim.tokensOnChain = aim.tokens
-        aim.pendingTransactions -= 1
+        aim.pendingTransactions.investment = false
       } catch(err)  {
         console.error("Failed to buy tokens", err) 
-        aim.pendingTransactions -= 1
+        aim.pendingTransactions.investment = false
       }
     },
     async sellTokens(aim: Aim, amount: bigint, minPrice: bigint ) {
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(aim.address!) 
-      aim.pendingTransactions += 1
+      aim.pendingTransactions.investment = true
       try {
         let tx = await aimContract.sell(
           amount, 
@@ -545,10 +559,10 @@ export const useAimNetwork = defineStore('aim-network', {
         await tx.wait()
         aim.tokenSupply -= amount
         aim.tokensOnChain = aim.tokens
-        aim.pendingTransactions -= 1
+        aim.pendingTransactions.investment = false
       } catch(err)  {
         console.error("Failed to sell tokens", err) 
-        aim.pendingTransactions -= 1
+        aim.pendingTransactions.investment = false
       }
     }, 
     async loadAim(aimAddr: string) { 
@@ -725,9 +739,10 @@ export const useAimNetwork = defineStore('aim-network', {
       delete this.aims[aim.id]
     },
     async transferAim(aim: Aim, newOwnerAddr: string) {
-      const w3 = useWeb3Connection()
-      const aimContract = w3.getAimContract(aim.address!) 
       try {
+        const w3 = useWeb3Connection()
+        const aimContract = w3.getAimContract(aim.address!) 
+        aim.pendingTransactions.transfer = true
         let tx = await aimContract.transferOwnership(newOwnerAddr)
         await tx.wait()
         aim.permissions = 0x7f 
@@ -739,10 +754,13 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.members.push(new Member(w3.address, 0x7f))
         }
         aim.owner = newOwnerAddr
+        aim.pendingTransactions.transfer = false
       } catch(err)  {
         console.error("Failed to transfer aim", err) 
+        aim.pendingTransactions.transfer = false
       }
     },
+
     // Flows
     createAndSelectFlow(from: Aim, into: Aim) {
       if(from !== into) {
@@ -787,7 +805,7 @@ export const useAimNetwork = defineStore('aim-network', {
     async createFlowOnChain(flow: Flow) {
       if(flow.from.address && flow.into.address) {
         let aimContract = useWeb3Connection().getAimContract(flow.into.address) 
-        flow.pendingTransactions += 1
+        flow.transactionPending = true
         try {
           let relativeDelta = flow.relativeDelta
           console.log('should be NON-PROXY', relativeDelta)
@@ -800,8 +818,6 @@ export const useAimNetwork = defineStore('aim-network', {
             }
           )
           let rc = await tx.wait()
-          flow.pendingTransactions -= 1 
-          flow.published = true
           if(!vec2.eq(flow.relativeDelta, relativeDelta)) {
             flow.origin.relativeDelta = relativeDelta
           }
@@ -809,9 +825,11 @@ export const useAimNetwork = defineStore('aim-network', {
           if(creationEvent) {
             flow.clearOrigin()
           }
+          flow.transactionPending = false
+          flow.published = true
         } catch(error: any) {
           console.error(`Failed to create flow: ${error}`) 
-          flow.pendingTransactions -= 1
+          flow.transactionPending = false
         }
       }
     }, 
@@ -847,16 +865,16 @@ export const useAimNetwork = defineStore('aim-network', {
       }) 
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(flow.into.address!) 
-      flow.pendingTransactions += 1
+      flow.transactionPending = true
       try {
         console.log(functionName) 
         let tx = await aimContract[functionName](flow.from.address!, ...args)
         await tx.wait()
         flow.clearOrigin()
-        flow.pendingTransactions -= 1
+        flow.transactionPending = false
       } catch(err)  {
-        console.error("Failed to commit aim changes", err) 
-        flow.pendingTransactions -= 1
+        console.error("Failed to commit flow changes", err) 
+        flow.transactionPending = false
       }
     }, 
     resetFlowChanges(flow: Flow) {

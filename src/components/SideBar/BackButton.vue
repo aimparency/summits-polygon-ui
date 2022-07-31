@@ -25,6 +25,7 @@ export default defineComponent({
   top: 1rem; 
   width: @size; 
   height: @size; 
+  border-radius: @secondaryradius; 
   line-height: @size; 
   font-weight: bold; 
   text-align: center; 

@@ -119,7 +119,7 @@ export default defineComponent({
     font-size: 1.8rem; 
     .clickable(); 
     background-color: @mid2; 
-    border-bottom-right-radius: @secondaryradius; 
+    border-radius: @secondaryradius; 
     width: @size; 
     height: @size; 
     line-height: @size; 

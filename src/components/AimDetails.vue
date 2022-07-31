@@ -3,62 +3,68 @@
     class="aim-details"> 
     <h3>aim details</h3>
     
-    <textarea
-      ref='title'
-      rows="4"
-      class='title' 
-      placeholder="aim title"
-      :disabled="!mayEdit"
-      :value="aim.title"
-      @input="updateTitle"></textarea>
-    <textarea
-      ref='description'
-      rows="9"
-      class='description' 
-      placeholder="aim description"
-      :disabled="!mayEdit"
-      :value="aim.description"
-      @input="updateDescription"></textarea>
-    <input 
-      class='effort' 
-      :value='aim.effort == 0 ? "" : aim.effort'
-      placeholder="effort"
-      :disabled="!mayEdit"
-      @input="updateEffort"/>
-    <MultiSwitch
-      class='status'
-      label="status"
-      :disabled="!mayEdit"
-      :value="aim.status"
-      :options="statusOptions" 
-      @change='updateState'
-      />
+    <div class=block>
+      <textarea
+        ref='title'
+        rows="4"
+        class='title' 
+        placeholder="aim title"
+        :disabled="!mayEdit"
+        :value="aim.title"
+        @input="updateTitle"></textarea>
+      <textarea
+        ref='description'
+        rows="9"
+        class='description' 
+        placeholder="aim description"
+        :disabled="!mayEdit"
+        :value="aim.description"
+        @input="updateDescription"></textarea>
+      <input 
+        class='effort' 
+        :value='aim.effort == 0 ? "" : aim.effort'
+        placeholder="effort"
+        :disabled="!mayEdit"
+        @input="updateEffort"/>
+      <MultiSwitch
+        class='status'
+        label="status"
+        :disabled="!mayEdit"
+        :value="aim.status"
+        :options="statusOptions" 
+        @change='updateState'
+        />
 
-        
-    <div class="fieldButtons">
-      <div
-        v-if="dirty" 
-        class='button' tabindex="0"  
-        @click="reset">Reset</div>
+          
+      <div class="fieldButtons">
+        <div
+          v-if="dirty" 
+          class='button' tabindex="0"  
+          @click="reset">Reset</div>
+        <div 
+          v-if="dirty && public"
+          class='button'
+          tabindex="0"
+          @click="commitChanges">Commit</div>
+        <div
+          tabindex="0"  
+          v-if="aim.address === undefined"
+          class='button' 
+          :class='{confirm: confirmRemove}'
+          @blur='confirmRemove = false'
+          @click="remove">{{ confirmRemove ? "Confirm removal" : "Remove aim" }}</div>
+        <!-- v-else blacklist button -->
+        <div
+          v-if="public"
+          tabindex="0"
+          class='button'
+          :class="{share: !justCopiedToClipboard, copied: justCopiedToClipboard}"
+          @click="share">{{justCopiedToClipboard ? "Copied to clipboard!" : ""}}</div>
+      </div>
       <div 
-        v-if="dirty && public"
-        class='button'
-        tabindex="0"
-        @click="commitChanges">Commit</div>
-      <div
-        tabindex="0"  
-        v-if="aim.address === undefined"
-        class='button' 
-        :class='{confirm: confirmRemove}'
-        @blur='confirmRemove = false'
-        @click="remove">{{ confirmRemove ? "Confirm removal" : "Remove aim" }}</div>
-      <!-- v-else blacklist button -->
-      <div
-        v-if="public"
-        tabindex="0"
-        class='button'
-        :class="{share: !justCopiedToClipboard, copied: justCopiedToClipboard}"
-        @click="share">{{justCopiedToClipboard ? "Copied to clipboard!" : ""}}</div>
+        :class="{deactivated: !(aim.pendingTransactions.data || buisy)}"
+        class="overlay">
+      </div>
     </div>
 
     <div v-if="aim.address == undefined">
@@ -73,175 +79,189 @@
     <div v-else>
       <h3> investment </h3>
     </div>
-    <div>
-      <p v-if="aim.address" class="supply">total supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
-    </div>
-    <BigIntSlider 
-      name='balance'
-      :left='tokensSliderMin.toString()'
-      :right='tokensSliderMax.toString()'
-      :from='tokensSliderMin'
-      :to='tokensSliderMax'
-      :value='aim.tokens'
-      unit="tokens"
-      @drag-end='updateTokensSliderOrigin'
-      @update='updateTokens'/>
-    <div v-if="aim.pendingTransactions"> 
-      <div class="spinner"></div>
-    </div>
-    <div v-else-if="aim.address == undefined">
-      <div 
-        v-if='aim.tokenName != "" && aim.tokenSymbol != ""'
-        class='button' 
-        tabindex="0" 
-        @click="createAimOnChain">Create aim on chain for {{ createPrice }} {{nativeCurrency.symbol}} </div>
-      <p v-else> 
-        <span class="error">
-          Token name and symbol are required for creating an aim on chain.
-        </span>
-      </p>
-    </div>
-    <div v-else-if='trade !== undefined'>
-      <div class='button' tabindex="0" @click="resetTokens"> 
-        Reset 
+    <div class=block>
+      <div>
+        <p v-if="aim.address" class="supply">total supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
       </div>
-      <div
-        class='button' tabindex="0" @click="doTrade"> 
-        {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }} {{ nativeCurrency.symbol }}
+      <BigIntSlider 
+        name='balance'
+        :left='tokensSliderMin.toString()'
+        :right='tokensSliderMax.toString()'
+        :from='tokensSliderMin'
+        :to='tokensSliderMax'
+        :value='aim.tokens'
+        unit="tokens"
+        @drag-end='updateTokensSliderOrigin'
+        @update='updateTokens'/>
+      <div v-if="aim.address == undefined">
+        <div 
+          v-if='aim.tokenName != "" && aim.tokenSymbol != ""'
+          class='button' 
+          tabindex="0" 
+          @click="createAimOnChain">Create aim on chain for {{ createPrice }} {{nativeCurrency.symbol}} </div>
+        <p v-else> 
+          <span class="hint">
+            Token name and symbol are required for creating an aim on chain.
+          </span>
+        </p>
       </div>
-    </div>
-    <h3> permissions </h3>
-    <p>
-      my permissions: 
-      <span class="permission-indicator" 
-        v-for="permission, key in permissions" 
-        :key="key">{{ permission }}</span>
-      <span class="permission-indicator" v-if="permissions.length == 0">
-        none
-      </span>
-    </p>
-
-    <div v-if="aim.address == undefined">
-      <p> Aim has to be saved on chain before managing members. </p>
-    </div>
-    <div class="memberSection" v-else >
-      <div> 
-        <span>owner</span>: 
-        <ShortAddress :address="aim.owner ?? myself"/>
-      </div>
-      <h4 v-if="aim.members.length > 0" class="member"> 
-        members
-      </h4>
-      <div v-for="member in aim.members" :key="member.address" class="member">
-        <div class="editButton" tabindex="0" @click="editMember(member)"></div>
-        <ShortAddress :address="member.address" />:
-        <span v-for="v, key in aimPermissions"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
-      </div>
-      <p v-if="aim.members.length == 0">there are no members</p>
-      <div v-if="membersChanged && public" class="memberChangesActions"> 
-        <div class="button" @click="resetMembers">
+      <div v-else-if='trade !== undefined'>
+        <div class='button' tabindex="0" @click="resetTokens"> 
           Reset 
         </div>
-        <div class="button" @click="commitMembers">
-          Commit 
-        </div> 
-      </div>
-      <div v-if="mayManage" class="editSection">
-        <div> add or edit member: 
-        <input 
-          ref="newMemberAddr"
-          class="newMemberAddr"
-          placeholder="account address"
-          :value="memberAddr"
-          @input="inputMemberAddress"
-          >
+        <div
+          class='button' tabindex="0" @click="doTrade"> 
+          {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }} {{ nativeCurrency.symbol }}
         </div>
-        <p class="permissionToggles"> permissions: 
-          <span 
-            v-for="selected, permission in permissionGranting"
-            class="permission-indicator toggleable" :class="{selected}"
-            @click="permissionGranting[permission] = !permissionGranting[permission]">
-            {{permission}}
-          </span>
-          <span
-            class="permission-indicator toggleable"
-            @click="resetPermissionGranting"
-            >x</span>
-        </p>
-        <p class="error" v-if="memberAddrError">{{memberAddrError}}</p>
-        <div v-else-if="memberAddr !== ''">
-          <div class="button" tabindex=0 @click="addMember">{{memberEditing ? "Change permissions" : "Add member"}}</div>
-          <div 
-            class=button
-            tabindex=0
-            :class="{confirm: confirmTransfer}"
-            v-if="mayTransfer" 
-            @blur='confirmTransfer = false'
-            @click="transferOwnership">
-            {{ confirmTransfer ? "Confirm transfer" : "Transfer ownership" }}
+      </div>
+      <div 
+        :class="{deactivated: !(aim.pendingTransactions.investment || buisy)}"
+        class=overlay />
+    </div>
+
+    <h3> permissions </h3>
+    <div class=block>
+      <p>
+        my permissions: 
+        <span class="permission-indicator" 
+          v-for="permission, key in permissions" 
+          :key="key">{{ permission }}</span>
+        <span class="permission-indicator" v-if="permissions.length == 0">
+          none
+        </span>
+      </p>
+
+      <div v-if="aim.address == undefined">
+        <p> Aim has to be saved on chain before managing members. </p>
+      </div>
+      <div class="memberSection" v-else >
+        <div> 
+          <span>owner</span>: 
+          <ShortAddress :address="aim.owner ?? myself"/>
+        </div>
+        <h4 v-if="aim.members.length > 0" class="member"> 
+          members
+        </h4>
+        <div v-for="member in aim.members" :key="member.address" class="member">
+          <div class="editButton" tabindex="0" @click="editMember(member)"></div>
+          <ShortAddress :address="member.address" />:
+          <span v-for="v, key in aimPermissions"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
+        </div>
+        <p v-if="aim.members.length == 0">there are no members</p>
+        <div v-if="membersChanged && public" class="memberChangesActions"> 
+          <div class="button" @click="resetMembers">
+            Reset 
+          </div>
+          <div class="button" @click="commitMembers">
+            Commit 
+          </div> 
+        </div>
+        <div v-if="mayManage" class="editSection">
+          <div> add or edit member: 
+          <input 
+            ref="newMemberAddr"
+            class="newMemberAddr"
+            placeholder="account address"
+            :value="memberAddr"
+            @input="inputMemberAddress"
+            >
+          </div>
+          <p class="permissionToggles"> permissions: 
+            <span 
+              v-for="selected, permission in permissionGranting"
+              class="permission-indicator toggleable" :class="{selected}"
+              @click="permissionGranting[permission] = !permissionGranting[permission]">
+              {{permission}}
+            </span>
+            <span
+              class="permission-indicator toggleable"
+              @click="resetPermissionGranting"
+              >x</span>
+          </p>
+          <p class="hint" v-if="memberAddrError">{{memberAddrError}}</p>
+          <div v-else-if="memberAddr !== ''">
+            <div class="button" tabindex=0 @click="addMember">{{memberEditing ? "Change permissions" : "Add member"}}</div>
+            <div 
+              class=button
+              tabindex=0
+              :class="{confirm: confirmTransfer}"
+              v-if="mayTransfer" 
+              @blur='confirmTransfer = false'
+              @click="transferOwnership">
+              {{ confirmTransfer ? "Confirm transfer" : "Transfer ownership" }}
+            </div>
           </div>
         </div>
       </div>
+      <div 
+        :class="{deactivated: !(aim.pendingTransactions.members || buisy)}"
+        class=overlay />
     </div>
+
     <h3> flows </h3>
-    <Slider
-      v-if='mayNetwork'
-      name='loop weight'
-      left='0'
-      right='100'
-      :factor="100/0xffff"
-      :decimalPlaces='2'
-      :from='0'
-      :to='0xffff'
-      :value='aim.loopWeight'
-      @update='updateLoopWeight'/>
-    <p v-else> loop weight: {{ Math.floor(100 * aim.loopWeight / 0xffff) }}% </p>
-    <div 
-      v-if='aim.address && aim.loopWeightOrigin'
-      class='button' 
-      tabindex="0" 
-      @click="commitLoopWeight">
-        Commit 
-    </div>
-    <p class=flowDirection> incoming flows </p>
-    <div class="flow loop">
-      loop share: {{ Math.floor(100 * aim.loopShare) }}%
-    </div>
-    <div 
-      class="flow button" 
-      v-for="(flow, aimId) in aim.inflows" 
-      @click="flowClick(flow)" 
-      :key="aimId">
-      {{ (100 * flow.share).toFixed(0) }}% : 
-      {{ flow.from.title || "[unnamed]"}} 
-    </div>
-    <p class=flowDirection> outgoing flows </p>
-    <div class="flow loop">
-      loop share: TBD 
-    </div>
-    <div 
-      class="outflow button" 
-      v-for="(outflow, aimId) in outflows" 
-      @click="flowClick(outflow.flow)" 
-      :key="aimId">
-      {{ (100 * outflow.share).toFixed(0) }}%: 
-      {{ outflow.title }} 
+    <div class=block>
+      <Slider
+        v-if='mayNetwork'
+        name='loop weight'
+        left='0'
+        right='100'
+        :factor="100/0xffff"
+        :decimalPlaces='2'
+        :from='0'
+        :to='0xffff'
+        :value='aim.loopWeight'
+        @update='updateLoopWeight'/>
+      <p v-else> loop weight: {{ Math.floor(100 * aim.loopWeight / 0xffff) }}% </p>
       <div 
-        class=confirmButton
-        v-if='outflow.showConfirmedness'
-        @click.stop="toggleContributionConfirmation(outflow.flow)"
-        :class="{confirmed: outflow.confirmed, deactivated: !mayNetwork}">
+        v-if='aim.address && aim.loopWeightOrigin'
+        class='button' 
+        tabindex="0" 
+        @click="commitLoopWeight">
+          Commit 
       </div>
-    </div>
-    <p/>
-    <div v-if="contributionConfirmationsChanged && mayNetwork">
-      <div
-        class='button' tabindex="0"  
-        @click="reset">Reset</div>
+      <p class=flowDirection> incoming flows </p>
+      <div class="flow loop">
+        loop share: {{ Math.floor(100 * aim.loopShare) }}%
+      </div>
       <div 
-        class='button'
-        tabindex="0"
-        @click="commitContributionConfirmations">Commit</div>
+        class="flow button" 
+        v-for="(flow, aimId) in aim.inflows" 
+        @click="flowClick(flow)" 
+        :key="aimId">
+        {{ (100 * flow.share).toFixed(0) }}% : 
+        {{ flow.from.title || "[unnamed]"}} 
+      </div>
+      <p class=flowDirection> outgoing flows </p>
+      <div class="flow loop">
+        loop share: TBD 
+      </div>
+      <div 
+        class="outflow button" 
+        v-for="(outflow, aimId) in outflows" 
+        @click="flowClick(outflow.flow)" 
+        :key="aimId">
+        {{ (100 * outflow.share).toFixed(0) }}%: 
+        {{ outflow.title }} 
+        <div 
+          class=confirmButton
+          v-if='outflow.showConfirmedness'
+          @click.stop="toggleContributionConfirmation(outflow.flow)"
+          :class="{confirmed: outflow.confirmed, deactivated: !mayNetwork}">
+        </div>
+      </div>
+      <p/>
+      <div v-if="contributionConfirmationsChanged && mayNetwork">
+        <div
+          class='button' tabindex="0"  
+          @click="reset">Reset</div>
+        <div 
+          class='button'
+          tabindex="0"
+          @click="commitContributionConfirmations">Commit</div>
+      </div>
+      <div 
+        :class="{deactivated: !(aim.pendingTransactions.contributionConfirmations || buisy)}"
+        class=overlay />
     </div>
 
     <div class="scrollspace"/>
@@ -340,6 +360,9 @@ export default defineComponent({
     }
   },
   computed: {
+    buisy() {
+      return this.aim.pendingTransactions.transfer || this.aim.pendingTransactions.creation
+    }, 
     contributionConfirmationsChanged() {
       return this.aim.contributionConfirmationSwitches.size > 0
     }, 
@@ -755,8 +778,8 @@ export default defineComponent({
     text-align: left;
     line-height: 2rem;
   }
-  .error{
-    color: @error; 
+  .hint{
+    color: @c1; 
   }
   .newMemberAddr {
     margin: 0.5rem;

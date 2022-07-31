@@ -121,4 +121,35 @@ h3 {
 .nowrap {
   white-space: nowrap; 
 }
+
+/* overlay loading animation */
+.block {
+  position: relative; 
+  .overlay {
+    animation: loading 2s ease infinite; 
+    position: absolute;
+    left: 0.5rem; 
+    top: -0.5rem; 
+    border-radius: 0.5rem; 
+    width: calc(100% - 1rem); 
+    height: calc(100% + 1rem);
+    background: linear-gradient(100deg, fade(@c2, 10%), #fff6);
+    background-size: 200% 100%;
+    opacity: 1; 
+    transition: opacity 0.2s ease-in-out;
+    &.deactivated {
+      opacity: 0; 
+      pointer-events: none;
+    }
+  }
+}
+@keyframes loading {
+  0% {
+    background-position: 0% 0%; 
+  }
+  100% {
+    background-position: -200% 0%; 
+  }
+}
+
 </style>

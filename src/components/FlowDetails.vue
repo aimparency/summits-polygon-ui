@@ -2,60 +2,62 @@
   <div 
     class="flow-details"> 
     <h3>flow details</h3>
-    <!-- TBD details (cid) -->
-    <textarea
-      ref='explanation'
-      rows="9"
-      placeholder="flow explanation"
-      :disabled="!flow.into.mayNetwork()"
-      :value="flow.explanation"
-      @input="updateExplanation"></textarea>
-    <div class='aims'>
-      <div
-        tabindex="0"
-        @click='aimNetwork.selectAim(flow.from)'
-        class='button'> 
-        {{ flow.from.title || "<unnamed>" }} 
-      </div>
-      contributes to
-      <div
-        tabindex="0"
-        @click='aimNetwork.selectAim(flow.into)'
-        class='button'> 
-        {{ flow.into.title || "<unnamed>"}} 
-      </div>
+    <div
+      tabindex="0"
+      @click='aimNetwork.selectAim(flow.from)'
+      class='button aim'> 
+      {{ flow.from.title || "<unnamed>" }} 
     </div>
-    <Slider
-      name='weight'
-      left='0'
-      right='100'
-      :disabled="!flow.into.mayNetwork()"
-      :factor="100/0xffff"
-      :decimalPlaces='2'
-      :from='0'
-      :to='0xffff'
-      :value='flow.weight'
-      @update='updateWeight'/>
-    <div class="relativePositionHint" v-if="flow.origin.relativeDelta != undefined">
-      <p>relative positioning changed</p>
+    contributes to
+    <div
+      tabindex="0"
+      @click='aimNetwork.selectAim(flow.into)'
+      class='button aim'> 
+      {{ flow.into.title || "<unnamed>"}} 
     </div>
-    <div>
-      <span v-if='!flow.published'>
-        <p v-if='flow.into.address == undefined || flow.from.address == undefined'>
-          Before creating this flow on chain, both involved aims have to be created on chain</p>
-        <div v-else class='button' tabindex="0" @click="create">create flow on chain</div>
-      </span>
-      <span v-else-if='dirty'>
-        <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
-        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit changes</div>
-      </span>
-      <div
-        v-if="!flow.published"
-        tabindex="0"  
-        class='button' 
-        :class='{confirm: confirmRemove}'
-        @blur='confirmRemove = false'
-        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+    <div class="block">
+      <textarea
+        ref='explanation'
+        rows="9"
+        placeholder="flow explanation"
+        :disabled="!flow.into.mayNetwork()"
+        :value="flow.explanation"
+        @input="updateExplanation"></textarea>
+      <Slider
+        name='weight'
+        left='0'
+        right='100'
+        :disabled="!flow.into.mayNetwork()"
+        :factor="100/0xffff"
+        :decimalPlaces='2'
+        :from='0'
+        :to='0xffff'
+        :value='flow.weight'
+        @update='updateWeight'/>
+      <div class="relativePositionHint" v-if="flow.origin.relativeDelta != undefined">
+        <p>relative positioning changed</p>
+      </div>
+      <div>
+        <span v-if='!flow.published'>
+          <p v-if='flow.into.address == undefined || flow.from.address == undefined'>
+            Before creating this flow on chain, both involved aims have to be created on chain</p>
+          <div v-else class='button' tabindex="0" @click="create">create flow on chain</div>
+        </span>
+        <span v-else-if='dirty'>
+          <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
+          <div class='button' tabindex="0" v-if='dirty' @click="commit">commit changes</div>
+        </span>
+        <div
+          v-if="!flow.published"
+          tabindex="0"  
+          class='button' 
+          :class='{confirm: confirmRemove}'
+          @blur='confirmRemove = false'
+          @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+      </div>
+      <div 
+        :class="{deactivated: !flow.transactionPending}"
+        class=overlay />
     </div>
     <div class="scrollspace"></div>
     <BackButton @click="aimNetwork.deselect"/>
@@ -144,6 +146,11 @@ export default defineComponent({
   .button {
     &.confirm {
       background-color: @danger; 
+    }
+    &.aim {
+      text-align: left; 
+      display: block; 
+      margin: 1rem; 
     }
   }
   .relativePositionHint {
