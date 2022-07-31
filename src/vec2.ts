@@ -11,6 +11,12 @@ export function create() {
   return [0, 0] as T
 }
 
+/* comparison */
+
+export function eq(a: T, b: T) {
+  return a[0] === b[0] && a[1] === b[1]
+}
+
 /* most operators work inplace */
 
 export function add(out: T, a: T, b: T) {

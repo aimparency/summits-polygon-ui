@@ -7,6 +7,7 @@
       ref='explanation'
       rows="9"
       placeholder="flow explanation"
+      :disabled="!flow.into.mayNetwork()"
       :value="flow.explanation"
       @input="updateExplanation"></textarea>
     <div class='aims'>
@@ -28,16 +29,17 @@
       name='weight'
       left='0'
       right='100'
+      :disabled="!flow.into.mayNetwork()"
       :factor="100/0xffff"
       :decimalPlaces='2'
       :from='0'
       :to='0xffff'
       :value='flow.weight'
       @update='updateWeight'/>
-    <div v-if="flow.pendingTransactions"> 
-      <div class="spinner"></div>
+    <div class="relativePositionHint" v-if="flow.origin.relativeDelta != undefined">
+      <p>relative positioning changed</p>
     </div>
-    <div v-else>
+    <div>
       <span v-if='!flow.published'>
         <p v-if='flow.into.address == undefined || flow.from.address == undefined'>
           Before creating this flow on chain, both involved aims have to be created on chain</p>
@@ -48,6 +50,7 @@
         <div class='button' tabindex="0" v-if='dirty' @click="commit">commit changes</div>
       </span>
       <div
+        v-if="!flow.published"
         tabindex="0"  
         class='button' 
         :class='{confirm: confirmRemove}'
@@ -142,6 +145,12 @@ export default defineComponent({
     &.confirm {
       background-color: @danger; 
     }
+  }
+  .relativePositionHint {
+    background-color: #0004; 
+    margin: 1rem; 
+    padding: 0.5rem;
+    border-radius: 0.2rem; 
   }
   textarea {
     height: 10em; 

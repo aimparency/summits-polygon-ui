@@ -629,6 +629,7 @@ export default defineComponent({
           lc.fromWeight
         )
         const arm = vec2.crSub(this.layoutingHandlePos, M) 
+        lc.flow.backupRelativeData()
         vec2.scale(lc.flow.relativeDelta, arm, lc.dScale)
       }
     }

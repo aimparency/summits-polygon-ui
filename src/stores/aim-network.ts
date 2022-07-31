@@ -12,6 +12,12 @@ import { useUi } from './ui'
 import * as vec2 from '../vec2'
 import { markRaw, toRaw } from 'vue'
 
+
+function vec2AsByteArray(v: vec2.T) : Uint8Array {
+  let d2d = new Float32Array(v)
+  return new Uint8Array(d2d.buffer)
+}
+
 function getPinnedAimsStorageKey() {
   const w3c = useWeb3Connection()
   return "pinnedAims-" + w3c.network!.chainId + "-" + w3c.address
@@ -132,6 +138,16 @@ export class Aim {
     transfer: 0x80, 
   } 
 
+  mayEdit() {
+    return this.permissions & Aim.Permissions.edit
+  }
+  mayNetwork() {
+    return this.permissions & Aim.Permissions.network
+  }
+  mayManage() {
+    return this.permissions & Aim.Permissions.manage
+  }
+
   members: Member[] = []
 
   permissions = 0
@@ -225,6 +241,7 @@ export class Aim {
 export class FlowOrigin {
   explanation?: string
   weight?: number
+  relativeDelta?: vec2.T
 }
 
 export class Flow {
@@ -259,6 +276,12 @@ export class Flow {
       this.origin.weight = this.weight
     }
     this.setWeight(v) 
+  }
+
+  backupRelativeData() {
+    if(this.published && this.origin.relativeDelta === undefined) {
+      this.origin.relativeDelta = vec2.clone(this.relativeDelta)
+    }
   }
 
   updateExplanation(v: string) {
@@ -766,18 +789,22 @@ export const useAimNetwork = defineStore('aim-network', {
         let aimContract = useWeb3Connection().getAimContract(flow.into.address) 
         flow.pendingTransactions += 1
         try {
-          let d2d = new Float32Array(flow.relativeDelta)
+          let relativeDelta = flow.relativeDelta
+          console.log('should be NON-PROXY', relativeDelta)
           let tx = await aimContract.createInflow(
             flow.from.address, 
             {
               explanation: flow.explanation, 
               weight: flow.weight, 
-              d2d: new Uint8Array(d2d.buffer)
+              d2d: vec2AsByteArray(relativeDelta) 
             }
           )
           let rc = await tx.wait()
           flow.pendingTransactions -= 1 
           flow.published = true
+          if(!vec2.eq(flow.relativeDelta, relativeDelta)) {
+            flow.origin.relativeDelta = relativeDelta
+          }
           let creationEvent: any = rc.events.find((e: any) => e.event === 'FlowCreation') 
           if(creationEvent) {
             flow.clearOrigin()
@@ -789,25 +816,40 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     // edit and remove flows
-    makeUpdateFunctionCall(obj: any, type: string) : [string, any[]] {
+    makeUpdateFunctionCall(
+      obj: any, 
+      type: string, 
+      specialCases: {[key: string]: (obj: any) => any} = {}
+    ) : [string, any[]] {
       let fields: string[] = []
       let args: any[] = []
       let origin = obj.origin as any
       Object.getOwnPropertyNames(origin).forEach((name: string) => {
         if(origin[name] !== undefined) {
-          fields.push(name)
-          args.push(obj[name]) 
+          if(specialCases[name]) {
+            let [field, arg] = specialCases[name](obj[name])
+            fields.push(field)
+            args.push(arg)
+          } else {
+            fields.push(name)
+            args.push(obj[name]) 
+          }
         }
       })
       let functionName = 'update' + type + fields.map(f => f[0].toUpperCase() + f.slice(1)).join("")
       return [functionName, args]
     }, 
     async commitFlowChanges(flow: Flow) {
-      let [functionName, args] = this.makeUpdateFunctionCall(flow, "Flow") 
+      let [functionName, args] = this.makeUpdateFunctionCall(flow, "Flow", {
+        relativeDelta: () => {
+          return ['d2d', vec2AsByteArray(flow.relativeDelta)]
+        }
+      }) 
       const w3 = useWeb3Connection()
       const aimContract = w3.getAimContract(flow.into.address!) 
       flow.pendingTransactions += 1
       try {
+        console.log(functionName) 
         let tx = await aimContract[functionName](flow.from.address!, ...args)
         await tx.wait()
         flow.clearOrigin()

@@ -13,6 +13,7 @@ The order is reversed chronological. Newer ideas on top:
   - only load contributing aims when a certain token * share threshold is reached
 
 #2022-08-01
+- when changin own permission update "permission" field at aim as well.
 
 #2022-07-31
 - D: UI Price negatives Vorzeichen raus
