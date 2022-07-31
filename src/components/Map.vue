@@ -535,11 +535,9 @@ export default defineComponent({
         rB = r[iB] 
         posB = positions[iB]
 
-        try {
         ab = vec2.crSub(posB, posA) 
         rSum = rA + rB
         d = vec2.len(ab)
-
 
         if(d == 0) {
           const x = Math.random() * 2 - 1
@@ -562,12 +560,6 @@ export default defineComponent({
             shiftA, shiftB
           )
         } 
-        } catch(err) {
-          console.error("some position isnt there... when handling intersections") 
-          console.log(intersection) 
-          console.log(boxIndexToAimId) 
-          break
-        }
       }
 
       let viewMinShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale

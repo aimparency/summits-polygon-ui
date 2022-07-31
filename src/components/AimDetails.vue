@@ -352,8 +352,6 @@ export default defineComponent({
       for(let flow of v) {
         into = flow.into
         absOutflow = flow.share * Number(into.tokenSupply + into.tokens - into.tokensOnChain)
-        console.log(flow.share) 
-        console.log("absOutflow", absOutflow)
         absOutflowSum += absOutflow
         confirmAvailable = from.address !== undefined && into.address !== undefined && flow.published
         results.push({

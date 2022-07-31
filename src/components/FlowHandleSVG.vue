@@ -61,7 +61,6 @@ export default defineComponent({
   }, 
   methods: {
     startLayouting(from: boolean) {
-      console.log("start layouting") 
       this.map.startLayouting({
         M: this.M, 
         start: from ? this.fromPos : this.intoPos, 

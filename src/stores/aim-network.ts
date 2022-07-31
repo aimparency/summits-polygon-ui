@@ -14,7 +14,7 @@ import { markRaw, toRaw } from 'vue'
 
 function getPinnedAimsStorageKey() {
   const w3c = useWeb3Connection()
-  console.log(w3c)
+  console.log(JSON.stringify(w3c))
   return "pinnedAims-" + w3c.network!.chainId + "-" + w3c.address
 }
 
@@ -474,7 +474,6 @@ export const useAimNetwork = defineStore('aim-network', {
         })
         const w3 = useWeb3Connection()
         const aimContract = w3.getAimContract(aim.address!)
-        console.log("Committing contribution confirmations", intoAddresses, values, aim.address, aimContract)
         try {
           let tx = await aimContract.setContributionConfirmations(intoAddresses, values)
           await tx.wait()
@@ -530,7 +529,6 @@ export const useAimNetwork = defineStore('aim-network', {
       }
     }, 
     async loadAim(aimAddr: string) { 
-      console.log("loading", aimAddr)
       const w3 = useWeb3Connection()
       let aimContract = w3.getAimContract(aimAddr) 
       let dataPromises = []
@@ -718,7 +716,6 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.members.push(new Member(w3.address, 0x7f))
         }
         aim.owner = newOwnerAddr
-        console.log("changed locally according to commit") 
       } catch(err)  {
         console.error("Failed to transfer aim", err) 
       }
@@ -839,19 +836,16 @@ export const useAimNetwork = defineStore('aim-network', {
 
     // selection
     selectFlow(flow: Flow) {
-      console.log("selecting flow", flow)
       this.selectedAim = undefined
       this.selectedFlow = flow
     }, 
     selectAim(aim: Aim) {
-      console.log("selecting aim", aim)
       this.selectedFlow = undefined
       this.selectedAim = aim
       this.lazyLoadAim(aim) 
       this.raiseLoadLevel(aim, 2) 
     },
     deselect() {
-      console.log("deselecting")
       this.selectedAim = undefined
       this.selectedFlow = undefined
     },
