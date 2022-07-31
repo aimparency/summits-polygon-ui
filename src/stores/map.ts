@@ -17,7 +17,7 @@ export interface LayoutCandidate {
 export const useMap = defineStore('map', {
   state() {
     return {
-      scale: 1, 
+      scale: 0, 
       offset: vec2.fromValues(0,0),
       mouse: {
         logical: vec2.fromValues(0,0), 
