@@ -13,16 +13,21 @@ The order is reversed chronological. Newer ideas on top:
   - only load contributing aims when a certain token * share threshold is reached
 
 #2022-08-01
-- when changin own permission update "permission" field at aim as well.
+- when changin self member: update "permission" field at aim as well.
 
 #2022-07-31
 - D: UI Price negatives Vorzeichen raus
 - D: confirmations als Set am aim
   - D: outflow computed
-- flow commit delta
+- D: flow commit delta
   - D: calc M on the flow such that handle stays under cursor
 - commitment seriality enforcement per commit type
 - feature: list uncommitted changes
+  - maybe in sidebar? 
+  - tabs: 
+    - local search 
+    (- global search )
+    - uncommited changes
 - A: pinned aims should also load fringe (maybe 1 instead of 2?) 
 - A: force should not feel quadratic for aim size
 
