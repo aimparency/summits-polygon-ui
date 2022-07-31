@@ -99,6 +99,7 @@ export default defineComponent({
       aimNetwork: useAimNetwork(),
       map: useMap(), 
       breakFromAnimLoop: false,
+      layoutingHandlePos: vec2.create(),
       reusableLayoutCalcArrays: markRaw({
         r: new Array<number>(),
         pos: new Array<vec2.T>(), 
@@ -155,15 +156,9 @@ export default defineComponent({
       const lc = this.map.layoutCandidate
       if(lc) {
         vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
-        vec2.crSub(lc.start, d)
+        vec2.sub(this.layoutingHandlePos, lc.start, d)
 
-        const M = vec2.crMix(
-          lc.flow.from.pos, 
-          lc.flow.into.pos, 
-          lc.fromWeight
-        )
-        const arm = vec2.crSub(handlePos, M) 
-        vec2.scale(lc.flow.relativeDelta, arm, lc.dScale)
+        this.updateRelativeDeltaWhileLayouting()
       }
     }
 
@@ -175,6 +170,7 @@ export default defineComponent({
         beginDrag(this.map.dragCandidate)
       } else if(this.map.layoutCandidate) {
         beginLayout()
+        updateLayout(vec2.create())
       } else if(this.map.connectFrom) {
         beginConnect()
       } else {
@@ -602,6 +598,7 @@ export default defineComponent({
           })
         }
       }
+      this.updateRelativeDeltaWhileLayouting()
     },
 
     calcShiftAndApply(
@@ -622,6 +619,18 @@ export default defineComponent({
       vec2.scale(hShift, ab, +rA * amount) 
       vec2.add(shiftB, shiftB, hShift)
       
+    }, 
+    updateRelativeDeltaWhileLayouting() {
+      let lc = this.map.layoutCandidate
+      if(this.map.layouting && lc) {
+        const M = vec2.crMix(
+          lc.flow.from.pos, 
+          lc.flow.into.pos, 
+          lc.fromWeight
+        )
+        const arm = vec2.crSub(this.layoutingHandlePos, M) 
+        vec2.scale(lc.flow.relativeDelta, arm, lc.dScale)
+      }
     }
   }
 });

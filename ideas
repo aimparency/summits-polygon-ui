@@ -19,7 +19,7 @@ The order is reversed chronological. Newer ideas on top:
 - D: confirmations als Set am aim
   - D: outflow computed
 - flow commit delta
-  - calc M on the flow such that handle stays under cursor
+  - D: calc M on the flow such that handle stays under cursor
 - commitment seriality enforcement per commit type
 - feature: list uncommitted changes
 - A: pinned aims should also load fringe (maybe 1 instead of 2?) 
