@@ -110,12 +110,15 @@ export class Aim {
   loadLevel = 0 // 0 means: don't load neighbors
   neighborAddrs: string [] = []
   
-  flowsFrom: { [aimId: string]: Flow } = {}
-  flowsInto: { [aimId: string]: Flow } = {}
+  inflows: { [aimId: string]: Flow } = {}
+  outflows: { [aimId: string]: Flow } = {}
 
   loopWeight = 0x8000 // half of uint16
   loopWeightOrigin = undefined as number | undefined
   loopShare = 1
+
+  contributionConfirmationSwitches = new Set<string>()
+  contributionConfirmationsOnChain = new Set<string>()
 
   origin = new AimOrigin()
 
@@ -147,7 +150,7 @@ export class Aim {
   }
 
   recalcWeights() {
-    let flows = this.flowsFrom
+    let flows = this.inflows
     let totalWeight = this.loopWeight
     for(let key in flows) {
       totalWeight += flows[key].weight
@@ -466,7 +469,7 @@ export const useAimNetwork = defineStore('aim-network', {
       if(aim.address !== undefined) {
         let intoAddresses: string[] = []
         let values: boolean[] = []
-        Object.values(aim.flowsInto).forEach((flow: Flow) => {
+        Object.values(aim.outflows).forEach((flow: Flow) => {
           if(flow.confirmed != flow.confirmedOnChain) {
             if(flow.into.address !== undefined) {
               intoAddresses.push(flow.into.address) 
@@ -481,7 +484,7 @@ export const useAimNetwork = defineStore('aim-network', {
           let tx = await aimContract.setContributionConfirmations(intoAddresses, values)
           await tx.wait()
           intoAddresses.forEach((intoAddr: string) => {
-            aim.flowsInto[intoAddr].confirmedOnChain = aim.flowsInto[intoAddr].confirmed
+            aim.outflows[intoAddr].confirmedOnChain = aim.outflows[intoAddr].confirmed
           })
         } catch (err) {
           console.error("Failed to commit contribution confirmations", err)
@@ -688,11 +691,11 @@ export const useAimNetwork = defineStore('aim-network', {
       aim.clearOrigin()
     }, 
     removeAim(aim: Aim) {
-      for(let fromId in aim.flowsFrom) {
-        this.removeFlow(aim.flowsFrom[fromId]) 
+      for(let fromId in aim.inflows) {
+        this.removeFlow(aim.inflows[fromId]) 
       }
-      for(let intoId in aim.flowsInto) {
-        this.removeFlow(aim.flowsInto[intoId]) 
+      for(let intoId in aim.outflows) {
+        this.removeFlow(aim.outflows[intoId]) 
       }
       if(this.selectedAim == aim) {
         this.selectedAim = undefined
@@ -728,9 +731,7 @@ export const useAimNetwork = defineStore('aim-network', {
             let rSum = into.r + from.r 
             if(rSum > 0) {
               flow.relativeDelta = markRaw(vec2.crScale(vec2.crSub(into.pos, from.pos), 1 / rSum))
-              console.log("create flow with relative delta: ", flow.relativeDelta)
             }
-
             this.selectFlow(flow) 
             useUi().sideMenuOpen = true
           }
@@ -755,8 +756,8 @@ export const useAimNetwork = defineStore('aim-network', {
       }
       const flow = this.flows[from.id][into.id]
 
-      from.flowsInto[into.id] = flow 
-      into.flowsFrom[from.id] = flow
+      from.outflows[into.id] = flow 
+      into.inflows[from.id] = flow
 
       into.recalcWeights()
 
@@ -830,23 +831,26 @@ export const useAimNetwork = defineStore('aim-network', {
       if(this.selectedFlow == flow) {
         this.selectedFlow = undefined
       }
-      delete flow.from.flowsInto[flow.into.id]
-      delete flow.into.flowsFrom[flow.from.id]
+      delete flow.from.outflows[flow.into.id]
+      delete flow.into.inflows[flow.from.id]
       delete this.flows[flow.from.id][flow.into.id]
     },
 
     // selection
     selectFlow(flow: Flow) {
+      console.log("selecting flow", flow)
       this.selectedAim = undefined
       this.selectedFlow = flow
     }, 
     selectAim(aim: Aim) {
+      console.log("selecting aim", aim)
       this.selectedFlow = undefined
       this.selectedAim = aim
       this.lazyLoadAim(aim) 
       this.raiseLoadLevel(aim, 2) 
     },
     deselect() {
+      console.log("deselecting")
       this.selectedAim = undefined
       this.selectedFlow = undefined
     },

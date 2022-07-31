@@ -7,6 +7,15 @@ The order is reversed chronological. Newer ideas on top:
 
 #features left
 
+#2022-07-31
+- D: UI Price negatives Vorzeichen raus
+- confirmations als Set am aim
+  - outflow computed
+- flow commit delta
+  - calc M on the flow such that handle stays under cursor
+- commitment seriality enforcement per commit type
+- feature: list uncommitted changes
+
 #2022-07-29
 - Towards V0.2 release
   - outflows computed list

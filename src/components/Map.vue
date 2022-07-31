@@ -29,7 +29,7 @@
         :key="`${flow.from.id}x${flow.into.id}`"
         :flow="flow"/>
       <Connector 
-        v-if="map.connectFrom !== undefined"
+        v-if="map.connecting && map.connectFrom !== undefined"
         :connectFrom="map.connectFrom"/>
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
@@ -103,6 +103,7 @@ export default defineComponent({
         r: new Array<number>(),
         pos: new Array<vec2.T>(), 
         shifts: new Array<vec2.T>(),
+        boxes: new Array<number[]>(),
       })
     }
   }, 
@@ -165,45 +166,47 @@ export default defineComponent({
     // I think it's not nice that mousedown etc. events have to reach the map component. 
     const beginWhatever = (mouse: vec2.T) => {
       this.map.updateMouse(mouse) 
-      if(this.map.connectFrom) {
-        this.map.connecting = true
-        this.map.cursorMoved = true
-      } else if(this.map.dragCandidate) {
-        beginDrag(this.map.dragCandidate, mouse)
+      this.map.mousePhysBegin = vec2.clone(mouse)
+      if(this.map.dragCandidate) {
+        beginDrag(this.map.dragCandidate)
       } else if(this.map.layoutCandidate) {
-        beginLayout(mouse)
+        beginLayout()
+      } else if(this.map.connectFrom) {
+        beginConnect()
       } else {
-        beginPan(mouse) 
-      }
+        beginPan() 
+      } 
     }
 
-    const beginPan = (mouse: vec2.T) => {
-      this.map.mousePhysBegin = vec2.clone(mouse)
+    const beginPan = () => {
       this.map.panBeginning = {
         offset: vec2.clone(this.map.offset)
       }
     }
-    const beginDrag = (aim: Aim, mouse:vec2.T) => {
-      //this.aimNetwork.deselect()
-      this.map.mousePhysBegin = vec2.clone(mouse)
+
+    const beginDrag = (aim: Aim) => {
       this.map.dragBeginning = {
         pos: vec2.clone(aim.pos) 
       }
     }
 
-    const beginLayout = (mouse:vec2.T) => {
-      this.map.mousePhysBegin = vec2.clone(mouse)
+    const beginLayout = () => {
       this.map.layouting = true
     }
 
+    const beginConnect = () => {
+      this.map.connecting = true
+    }
+
     const endWhatever = () : void => {
-      this.map.connectFrom = undefined
       if(this.map.panBeginning) {
         endPan(); 
       } else if (this.map.dragBeginning) {
         endDrag();
       } else if(this.map.layouting) {
         endLayout();
+      } else if(this.map.connecting) {
+        endConnect(); 
       }
       setTimeout(() => { this.map.cursorMoved = false })
     }
@@ -222,6 +225,11 @@ export default defineComponent({
       delete this.map.layoutCandidate;
     }
 
+    const endConnect = () => {
+      delete this.map.connectFrom 
+      this.map.connecting = false; 
+    }
+
     const updateWhatever = (mouse: vec2.T) : void => {
       this.map.updateMouse(mouse)
       const d = vec2.crSub(this.map.mousePhysBegin, mouse)
@@ -233,6 +241,8 @@ export default defineComponent({
           updateDrag(d); 
         } else if (this.map.layouting) {
           updateLayout(d); 
+        } else if (this.map.connecting) {
+          // nothing but important for else branch
         } else {
           this.map.cursorMoved = false
         }
@@ -440,62 +450,35 @@ export default defineComponent({
 
       const globalForce = 0.09
 
-      /* in the following there is 
-        - aimId: the string
-        - aimIndex: the index of an aim in all the following arrays like r[]
-        - boxIndex: the index of an aim in the boxes array */
-
       let aims = this.aimNetwork.aims
       let aimIds = Object.keys(aims) as unknown as number[]
 
       let map = this.map
 
       let r = this.reusableLayoutCalcArrays.r
-      let pos = this.reusableLayoutCalcArrays.pos
+      let positions = this.reusableLayoutCalcArrays.pos
       let shifts = this.reusableLayoutCalcArrays.shifts
-      r.length = aimIds.length
-      pos.length = aimIds.length
-      shifts.length = aimIds.length
+
+      let boxes = this.reusableLayoutCalcArrays.boxes
+      boxes.length = aimIds.length
 
       let aim
-      let left, right, top, bottom
+      let br, pos
 
-      let mapWidth = LOGICAL_HALF_SIDE * map.xratio * 2 / map.scale
-      let mapHeight = LOGICAL_HALF_SIDE * map.yratio * 2 / map.scale
-
-      const sLeft = (-map.offset[0] - mapWidth) 
-      const sRight = (-map.offset[0] + mapWidth) 
-      const sTop = (-map.offset[1] - mapHeight) 
-      const sBottom = (-map.offset[1] + mapHeight) 
-
-      let tr
+      let boxIndexToAimId: number[] = []
       let boxIndex = 0
-      let boxes: number[][] = []
-      const boxToAimId: number[] = []
+
       for(let aimId of aimIds) {
         aim = aims[aimId]
-        tr = aim.r
 
-        left = aim.pos[0] - tr
-        right = aim.pos[0] + tr
-        top = aim.pos[1] - tr
-        bottom = aim.pos[1] + tr
-
-        if(
-          left < sRight &&
-          right > sLeft &&
-          top < sBottom &&
-          bottom > sTop
-        ) {
-          boxToAimId[boxIndex] = aimId
-          tr *= outerMarginFactor
-          boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
-          boxIndex++
-        }
-
+        r[aimId] = br = aim.r
+        positions[aimId] = pos = aim.pos
         shifts[aimId] = vec2.create()
-        r[aimId] = aim.r
-        pos[aimId] = aim.pos
+
+        br *= outerMarginFactor
+        boxes[boxIndex++] = [pos[0] - br, pos[1] - br, pos[0] + br, pos[1] + br]
+
+        boxIndexToAimId.push(aimId)
       }
 
       // handle connected aims
@@ -540,15 +523,16 @@ export default defineComponent({
       let ab, rSum, d
 
       for(let intersection of intersections) {
-        iA = boxToAimId[intersection[0]]
-        iB = boxToAimId[intersection[1]]
+        iA = boxIndexToAimId[intersection[0]]
+        iB = boxIndexToAimId[intersection[1]]
         shiftA = shifts[iA]
         rA = r[iA] 
-        posA = pos[iA]
+        posA = positions[iA]
         shiftB = shifts[iB]
         rB = r[iB] 
-        posB = pos[iB]
+        posB = positions[iB]
 
+        try {
         ab = vec2.crSub(posB, posA) 
         rSum = rA + rB
         d = vec2.len(ab)
@@ -575,13 +559,22 @@ export default defineComponent({
             shiftA, shiftB
           )
         } 
+        } catch(err) {
+          console.error("some position isnt there... when handling intersections") 
+          console.log(intersection) 
+          console.log(boxIndexToAimId) 
+          break
+        }
       }
 
-      let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
+      let viewMinShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
+      let minShift = 0
       let standstill = true
       for(let aimId of aimIds) {
         const shift = shifts[aimId]
         vec2.scale(shift, shift, globalForce)
+        minShift = Math.max(viewMinShift, r[aimId] * 0.001)
+        // TBD minShift = max(minShift, flow aim distance order radius)
         if(shift[0] < -minShift ||
           shift[0] > minShift ||
           shift[1] < -minShift ||

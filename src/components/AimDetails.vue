@@ -209,7 +209,7 @@
     </div>
     <div 
       class="flow button" 
-      v-for="(flow, aimId) in aim.flowsFrom" 
+      v-for="(flow, aimId) in aim.inflows" 
       @click="flowClick(flow)" 
       :key="aimId">
       {{ (100 * flow.share).toFixed(0) }}% : 
@@ -221,16 +221,17 @@
     </div>
     <div 
       class="outflow button" 
-      v-for="(flow, aimId) in aim.flowsInto" 
-      @click="flowClick(flow)" 
+      v-for="(outflow, aimId) in outflows" 
+      @click="flowClick(outflow.flow)" 
       :key="aimId">
-      {{ (100 * flow.share).toFixed(0) }}%: 
-      {{ flow.into.title || "[unnamed]"}} 
+      {{ (100 * outflow.share).toFixed(0) }}%: 
+      {{ outflow.title }} 
+      {{ !mayNetwork }}
       <div 
         class=confirmButton
-        v-if='mayNetwork && flow.published && flow.into.address !== undefined && flow.from.address !== undefined'
-        @click.stop="toggleFlowConfirm(flow)"
-        :class="{confirmed: flow.confirmed}">
+        v-if='outflow.showConfirmedness'
+        @click.stop="toggleFlowConfirm(outflow.flow)"
+        :class="{confirmed: outflow.confirmed, deactivated: !mayNetwork}">
       </div>
     </div>
     <p/>
@@ -269,6 +270,14 @@ interface Trade {
   amount: bigint, 
   price: bigint, 
   humanPrice: string
+}
+
+interface Outflow {
+  share: number, 
+  flow: Flow, 
+  title: string, 
+  showConfirmedness: boolean, 
+  confirmed: boolean,
 }
 
 export default defineComponent({
@@ -333,15 +342,30 @@ export default defineComponent({
   },
   computed: {
     flowConfirmationsChanged() {
-      let v = Object.values(this.aim.flowsInto)
+      return this.aim.contributionConfirmationSwitches.size > 0
+    }, 
+    outflows() : Outflow[] {
+      let v = Object.values(this.aim.outflows)
+      let results = []
+      let from = this.aim, into
+      let confirmAvailable
+      let absOutflow, absOutflowSum = 0
       for(let flow of v) {
-        console.log(flow) 
-        if (flow.confirmed !== flow.confirmedOnChain) {
-          console.log("changed")
-          return true
-        }
+        into = flow.into
+        absOutflow = flow.share * Number(into.tokenSupply + into.tokens - into.tokensOnChain)
+        absOutflowSum += absOutflow
+        confirmAvailable = from.address !== undefined && into.address !== undefined,
+        results.push({
+          title: into.title, 
+          flow: flow, 
+          showConfirmedness: confirmAvailable,
+          confirmed: confirmAvailable ? 
+            from.contributionConfirmationsOnChain.has(into.address!) != from.contributionConfirmationSwitches.has(into.address!) : false,
+          share: absOutflow 
+        })
       }
-      return false; 
+      results.forEach(r => r.share = r.share / absOutflowSum)
+      return results
     }, 
     memberAddrError() {
       if(this.memberAddr != "" && !(ethers.utils.isAddress(this.memberAddr))) {
@@ -381,24 +405,23 @@ export default defineComponent({
       const aim = this.aim
       if( aim.tokens !== aim.tokensOnChain) {
         let amount = aim.tokens - aim.tokensOnChain
-        let volPricePre = aim.tokenSupply * aim.tokenSupply
+        let volPricePre = aim.tokenSupply ** 2n
         let newSupply = aim.tokenSupply + amount
-        let volPricePost = newSupply * newSupply
+        let volPricePost = newSupply ** 2n
         let price = volPricePost - volPricePre
-        let humanPrice = humanizeAmount(price)
         if( amount > 0n ) {
           return {
             verb: 'Buy', 
             amount,
             price, 
-            humanPrice
+            humanPrice: humanizeAmount(price)
           }
         } else {
           return {
             verb: 'Sell', 
             amount: -amount, 
             price: -price, 
-            humanPrice
+            humanPrice: humanizeAmount(-price)
           }
         }
       }
@@ -605,7 +628,13 @@ export default defineComponent({
       }
     },
     toggleFlowConfirm(flow: Flow) {
-      flow.confirmed = !flow.confirmed
+      if(this.mayNetwork && flow.into.address !== undefined) {
+        if(this.aim.contributionConfirmationSwitches.has(flow.into.address)) {
+          this.aim.contributionConfirmationSwitches.delete(flow.into.address)
+        } else {
+          this.aim.contributionConfirmationSwitches.add(flow.into.address)
+        }
+      }
     },
   }, 
 });
@@ -688,6 +717,10 @@ export default defineComponent({
       }
       &:hover {
         background-color: #fff8; 
+      }
+      &.deactivated {
+        background-color: #fff0; 
+        pointer-events: none; 
       }
     }
   }
