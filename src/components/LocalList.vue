@@ -18,14 +18,17 @@
     <div class="buttonList">
       <div tabindex="0" class="button" 
         @keypress.enter="addAim"
+        @keypress.space="addAim"
         @click.stop="addAim">
         add aim
       </div>
-      <div tabindex="0" class="button" 
+      <!--div tabindex="0" class="button" 
         @keyup.enter="switchToGlobalSearch"
+        @keypress.space="switchToGlobalSearch"
+        @keypress.enter="switchToGlobalSearch"
         @click.stop="switchToGlobalSearch">
         search globally
-      </div>
+      </div-->
     </div>
   </div>
 </template>

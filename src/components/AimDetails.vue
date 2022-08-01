@@ -1,5 +1,6 @@
 <template>
   <div 
+    @keydown.esc="aimNetwork.deselect"
     class="aim-details"> 
     <h3>aim details</h3>
     
@@ -40,11 +41,15 @@
         <div
           v-if="dirty" 
           class='button' tabindex="0"  
+          @keypress.enter.prevent.stop="reset"
+          @keypress.space.prevent.stop="reset"
           @click="reset">Reset</div>
         <div 
           v-if="dirty && public"
           class='button'
           tabindex="0"
+          @keypress.enter.prevent.stop="commitChanges"
+          @keypress.space.prevent.stop="commitChanges"
           @click="commitChanges">Commit</div>
         <div
           tabindex="0"  
@@ -52,6 +57,8 @@
           class='button' 
           :class='{confirm: confirmRemove}'
           @blur='confirmRemove = false'
+          @keypress.enter.prevent.stop="remove"
+          @keypress.space.prevent.stop="remove"
           @click="remove">{{ confirmRemove ? "Confirm removal" : "Remove aim" }}</div>
         <!-- v-else blacklist button -->
         <div
@@ -59,6 +66,8 @@
           tabindex="0"
           class='button'
           :class="{share: !justCopiedToClipboard, copied: justCopiedToClipboard}"
+          @keypress.enter.prevent.stop="share"
+          @keypress.space.prevent.stop="share"
           @click="share">{{justCopiedToClipboard ? "Copied to clipboard!" : ""}}</div>
       </div>
       <div 
@@ -98,6 +107,8 @@
           v-if='aim.tokenName != "" && aim.tokenSymbol != ""'
           class='button' 
           tabindex="0" 
+          @keypress.enter.prevent.stop="createAimOnChain"
+          @keypress.space.prevent.stop="createAimOnChain"
           @click="createAimOnChain">Create aim on chain for {{ createPrice }} {{nativeCurrency.symbol}} </div>
         <p v-else> 
           <span class="hint">
@@ -106,11 +117,20 @@
         </p>
       </div>
       <div v-else-if='trade !== undefined'>
-        <div class='button' tabindex="0" @click="resetTokens"> 
+        <div 
+          class='button' 
+          tabindex="0" 
+          @keypress.enter.prevent.stop="resetTokens"
+          @keypress.space.prevent.stop="resetTokens"
+          @click="resetTokens"> 
           Reset 
         </div>
         <div
-          class='button' tabindex="0" @click="doTrade"> 
+          class='button' 
+          tabindex="0" 
+          @keypress.enter.prevent.stop="doTrade"
+          @keypress.space.prevent.stop="doTrade"
+          @click="doTrade"> 
           {{ trade.verb }} {{ trade.amount }} {{ aim.tokenSymbol }} for <br/> {{ trade.humanPrice }} {{ nativeCurrency.symbol }}
         </div>
       </div>
@@ -143,16 +163,29 @@
           members
         </h4>
         <div v-for="member in aim.members" :key="member.address" class="member">
-          <div class="editButton" tabindex="0" @click="editMember(member)"></div>
+          <div 
+            class="editButton" 
+            tabindex="0" 
+            @keypress.enter.prevent.stop="editMember(member)"
+            @keypress.space.prevent.stop="editMember(member)"
+            @click="editMember(member)"/>
           <ShortAddress :address="member.address" />:
           <span v-for="v, key in aimPermissions"><span class="permission-indicator" v-if="v & member.permissions">{{key}}</span></span>
         </div>
         <p v-if="aim.members.length == 0">there are no members</p>
         <div v-if="membersChanged && public" class="memberChangesActions"> 
-          <div class="button" @click="resetMembers">
+          <div 
+            class="button" 
+            @keypress.enter.prevent.stop="resetMembers"
+            @keypress.space.prevent.stop="resetMembers"
+            @click="resetMembers">
             Reset 
           </div>
-          <div class="button" @click="commitMembers">
+          <div 
+            class="button" 
+            @keypress.enter.prevent.stop="commitMembers"
+            @keypress.space.prevent.stop="commitMembers"
+            @click="commitMembers">
             Commit 
           </div> 
         </div>
@@ -170,11 +203,17 @@
             <span 
               v-for="selected, permission in permissionGranting"
               class="permission-indicator toggleable" :class="{selected}"
-              @click="permissionGranting[permission] = !permissionGranting[permission]">
+              tabindex="0"
+              @keypress.enter.prevent.stop="togglePermissionGranting(permission as string)"
+              @keypress.space.prevent.stop="togglePermissionGranting(permission as string)"
+              @click="togglePermissionGranting(permission as string)">
               {{permission}}
             </span>
             <span
               class="permission-indicator toggleable"
+              tabindex="0"
+              @keypress.enter.prevent.stop="resetPermissionGranting"
+              @keypress.space.prevent.stop="resetPermissionGranting"
               @click="resetPermissionGranting"
               >x</span>
           </p>
@@ -187,6 +226,8 @@
               :class="{confirm: confirmTransfer}"
               v-if="mayTransfer" 
               @blur='confirmTransfer = false'
+              @keypress.enter.prevent.stop="transferOwnership"
+              @keypress.space.prevent.stop="transferOwnership"
               @click="transferOwnership">
               {{ confirmTransfer ? "Confirm transfer" : "Transfer ownership" }}
             </div>
@@ -216,6 +257,8 @@
         v-if='aim.address && aim.loopWeightOrigin'
         class='button' 
         tabindex="0" 
+        @keypress.enter.prevent.stop="commitLoopWeight"
+        @keypress.space.prevent.stop="commitLoopWeight"
         @click="commitLoopWeight">
           Commit 
       </div>
@@ -226,18 +269,24 @@
       <div 
         class="flow button" 
         v-for="(flow, aimId) in aim.inflows" 
+        tabindex="0"
+        @keypress.enter.prevent.stop="flowClick(flow)"
+        @keypress.space.prevent.stop="flowClick(flow)"
         @click="flowClick(flow)" 
         :key="aimId">
         {{ (100 * flow.share).toFixed(0) }}% : 
         {{ flow.from.title || "[unnamed]"}} 
       </div>
       <p class=flowDirection> outgoing flows </p>
-      <div class="flow loop">
-        loop share: TBD 
+      <div v-if="outflows.length == 0" class="flow loop">
+        none
       </div>
       <div 
         class="outflow button" 
         v-for="(outflow, aimId) in outflows" 
+        tabindex="0"
+        @keypress.enter.prevent.stop="flowClick(outflow.flow)"
+        @keypress.space.prevent.stop="flowClick(outflow.flow)"
         @click="flowClick(outflow.flow)" 
         :key="aimId">
         {{ (100 * outflow.share).toFixed(0) }}%: 
@@ -245,6 +294,9 @@
         <div 
           class=confirmButton
           v-if='outflow.showConfirmedness'
+          tabindex="0"
+          @keypress.enter.prevent.stop="toggleContributionConfirmation(outflow.flow)"
+          @keypress.space.prevent.stop="toggleContributionConfirmation(outflow.flow)"
           @click.stop="toggleContributionConfirmation(outflow.flow)"
           :class="{confirmed: outflow.confirmed, deactivated: !mayNetwork}">
         </div>
@@ -253,10 +305,11 @@
       <div v-if="contributionConfirmationsChanged && mayNetwork">
         <div
           class='button' tabindex="0"  
-          @click="reset">Reset</div>
+          @keypress.enter.prevent.stop="resetContributionConfirmations"
+          @keypress.space.prevent.stop="resetContributionConfirmations"
+          @click="resetContributionConfirmations">Reset</div>
         <div 
-          class='button'
-          tabindex="0"
+          class='button' tabindex="0"
           @click="commitContributionConfirmations">Commit</div>
       </div>
       <div 
@@ -265,7 +318,9 @@
     </div>
 
     <div class="scrollspace"/>
-    <BackButton @click="aimNetwork.deselect"/>
+    <BackButton 
+      tabindex="0"
+      @click="aimNetwork.deselect"/>
   </div>
 </template>
 
@@ -498,6 +553,9 @@ export default defineComponent({
         this.permissionGranting[permission] = false
       }
     },
+    togglePermissionGranting(permission: string) {
+      this.permissionGranting[permission] = !this.permissionGranting[permission]
+    },
     share() {
       let url = `${window.location.origin}/?loadAim=${this.aim.address}`
       navigator.clipboard.writeText(url).then(() => {
@@ -568,6 +626,9 @@ export default defineComponent({
     commitContributionConfirmations() {
       this.aimNetwork.commitContributionConfirmations(this.aim) 
     },
+    resetContributionConfirmations() {
+      this.aimNetwork.resetContributionConfirmations(this.aim) 
+    }, 
     editMember(member: Member) {
       this.memberAddr = member.address
       this.resetPermissionGranting()

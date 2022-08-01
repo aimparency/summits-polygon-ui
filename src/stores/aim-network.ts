@@ -327,8 +327,8 @@ export const useAimNetwork = defineStore('aim-network', {
         if(addr) {
           await this.loadAim(addr)
         }
-      } catch(e) {
-        useUi().setWarning("could not load aim from sharer link", vec2.create())
+      } catch(err: any) {
+        useUi().log(`Could not load aim from link ${err.message ?? err}`, "error")
       }
       this.loadPinned() 
     }, 
@@ -418,7 +418,8 @@ export const useAimNetwork = defineStore('aim-network', {
             aim.loopWeightOrigin = undefined
             this.togglePin(aim)
           }
-        } catch {
+        } catch(err: any) {
+          useUi().log(`Failed to create aim on chain: ${err.message ?? err}`, "error")
           aim.pendingTransactions.creation = false
         }
       }
@@ -444,8 +445,8 @@ export const useAimNetwork = defineStore('aim-network', {
           delete origin[name]
         }
       aim.pendingTransactions.data = false
-      } catch(err)  {
-        console.error("Failed to commit aim changes", err) 
+      } catch(err: any)  {
+        useUi().log(`Failed to commit aim changes: ${err.message ?? err}`, "error")
         aim.pendingTransactions.data = false
       }
 
@@ -481,8 +482,8 @@ export const useAimNetwork = defineStore('aim-network', {
               }
             })
             aim.pendingTransactions.members = false
-          } catch(err) {
-            console.error("Failed to commit aim member changes", err)
+          } catch(err: any) {
+            useUi().log(`Failed to commit aim member changes: ${err.message ?? err}`, "error")
             aim.pendingTransactions.members = false
           }
           // set members changed to false for include members
@@ -522,10 +523,13 @@ export const useAimNetwork = defineStore('aim-network', {
           aim.contributionConfirmationSwitches = new Set<string>()
           aim.pendingTransactions.contributionConfirmations = false
         } catch (err) {
-          console.error("Failed to commit contribution confirmations", err)
+          useUi().log(`Failed to commit contribution confirmations: ${err.message ?? err}`, "error")
           aim.pendingTransactions.contributionConfirmations = false
         }
       }
+    }, 
+    async resetContributionConfirmations(aim: Aim) {
+      aim.contributionConfirmationSwitches = new Set<string>()
     }, 
     async buyTokens(aim: Aim, amount: bigint, maxPrice: bigint) {
       try {
@@ -542,8 +546,8 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.tokenSupply += amount
         aim.tokensOnChain = aim.tokens
         aim.pendingTransactions.investment = false
-      } catch(err)  {
-        console.error("Failed to buy tokens", err) 
+      } catch(err: any)  {
+        useUi().log(`Failed to buy tokens: ${err.message ?? err}`, "error")
         aim.pendingTransactions.investment = false
       }
     },
@@ -560,8 +564,8 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.tokenSupply -= amount
         aim.tokensOnChain = aim.tokens
         aim.pendingTransactions.investment = false
-      } catch(err)  {
-        console.error("Failed to sell tokens", err) 
+      } catch(err: any)  {
+        useUi().log(`Failed to sell tokens: ${err.message ?? err}`, "error")
         aim.pendingTransactions.investment = false
       }
     }, 
@@ -755,8 +759,8 @@ export const useAimNetwork = defineStore('aim-network', {
         }
         aim.owner = newOwnerAddr
         aim.pendingTransactions.transfer = false
-      } catch(err)  {
-        console.error("Failed to transfer aim", err) 
+      } catch(err: any)  {
+        useUi().log(`Failed to transfer aim: ${err.message ?? err}`, 'error')
         aim.pendingTransactions.transfer = false
       }
     },
@@ -828,7 +832,7 @@ export const useAimNetwork = defineStore('aim-network', {
           flow.transactionPending = false
           flow.published = true
         } catch(error: any) {
-          console.error(`Failed to create flow: ${error}`) 
+          useUi().log(`Failed to create flow: ${error}`, 'error')
           flow.transactionPending = false
         }
       }
@@ -872,8 +876,8 @@ export const useAimNetwork = defineStore('aim-network', {
         await tx.wait()
         flow.clearOrigin()
         flow.transactionPending = false
-      } catch(err)  {
-        console.error("Failed to commit flow changes", err) 
+      } catch(err: any)  {
+        useUi().log(`Failed to commit flow changes: ${err.message ?? err}`, 'error') 
         flow.transactionPending = false
       }
     }, 

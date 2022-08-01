@@ -146,7 +146,7 @@ export default defineComponent({
       try {
         this.aimNetwork.createAndSelectFlow(from, to) 
       } catch(err: any) {
-        this.ui.setError(err.toString()) 
+        this.ui.log(err.toString(), "error")
       }
     }, 
     togglePin() {

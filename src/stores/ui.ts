@@ -1,25 +1,22 @@
 import { defineStore } from 'pinia'
+import { markRaw } from 'vue'
 
 import * as vec2 from '../vec2'
 
-import { useMap } from './map'
-
-export class Hint {
-  constructor(
-    public message: string, 
-    public position: vec2.T, 
-    public color: string,
-  ) {}
+interface LogEntry {
+  message: string
+  type: string
+  key: number 
+  fade: boolean
 } 
-
-let closeTimeout: ReturnType<typeof setTimeout> | null = null 
 
 export const useUi = defineStore('ui', {
   state() {
     return {
       screenSize: vec2.create(),
       sideMenuOpen: false,
-      hint: undefined as undefined | Hint     
+      logEntries: [] as LogEntry[], 
+      nextLogId: 0, 
     }
   }, 
   actions: {
@@ -29,30 +26,21 @@ export const useUi = defineStore('ui', {
     toggleSideMenu() {
       this.sideMenuOpen = !this.sideMenuOpen
     }, 
-    setError(msg: string, pos?: vec2.T) {
-      this.setHint(msg, "#aa1112", pos)
+    log(message: string, type: string) {
+      let logEntry = {
+        message, 
+        type, 
+        key: this.nextLogId++,
+        fade: false
+      } 
+      this.logEntries.push(logEntry)
+      logEntry = this.logEntries[this.logEntries.length - 1]
+      setTimeout(() => {
+        logEntry.fade = true
+        setTimeout(() => {
+          this.logEntries.shift()
+        }, 2000)
+      }, 10000)
     }, 
-    setWarning(msg: string, pos?: vec2.T) {
-      this.setHint(msg, "#999901", pos)
-    }, 
-    setInfo(msg: string, pos?: vec2.T) {
-      this.setHint(msg, "#66bbff", pos)
-    }, 
-    setHint(msg: string, color: string, pos?: vec2.T) {
-      let duration = msg.length * 50 + 1000
-      if(pos == undefined) {
-        pos = vec2.clone(useMap().mouse.physical)
-      }
-      this.hint = new Hint(msg, pos, color)
-      closeTimeout = setTimeout(() => {
-        this.closeHint()
-      }, duration)
-    }, 
-    closeHint() {
-      this.hint = undefined
-      if(closeTimeout !== null) {
-        closeTimeout = null
-      }
-    }
   }
 })
