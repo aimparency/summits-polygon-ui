@@ -117,6 +117,12 @@ export default defineComponent({
 <style scoped lang="less">
 .flowButton{
   .button(); 
+  background-color: shade(@c2, 50%); 
+  margin-left: 3rem; 
+  &:focus, &:hover{
+    background-color: shade(@c2, 30%); 
+    outline: none; 
+  }
   &.disabled {
     background-color: #aaa; 
     cursor: default; 
@@ -134,5 +140,9 @@ export default defineComponent({
   padding: 0.2rem; 
   border-radius:0.2rem; 
   background-color: #8888; 
+}
+.changeList {
+  text-align: left;
+  padding: 0rem 0.5rem; 
 }
 </style>
