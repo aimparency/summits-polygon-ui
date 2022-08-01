@@ -12,6 +12,9 @@ The order is reversed chronological. Newer ideas on top:
   - only how confirmed aims if they really have a connection from the stating aim
   - only load contributing aims when a certain token * share threshold is reached
 
+#2022-08-02
+- don't allow flow layouting when not mayNetwork
+
 #2022-08-01
 - D: when changin self member: update "permission" field at aim as well.
 - errors
@@ -22,6 +25,8 @@ The order is reversed chronological. Newer ideas on top:
 - uncommitted changes
   - lupe>back symbol
 - console.logs loeschen
+- make aims default tab
+
 
 #2022-07-31
 - D: UI Price negatives Vorzeichen raus

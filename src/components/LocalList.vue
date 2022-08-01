@@ -1,6 +1,5 @@
 <template>
   <div class="local-list"> 
-    <h3>find aims</h3>
     <input type="text" placeholder="search" :value="search" @input="updateSearch"/>
     <div v-if="searchResults.length > 0" class="results">
       <AimLi tabindex="0"

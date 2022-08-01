@@ -12,7 +12,7 @@
         v-else-if="aimNetwork.selectedFlow"
         :flow="aimNetwork.selectedFlow"
         />
-      <LocalList v-else/>
+      <TabbedMenu v-else/>
     </div>
     <div class="toggle"
       tabindes="0"
@@ -33,14 +33,14 @@ import { defineComponent } from "vue"
 import { useUi } from "../stores/ui"
 import { useAimNetwork } from "../stores/aim-network"
 
-import LocalList from "./LocalList.vue"
+import TabbedMenu from "./TabbedMenu.vue"
 import AimDetails from "./AimDetails.vue"
 import FlowDetails from "./FlowDetails.vue"
 
 export default defineComponent({
   name: "SideBar",
   components: {
-    LocalList, 
+    TabbedMenu, 
     AimDetails, 
     FlowDetails, 
   },

@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { markRaw } from 'vue'
 
 import * as vec2 from '../vec2'
 
@@ -14,9 +13,11 @@ export const useUi = defineStore('ui', {
   state() {
     return {
       screenSize: vec2.create(),
-      sideMenuOpen: false,
+      sideMenuOpen: true,
       logEntries: [] as LogEntry[], 
       nextLogId: 0, 
+      tabs: ['aims', 'changes'], 
+      openTab: 'changes', 
     }
   }, 
   actions: {

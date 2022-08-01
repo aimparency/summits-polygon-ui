@@ -344,7 +344,7 @@ export const useAimNetwork = defineStore('aim-network', {
         const map = useMap()
         map.centerOnAim(home) 
 
-        this.selectAim(home)
+        // this.selectAim(home)
 
         // test transaction
         // await summitsContract.test() // test
@@ -359,7 +359,7 @@ export const useAimNetwork = defineStore('aim-network', {
             aim.pinned = true
             this.raiseLoadLevel(aim, 2) 
           }).catch(() => {
-            console.warn("Could not load pinned aim") 
+            useUi().log("Could not load pinned aim. Maybe clear your local storage.", "error") 
           })
         })
       }
