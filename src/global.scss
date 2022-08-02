@@ -20,6 +20,9 @@
   cursor: pointer; 
   user-select: none; 
   box-shadow: 0 0 1rem #0008; 
+  &:hover {
+    box-shadow: 0 0 0.5rem #0004; 
+  }
 }
 
 

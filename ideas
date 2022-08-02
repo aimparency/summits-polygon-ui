@@ -9,19 +9,22 @@ The order is reversed chronological. Newer ideas on top:
 
 #far future
 - neighbor guard
-  - only how confirmed aims if they really have a connection from the stating aim
-  - only load contributing aims when a certain token * share threshold is reached
+  - only how confirmed aims 
+    - if they really have a connection from the stating aim
+  - only load contributing aims 
+    - when a certain token * share threshold is reached
 
 #2022-08-02
 - don't allow flow layouting when not mayNetwork
+- click on handle may select aim
 
 #2022-08-01
 - D: when changin self member: update "permission" field at aim as well.
-- errors
+- D: errors
   - V: oben Mitte 
-  - unten rechts, wie counterstrike log.
+  - D: unten rechts, wie counterstrike log.
     - max width 100vw - (side menu width + 3 rem (links) + 2rem rechts) 
-  - statt console.error
+  - D: statt console.error
 - uncommitted changes
   - lupe>back symbol
 - console.logs loeschen

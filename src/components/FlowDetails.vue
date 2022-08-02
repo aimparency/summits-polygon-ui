@@ -44,7 +44,7 @@
       </div>
       <div>
         <span v-if='!flow.published'>
-          <p v-if='flow.into.address == undefined || flow.from.address == undefined'>
+          <p class=hint v-if='flow.into.address == undefined || flow.from.address == undefined'>
             Before creating this flow on chain, both involved aims have to be created on chain</p>
           <div v-else class='button' tabindex="0" 
             @keypress.enter.prevent.stop="create"
@@ -118,6 +118,17 @@ export default defineComponent({
       confirmRemove: false, 
     }
   }, 
+  mounted() {
+    this.init()
+  },
+  watch: {
+    flow: {
+      handler(_new, _old) {
+        this.init()
+      },
+      deep: false
+    }
+  },
   computed: {
     dirty() : boolean {
       return ( 
@@ -126,6 +137,9 @@ export default defineComponent({
     }, 
   }, 
   methods: {
+    init() {
+      (<HTMLInputElement>this.$refs.explanation).focus();
+    }, 
     updateWeight(v: number) {
       this.flow.updateWeight(v)
     }, 

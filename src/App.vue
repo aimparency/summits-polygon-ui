@@ -25,23 +25,35 @@ export default defineComponent({
     SideBar,
     Log
   },
-  setup() {
-    useWeb3Connection().connect(() => {
-        useAimNetwork().loadInitial()
+  data() {
+    return {
+      web3Connection: useWeb3Connection(),
+      aimNetwork: useAimNetwork(),
+      ui: useUi(),
+    }
+  },
+  mounted() {
+    this.web3Connection.connect(() => {
+        this.aimNetwork.loadInitial()
     }) 
-    let ui = useUi()
     const onResize = () => {
-      ui.setScreenSize(
+      this.ui.setScreenSize(
         window.innerWidth, 
         window.innerHeight
       )
     }
     window.addEventListener('resize', onResize)
     onResize()
+    console.log("addding event listener for close")
+    window.addEventListener("beforeunload", (e) => {
+      if(this.aimNetwork.allChanges().length > 0) {
+        this.aimNetwork
+        e.preventDefault()
+        this.ui.promtOnExit()
+        this.aimNetwork.deselect()
+      }
+    }, true);
   }, 
-  data() {
-    return {}
-  },
   methods: {
   },
 });
@@ -150,6 +162,10 @@ h3 {
   100% {
     background-position: -200% 0%; 
   }
+}
+
+.hint{
+  color: @c1; 
 }
 
 </style>

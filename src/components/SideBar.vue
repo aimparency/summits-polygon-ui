@@ -3,7 +3,7 @@
     class="side-bar" 
     :class="{closed: !open}" 
     :style="style"> 
-    <div class="container">
+    <div class="container" v-if="open || keepOpen">
       <AimDetails 
         v-if="aimNetwork.selectedAim"
         :aim="aimNetwork.selectedAim"
@@ -50,7 +50,8 @@ export default defineComponent({
   setup() {
     return { 
       ui: useUi(),
-      aimNetwork: useAimNetwork()
+      aimNetwork: useAimNetwork(), 
+      keepOpen: false, 
     }
   }, 
   data() {
@@ -119,6 +120,9 @@ export default defineComponent({
     font-size: 1.8rem; 
     .clickable(); 
     background-color: @mid2; 
+    &:hover {
+      background-color: @mid2; 
+    }
     border-radius: @secondaryradius; 
     width: @size; 
     height: @size; 

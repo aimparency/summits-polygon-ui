@@ -1,124 +1,99 @@
 <template>
+  <div v-if="ui.confirmExit">
+    <p class="hint"> If you exit this browser tab, the following uncommitted changes will be lost! </p>
+  </div>
   <div class="changeList">
-    <div v-for="change in changes">
+    <div v-for="change in changes" class="changedAim">
       <div
         class="aimButton"
-        :class="{disabled: change.aimChanges.length == 0}"
+        :class="{disabled: change.aimButtonDisabled}"
         tabindex="0"
         :key="change.aim.id"
         :aim="change.aim"
-        @click="change.aimChanges.length > 0 && selectAim(change.aim)"
-        @keypress.space="change.aimChanges.length > 0 && selectAim(change.aim)"
-        @keypress.enter="change.aimChanges.length > 0 && selectAim(change.aim)"
-      > {{ change.aim.title }} </div>: 
-      <span v-if="change.aimChanges.length == 0"> no aim changes </span>
-      <template v-else>
+        @click="!change.aimButtonDisabled && selectAim(change.aim)"
+        @keypress.space="!change.aimButtonDisabled && selectAim(change.aim)"
+        @keypress.enter="!change.aimButtonDisabled && selectAim(change.aim)"
+      > {{ change.aim.title || "[untitled]" }} </div>
+      <p v-if="change.uncommitted" class="uncommitted">
+        not yet created on chain
+      </p>
+      <p v-else-if="change.aimChanges.length == 0"> no aim changes </p>
+      <div v-else class="changeBox">
         <span 
           class="aimChange"
           v-for="type in change.aimChanges">
           {{ type }}
         </span>
-      </template>
-      <template v-if="change.changedFlows.length > 0">
-        <br/>
+      </div>
+      <div class="changedFlowsList" v-if="change.changedFlows.length > 0">
         <div 
           v-for="flow in change.changedFlows"
           class="flowButton"
-          @click="change.aimChanges.length > 0 && selectFlow(change.aim)"
-          @keypress.space="change.aimChanges.length > 0 && selectFlow(change.aim)"
-          @keypress.enter="change.aimChanges.length > 0 && selectFlow(change.aim)">
-          --> {{flow.into.title }}
+          @click="selectFlow(flow)"
+          @keypress.space="selectFlow(flow)"
+          @keypress.enter="selectFlow(flow)">
+          {{ flow.from.title || "[untitled]" }}
         </div>
-      </template>
+      </div>
     </div>
   </div>
+  <div class="scrollspace"/>
 </template>
 
 <script lang="ts">
 import { defineComponent } from "vue"
 import { Aim, Flow, useAimNetwork } from '../stores/aim-network'
 import { useMap } from "../stores/map"
+import { useUi } from "../stores/ui";
 
 import AimLi from './AimLi.vue'
-
-interface Change {
-  aim: Aim
-  aimChanges: string[]
-  changedFlows: Flow[]
-}
 
 export default defineComponent({
   name: "UncommittedChanges",
   components: {
     AimLi
   }, 
-  setup() {
+  data() {
     return { 
       aimNetwork: useAimNetwork(), 
-      map: useMap()
+      ui: useUi(), 
+      map: useMap(), 
     }
-  }, 
-  data() {
-    return {}
   },
   computed: {
     changes() {
-      let results: Change[] = []
-      let aimIds = Object.keys(this.aimNetwork.aims) as any as number[]
-      for(let aimId in aimIds) {
-        let aim = this.aimNetwork.aims[aimId]
-        let aimChanges = []
-        if(Object.keys(aim.origin).find(key => (aim.origin as any)[key] !== undefined)) {
-          aimChanges.push("data") 
-        } 
-        if(aim.tokens != aim.tokensOnChain) {
-          aimChanges.push("investment") 
-        } 
-        if(aim.members.find(m => m.changed)) {
-          aimChanges.push("permissions") 
-        }
-        if(aim.loopWeightOrigin !== undefined) {
-          aimChanges.push("loop weight") 
-        }
-        if(aim.contributionConfirmationSwitches.size !== 0) {
-          aimChanges.push("contribution confirmations")
-        }
-        let changedFlows: Flow[] = []
-        for(let flowId in aim.inflows) {
-          let flow = aim.inflows[flowId]
-          if(Object.keys(flow.origin).find(key => (flow.origin as any)[key] !== undefined)) {
-            changedFlows.push(flow) 
-          } 
-        }
-        if(aimChanges.length > 0 || changedFlows.length > 0) {
-          results.push({
-            aim, 
-            aimChanges, 
-            changedFlows, 
-          })
-        }
-      }
-      return results
+      return this.aimNetwork.allChanges()
     }
   }, 
+  unmounted() {
+    this.ui.confirmExit = false
+  },
   methods: {
     selectAim(aim: Aim) {
       this.aimNetwork.selectAim(aim)
       this.map.centerOnAim(aim) 
     },
     selectFlow(flow: Flow) {
+      console.log("selecting flow") 
       this.aimNetwork.selectFlow(flow)
       this.map.centerOnAim(flow.from) 
     },
+    closeAnyway() {
+      window.close()
+    }
   }
 });
 </script>
 
 <style scoped lang="less">
+.changedFlowsList {
+  margin-top: 1rem;
+  margin-left: 3em;
+}
 .flowButton{
   .button(); 
   background-color: shade(@c2, 50%); 
-  margin-left: 3rem; 
+  margin: 0.25rem; 
   &:focus, &:hover{
     background-color: shade(@c2, 30%); 
     outline: none; 
@@ -130,19 +105,33 @@ export default defineComponent({
 }
 .aimButton {
   .button(); 
+  margin: 0.25rem; 
   &.disabled {
     background-color: #aaa; 
     cursor: default; 
   }
 }
 .aimChange{
-  margin: 0.2rem; 
-  padding: 0.2rem; 
-  border-radius:0.2rem; 
+  margin: 0.25rem; 
+  padding: 0.25rem; 
+  border-radius:0.25rem; 
   background-color: #8888; 
+  white-space: nowrap;
 }
 .changeList {
   text-align: left;
-  padding: 0rem 0.5rem; 
+  padding: 0rem; 
+}
+.changedAim {
+  margin: 1rem; 
+  padding: 0.5rem;
+  background-color: #0004; 
+  border-radius: 0.5rem; 
+  p {
+    margin: 0.25rem 0.5rem; 
+  }
+}
+.changeBox {
+  margin: 0.5rem 0rem; 
 }
 </style>

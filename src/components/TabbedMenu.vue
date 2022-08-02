@@ -57,6 +57,7 @@ export default defineComponent({
     line-height: 1rem; 
     margin-top: 2rem;
     background-color: shade(@bg2, 25%); 
+    user-select:none; 
     cursor:pointer; 
     display: inline-block; 
     color: #ccc; 

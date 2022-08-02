@@ -36,11 +36,6 @@ export default defineComponent({
       return width + "%"
     }
   },
-  methods: {
-    closeHint() {
-      this.ui.closeHint()
-    }
-  }
 });
 </script>
 
@@ -58,7 +53,7 @@ export default defineComponent({
     pointer-events: all; 
     cursor: text; 
     margin: 0.25rem; 
-    max-width: calc(100% - 2rem); 
+    max-width: calc(100% - 2.5rem); 
     right: 1rem; 
     box-sizing: border-box;
     padding: 0.25rem;

@@ -306,6 +306,14 @@ export class Flow {
   }
 }
 
+interface Change {
+  aim: Aim
+  aimButtonDisabled: boolean
+  uncommitted: boolean
+  aimChanges: string[]
+  changedFlows: Flow[]
+}
+
 export const useAimNetwork = defineStore('aim-network', {
   state() {
     return {
@@ -929,6 +937,52 @@ export const useAimNetwork = defineStore('aim-network', {
         }
         aim.pinned = !aim.pinned
       }
+    }, 
+    allChanges() {
+      let results: Change[] = []
+      let aimIds = Object.keys(this.aims) as any as number[]
+      for(let aimId in aimIds) {
+        let aim = this.aims[aimId]
+        let aimChanges = []
+        let uncommitted = false
+        if(aim.address === undefined) {
+          uncommitted = true
+        } else {
+          if(Object.keys(aim.origin).find(key => (aim.origin as any)[key] !== undefined)) {
+            aimChanges.push("data") 
+          } 
+          if(aim.tokens != aim.tokensOnChain) {
+            aimChanges.push("investment") 
+          } 
+          if(aim.members.find(m => m.changed)) {
+            aimChanges.push("permissions") 
+          }
+          if(aim.loopWeightOrigin !== undefined) {
+            aimChanges.push("loop weight") 
+          }
+          if(aim.contributionConfirmationSwitches.size !== 0) {
+            aimChanges.push("contribution confirmations")
+          }
+        }
+        let changedFlows: Flow[] = []
+        for(let flowId in aim.inflows) {
+          let flow = aim.inflows[flowId]
+          let hasChanged = Object.keys(flow.origin).some(key => (flow.origin as any)[key] !== undefined)
+          if(flow.published !== true || hasChanged) {
+            changedFlows.push(flow) 
+          } 
+        }
+        if(uncommitted || aimChanges.length > 0 || changedFlows.length > 0) {
+          results.push({
+            aim, 
+            aimButtonDisabled: !uncommitted && aimChanges.length == 0,
+            uncommitted,
+            aimChanges, 
+            changedFlows, 
+          })
+        }
+      }
+      return results
     }
   }, 
 })

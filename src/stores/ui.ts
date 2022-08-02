@@ -18,6 +18,7 @@ export const useUi = defineStore('ui', {
       nextLogId: 0, 
       tabs: ['aims', 'changes'], 
       openTab: 'changes', 
+      confirmExit: false, 
     }
   }, 
   actions: {
@@ -43,5 +44,10 @@ export const useUi = defineStore('ui', {
         }, 2000)
       }, 10000)
     }, 
+    promtOnExit() {
+      this.confirmExit = true
+      this.openTab = 'changes'
+      this.sideMenuOpen = true
+    }
   }
 })
