@@ -483,9 +483,10 @@ export const useAimNetwork = defineStore('aim-network', {
               let tx = await aimContract.setPermissionsForMultipleMembers(addresses, permissions)
               await tx.wait()
             }
-            includedMembers.forEach((member: Member) => {
+            aim.members = aim.members.filter(m => m.permissions !== 0)
+            aim.members.forEach(member => {
               member.persist()
-              if(member.address == w3.address) { 
+              if(member.address == w3.address && aim.owner !== w3.address) { 
                 aim.permissions = member.permissions
               }
             })
@@ -954,7 +955,7 @@ export const useAimNetwork = defineStore('aim-network', {
           if(aim.tokens != aim.tokensOnChain) {
             aimChanges.push("investment") 
           } 
-          if(aim.members.find(m => m.changed)) {
+          if(aim.members && aim.members.some(member => member.changed())) {
             aimChanges.push("permissions") 
           }
           if(aim.loopWeightOrigin !== undefined) {

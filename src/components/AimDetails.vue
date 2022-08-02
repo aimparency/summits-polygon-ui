@@ -698,6 +698,7 @@ export default defineComponent({
       let member = this.aim.members.find(m => m.address == this.memberAddr)
       if(member !== undefined) {
         member.updatePermissions(permissions)
+        console.log("updated member permissions")
       } else {
         let newMember = new Member(this.memberAddr, permissions, 0x00)
         this.aim.members.push(newMember)

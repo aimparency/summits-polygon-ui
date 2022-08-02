@@ -29,6 +29,7 @@
         :value="flow.explanation"
         @input="updateExplanation"></textarea>
       <Slider
+        v-if="flow.into.mayNetwork()"
         name='weight'
         left='0'
         right='100'
@@ -39,6 +40,7 @@
         :to='0xffff'
         :value='flow.weight'
         @update='updateWeight'/>
+      <p v-else> weight: {{ Math.round(100 * flow.weight / 0xffff) }}% </p>
       <div class="relativePositionHint" v-if="flow.origin.relativeDelta != undefined">
         <p>relative positioning changed</p>
       </div>
