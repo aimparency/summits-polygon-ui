@@ -3,7 +3,7 @@
     <p class="hint"> If you exit this browser tab, the following uncommitted changes will be lost! </p>
   </div>
   <div class="changeList">
-    <div v-for="change in changes" class="changedAim">
+    <div v-for="change in aimNetwork.allChanges()" class="changedAim">
       <div
         class="aimButton"
         :class="{disabled: change.aimButtonDisabled}"
@@ -55,16 +55,12 @@ export default defineComponent({
   }, 
   data() {
     return { 
+      bla: "asd", 
       aimNetwork: useAimNetwork(), 
       ui: useUi(), 
       map: useMap(), 
     }
   },
-  computed: {
-    changes() {
-      return this.aimNetwork.allChanges()
-    }
-  }, 
   unmounted() {
     this.ui.confirmExit = false
   },

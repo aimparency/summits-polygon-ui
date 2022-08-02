@@ -138,6 +138,15 @@ export class Aim {
     transfer: false,
   } 
 
+  anyTransactionPending() {
+    for(let key in this.pendingTransactions) {
+      if((this.pendingTransactions as any)[key]) {
+        return true
+      }
+    }
+    return false
+  }
+
   static Permissions: {[name: string]: number} = {
     edit: 0x01, 
     network: 0x02,
@@ -531,7 +540,7 @@ export const useAimNetwork = defineStore('aim-network', {
           }) 
           aim.contributionConfirmationSwitches = new Set<string>()
           aim.pendingTransactions.contributionConfirmations = false
-        } catch (err) {
+        } catch (err: any) {
           useUi().log(`Failed to commit contribution confirmations: ${err.message ?? err}`, "error")
           aim.pendingTransactions.contributionConfirmations = false
         }

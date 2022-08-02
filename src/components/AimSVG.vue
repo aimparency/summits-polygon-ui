@@ -98,7 +98,7 @@ export default defineComponent({
       return this.aimNetwork.selectedAim == this.aim; 
     }, 
     loading() : boolean {
-      return this.aim.pendingTransactions > 0 
+      return this.aim.anyTransactionPending()
     }, 
     published() : boolean {
       return this.aim.address !== undefined

@@ -21,7 +21,7 @@ import { defineComponent } from "vue"
 import LocalList from "./LocalList.vue"
 import UncommittedChanges from "./UncommittedChanges.vue"
 
-import { useUi } from "../stores/ui.ts"
+import { useUi } from "../stores/ui"
 
 export default defineComponent({
   name: "TabbedMenu",

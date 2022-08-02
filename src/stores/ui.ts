@@ -17,7 +17,7 @@ export const useUi = defineStore('ui', {
       logEntries: [] as LogEntry[], 
       nextLogId: 0, 
       tabs: ['aims', 'changes'], 
-      openTab: 'changes', 
+      openTab: 'aims', 
       confirmExit: false, 
     }
   }, 
