@@ -839,9 +839,6 @@ export default defineComponent({
     text-align: left;
     line-height: 2rem;
   }
-  .hint{
-    color: @c1; 
-  }
   .newMemberAddr {
     margin: 0.5rem;
   }

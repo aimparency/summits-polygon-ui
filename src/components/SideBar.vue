@@ -121,7 +121,7 @@ export default defineComponent({
     .clickable(); 
     background-color: @mid2; 
     &:hover {
-      background-color: @mid2; 
+      background-color: shade(@c2, 30%);  
     }
     border-radius: @secondaryradius; 
     width: @size; 

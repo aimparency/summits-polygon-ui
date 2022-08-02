@@ -4,13 +4,13 @@
     :cx="fromPos[0]" :cy="fromPos[1]" :r="flow.from.r" 
     @mousedown="startLayouting(true)" 
     @touchstart="startLayouting(true)"
-    @click.stop
+    @click.stop="selectAim(flow.from)"
     :stroke-width="flow.from.r * 0.05" />
   <circle class="handle" :cx="intoPos[0]" :cy="intoPos[1]" :r="flow.into.r"
     :class="{dragging: map.layouting}"
     @mousedown="startLayouting(false)" 
     @touchstart="startLayouting(false)"
-    @click.stop
+    @click.stop="selectAim(flow.into)"
     :stroke-width="flow.into.r * 0.05" />
   <line class="handle line" :x1="fromPos[0]" :y1="fromPos[1]" :x2="intoPos[0]" :y2="intoPos[1]" 
     :class="{dragging: map.layouting}"
@@ -23,7 +23,7 @@
 // import Color from 'color'
 import { defineComponent, PropType } from 'vue';
 
-import { Flow, useAimNetwork } from '../stores/aim-network';
+import { Aim, Flow, useAimNetwork } from '../stores/aim-network';
 import { useMap } from '../stores/map';
 
 import * as vec2 from '../vec2';
@@ -70,6 +70,11 @@ export default defineComponent({
         dScale: from ? -1 / this.flow.into.r : 1 / this.flow.from.r, 
         flow: this.flow, 
       });
+    }, 
+    selectAim(aim: Aim) {
+      if(!this.map.cursorMoved) {
+        this.aimNetwork.selectAim(aim);
+      }
     }
   }
 });

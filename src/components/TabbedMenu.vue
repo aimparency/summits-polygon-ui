@@ -46,7 +46,7 @@ export default defineComponent({
 
 <style scoped lang="less">
 .head{
-  background-color: shade(@bg2, 50%); 
+  background-color: mix(@bg2, #111, 30%); 
   height: 5rem; 
   .tab {
     font-size: 1.2rem; 
@@ -56,17 +56,22 @@ export default defineComponent({
     border-top-right-radius: 1rem; 
     line-height: 1rem; 
     margin-top: 2rem;
-    background-color: shade(@bg2, 25%); 
+    background-color: mix(@bg2, #111, 30%); 
     user-select:none; 
     cursor:pointer; 
     display: inline-block; 
     color: #ccc; 
-    &.active {
-      color: white; 
-      background-color: @bg2; 
-    }
+    transition: background-color 0.2s ease-in-out, border-bottom-color 0.2s ease-in-out;
+    border-bottom: 0.25rem solid @bg2; 
     &:hover {
-      background-color: shade(@c2, 50%); 
+      border-bottom-color: @c2; 
+      background-color: #fff1; 
+    }
+    &.active {
+      transition: none; 
+      color: white; 
+      border-bottom-color: @bg2;
+      background-color: @bg2; 
     }
   }
   margin-bottom: 1rem;

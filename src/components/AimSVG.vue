@@ -162,13 +162,18 @@ export default defineComponent({
   font-family: monospace; 
   .aim-circle {
     cursor: pointer; 
-    transition: stroke-dasharray;  
+    transition: stroke 0.2s ease-in-out;  
     stroke-width: 0.075;
+    stroke: #ccc0;
+    &:hover {
+      stroke: #cccf; 
+    }
     &.selected {
-      stroke: #ccc; 
+      transition: none; 
+      stroke: #cccf; 
     }
     &.loading {
-      stroke: #ccc; 
+      stroke: #cccf; 
       animation: dash 1.5s linear infinite;
       stroke-linecap: round;
     }

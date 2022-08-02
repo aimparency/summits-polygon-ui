@@ -10,7 +10,7 @@
       <linearGradient v-for="color, key in summitColors" :key="key" 
         :id="'summit-gradient-' + key"
         gradientTransform="rotate(90)">
-        <stop offset="0%"  :stop-color="color + '3e'" />
+        <stop offset="0%"  :stop-color="color + '1e'" />
         <stop offset="100%" :stop-color="color + '00'" />
       </linearGradient>
       <pattern v-for="y, i in summitYs" :id="'range-'+i" 
@@ -34,7 +34,7 @@
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
         :aim="aim"/>
-      <FlowHandle v-if="aimNetwork.selectedFlow !== undefined"
+      <FlowHandle v-if="aimNetwork.selectedFlow !== undefined && aimNetwork.selectedFlow.into.mayNetwork()"
         :flow="aimNetwork.selectedFlow"/>
 
       <!--rect
