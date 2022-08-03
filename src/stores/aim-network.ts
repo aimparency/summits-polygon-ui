@@ -342,7 +342,9 @@ export const useAimNetwork = defineStore('aim-network', {
       try {
         let addr = urlParams.get('loadAim')
         if(addr) {
-          await this.loadAim(addr)
+          let aim = await this.loadAim(addr)
+          this.raiseLoadLevel(aim, 2)
+          this.focusAim(aim) 
         }
       } catch(err: any) {
         useUi().log(`Could not load aim from link ${err.message ?? err}`, "error")
@@ -354,14 +356,10 @@ export const useAimNetwork = defineStore('aim-network', {
       if(summitsContract) {
         const baseAimAddr = await summitsContract.baseAim()
         let home = await this.loadAim(baseAimAddr) 
-        home.pinned = true
 
         this.raiseLoadLevel(home, 2) 
 
-        const map = useMap()
-        map.centerOnAim(home) 
-
-        // this.selectAim(home)
+        this.focusAim(home)
 
         // test transaction
         // await summitsContract.test() // test
@@ -927,6 +925,11 @@ export const useAimNetwork = defineStore('aim-network', {
       this.lazyLoadAim(aim) 
       this.raiseLoadLevel(aim, 2) 
     },
+    focusAim(aim: Aim) {
+      this.selectAim(aim) 
+      const map = useMap()
+      map.centerOnAim(aim) 
+    }, 
     deselect() {
       this.selectedAim = undefined
       this.selectedFlow = undefined
@@ -948,6 +951,8 @@ export const useAimNetwork = defineStore('aim-network', {
         aim.pinned = !aim.pinned
       }
     }, 
+  },
+  getters: {
     allChanges() {
       let results: Change[] = []
       let aimIds = Object.keys(this.aims) as any as number[]

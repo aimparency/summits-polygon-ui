@@ -2,7 +2,7 @@
   <div 
     @keydown.esc="aimNetwork.deselect"
     class="aim-details"> 
-    <h3>aim details</h3>
+    <h2>aim</h2>
     
     <div class=block>
       <textarea
@@ -76,21 +76,19 @@
       </div>
     </div>
 
-    <div v-if="aim.address == undefined">
-      <h3> Initial investment </h3>
-      <input class="tokenInfo" size="13" placeholder="token name" 
-        :value="aim.tokenName"
-        @input="changeTokenName"/>
-      <input class="tokenInfo" size="5" placeholder="symbol" 
-        :value="aim.tokenSymbol"
-        @input="changeTokenSymbol"/>
-    </div>
-    <div v-else>
-      <h3> investment </h3>
-    </div>
+    <h3 v-if="aim.address !== undefined"> investment </h3>
+    <h3 v-else> initial investment </h3>
     <div class=block>
-      <div>
-        <p v-if="aim.address" class="supply">total supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
+      <div v-if="aim.address == undefined">
+        <input class="tokenInfo" size="13" placeholder="token name" 
+          :value="aim.tokenName"
+          @input="changeTokenName"/>
+        <input class="tokenInfo" size="5" placeholder="symbol" 
+          :value="aim.tokenSymbol"
+          @input="changeTokenSymbol"/>
+      </div>
+      <div v-else>
+        <p class="supply">total supply: <b class="nowrap">{{aim.tokenSupply}} {{ aim.tokenSymbol }}</b></p>
       </div>
       <BigIntSlider 
         name='balance'
@@ -731,7 +729,7 @@ export default defineComponent({
   .fieldButtons {
     margin: 1rem; 
     .share {
-      background-image: url(/share.svg);
+      background-image: url(../assets/share.svg);
       background-size: 50%;
       background-repeat: no-repeat;
       background-position: center;
@@ -792,12 +790,12 @@ export default defineComponent({
       top: 0rem; 
       position: absolute;
       background-color: #fff4; 
-      background-image: url(./unconfirmed.svg);
+      background-image: url(../assets/unconfirmed.svg);
       background-size: 70%;
       background-position: center;
       background-repeat: no-repeat;
       &.confirmed {
-        background-image: url(./confirmed.svg);
+        background-image: url(../assets/confirmed.svg);
       }
       &:hover {
         background-color: #fff8; 
@@ -856,7 +854,7 @@ export default defineComponent({
     width: 2.5rem; 
     height: 2.5rem; 
     vertical-align: bottom;
-    background-image: url(/edit.svg);
+    background-image: url(../assets/edit.svg);
     background-size: 100%;
     background-repeat: no-repeat;
     background-position: center;

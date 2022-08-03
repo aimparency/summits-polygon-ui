@@ -30,7 +30,7 @@ export default defineComponent({
   font-weight: bold; 
   text-align: center; 
   position: absolute; 
-  background-image: url(/search.svg); 
+  background-image: url(../../assets/main-menu.svg); 
   background-repeat: no-repeat; 
   background-position: center; 
   background-size: 65%; 

@@ -2,7 +2,7 @@
   <div 
     @keydown.esc="aimNetwork.deselect"
     class="flow-details"> 
-    <h3>flow details</h3>
+    <h2>flow</h2>
     <div
       tabindex="0"
       @keypress.enter.prevent.stop="aimNetwork.selectAim(flow.from)"

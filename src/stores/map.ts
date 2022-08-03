@@ -73,7 +73,10 @@ export const useMap = defineStore('map', {
     startLayouting(c: LayoutCandidate) {
       this.layoutCandidate = c
     }, 
-    centerOnAim(aim: Aim) {
+    stopAnim() {
+      this.anim.update = undefined
+    }, 
+    centerOnAim(aim: Aim, duration = 1000) {
       // Gleichung: 
       // 100 = scale * home.r
       // scale = 100 / home.r
@@ -81,7 +84,7 @@ export const useMap = defineStore('map', {
       const scale0 = this.scale
       this.anim.t0 = Date.now()
       this.anim.update = () => {
-        let progress = (Date.now() - this.anim.t0) / 1000 / this.anim.duration 
+        let progress = (Date.now() - this.anim.t0) / duration / this.anim.duration 
         if(progress >= 1) {
           progress = 1
           this.anim.update = undefined

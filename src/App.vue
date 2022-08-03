@@ -46,12 +46,14 @@ export default defineComponent({
     onResize()
     console.log("addding event listener for close")
     window.addEventListener("beforeunload", (e) => {
-      if(this.aimNetwork.allChanges().length > 0) {
-        this.aimNetwork
+      if(this.aimNetwork.allChanges.length > 0) {
         e.preventDefault()
         this.ui.promtOnExit()
         this.aimNetwork.deselect()
+        e.returnValue = "There are uncommmitted changes, that will be lost if you leave this page."
+        return "There are uncommmitted changes, that will be lost if you leave this page."
       }
+      return null
     }, true);
   }, 
   methods: {
@@ -128,6 +130,11 @@ p {
 h3 {
   margin: 1rem auto; 
   padding-top: 2rem; 
+}
+
+h2 {
+  line-height: 2rem; 
+  margin: 1.5rem auto ; 
 }
 
 .nowrap {

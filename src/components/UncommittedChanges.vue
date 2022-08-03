@@ -1,42 +1,50 @@
 <template>
-  <div v-if="ui.confirmExit">
-    <p class="hint"> If you exit this browser tab, the following uncommitted changes will be lost! </p>
+  {{ aimNetwork.allChanges.length }}
+  <div v-if="aimNetwork.allChanges.length == 0">
+    <p>No uncommitted changes</p>
   </div>
-  <div class="changeList">
-    <div v-for="change in aimNetwork.allChanges()" class="changedAim">
-      <div
-        class="aimButton"
-        :class="{disabled: change.aimButtonDisabled}"
-        tabindex="0"
-        :key="change.aim.id"
-        :aim="change.aim"
-        @click="!change.aimButtonDisabled && selectAim(change.aim)"
-        @keypress.space="!change.aimButtonDisabled && selectAim(change.aim)"
-        @keypress.enter="!change.aimButtonDisabled && selectAim(change.aim)"
-      > {{ change.aim.title || "[untitled]" }} </div>
-      <p v-if="change.uncommitted" class="uncommitted">
-        not yet created on chain
+  <template v-else>
+    <div v-if="ui.confirmExit">
+      <p class="hint"> 
+        If you exit this browser tab, the following uncommitted changes will be lost! 
       </p>
-      <p v-else-if="change.aimChanges.length == 0"> no aim changes </p>
-      <div v-else class="changeBox">
-        <span 
-          class="aimChange"
-          v-for="type in change.aimChanges">
-          {{ type }}
-        </span>
-      </div>
-      <div class="changedFlowsList" v-if="change.changedFlows.length > 0">
-        <div 
-          v-for="flow in change.changedFlows"
-          class="flowButton"
-          @click="selectFlow(flow)"
-          @keypress.space="selectFlow(flow)"
-          @keypress.enter="selectFlow(flow)">
-          {{ flow.from.title || "[untitled]" }}
+    </div>
+    <div class="changeList">
+      <div v-for="change in aimNetwork.allChanges" class="changedAim">
+        <div
+          class="aimButton"
+          :class="{disabled: change.aimButtonDisabled}"
+          tabindex="0"
+          :key="change.aim.id"
+          :aim="change.aim"
+          @click="!change.aimButtonDisabled && selectAim(change.aim)"
+          @keypress.space="!change.aimButtonDisabled && selectAim(change.aim)"
+          @keypress.enter="!change.aimButtonDisabled && selectAim(change.aim)"
+        > {{ change.aim.title || "[untitled]" }} </div>
+        <p v-if="change.uncommitted" class="uncommitted">
+          not yet created on chain
+        </p>
+        <p v-else-if="change.aimChanges.length == 0"> no aim changes </p>
+        <div v-else class="changeBox">
+          <span 
+            class="aimChange"
+            v-for="type in change.aimChanges">
+            {{ type }}
+          </span>
+        </div>
+        <div class="changedFlowsList" v-if="change.changedFlows.length > 0">
+          <div 
+            v-for="flow in change.changedFlows"
+            class="flowButton"
+            @click="selectFlow(flow)"
+            @keypress.space="selectFlow(flow)"
+            @keypress.enter="selectFlow(flow)">
+            {{ flow.from.title || "[untitled]" }}
+          </div>
         </div>
       </div>
     </div>
-  </div>
+  </template>
   <div class="scrollspace"/>
 </template>
 
@@ -66,8 +74,7 @@ export default defineComponent({
   },
   methods: {
     selectAim(aim: Aim) {
-      this.aimNetwork.selectAim(aim)
-      this.map.centerOnAim(aim) 
+      this.aimNetwork.focusAim(aim)
     },
     selectFlow(flow: Flow) {
       console.log("selecting flow") 

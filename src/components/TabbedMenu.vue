@@ -1,6 +1,6 @@
 <template>
   <div class="head">
-    <span class='tab'
+    <h2 class='tab'
       v-for="tab, key in ui.tabs" :key="key"
       tabindex=0
       @keydown.enter.prevent.stop="ui.openTab = tab"
@@ -9,7 +9,7 @@
       :class="{active: tab == ui.openTab}"
       >
       {{ tab }}
-    </span>
+    </h2>
   </div>
   <LocalList v-if="ui.openTab == 'aims'"/>
   <UncommittedChanges v-if="ui.openTab == 'changes'"/>
@@ -49,13 +49,11 @@ export default defineComponent({
   background-color: mix(@bg2, #111, 30%); 
   height: 5rem; 
   .tab {
-    font-size: 1.2rem; 
     font-weight: bold; 
     padding: 1rem;
     border-top-left-radius: 1rem; 
     border-top-right-radius: 1rem; 
-    line-height: 1rem; 
-    margin-top: 2rem;
+    margin-top: 1rem;
     background-color: mix(@bg2, #111, 30%); 
     user-select:none; 
     cursor:pointer; 
@@ -63,7 +61,8 @@ export default defineComponent({
     color: #ccc; 
     transition: background-color 0.2s ease-in-out, border-bottom-color 0.2s ease-in-out;
     border-bottom: 0.25rem solid @bg2; 
-    &:hover {
+    &:hover, &:focus{
+      outline: none; 
       border-bottom-color: @c2; 
       background-color: #fff1; 
     }

@@ -89,8 +89,7 @@ export default defineComponent({
       })
     }, 
     selectAim(aim: Aim) {
-      this.aimNetwork.selectAim(aim)
-      this.map.centerOnAim(aim) 
+      this.aimNetwork.focusAim(aim)
     },
     updateSearch(event: any) {
       this.search = event.target.value

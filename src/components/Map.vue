@@ -234,7 +234,7 @@ export default defineComponent({
       this.map.updateMouse(mouse)
       const d = vec2.crSub(this.map.mousePhysBegin, mouse)
       if(vec2.len2(d) > 25 || this.map.cursorMoved) {
-        this.map.cursorMoved = true
+        let actionOngoing = true
         if(this.map.panBeginning) {
           updatePan(d); 
         } else if (this.map.dragBeginning) {
@@ -244,7 +244,11 @@ export default defineComponent({
         } else if (this.map.connecting) {
           // nothing but important for else branch
         } else {
-          this.map.cursorMoved = false
+          actionOngoing = false
+        }
+        if(actionOngoing) {
+          this.map.cursorMoved = true
+          this.map.stopAnim()
         }
       }
     }

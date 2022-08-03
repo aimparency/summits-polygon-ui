@@ -49,7 +49,7 @@
             class="icon"
             x="-1" y="-1" 
             width="2" height="2" 
-            :href="aim.pinned ? 'pinned.svg' : 'pin.svg'" />
+            :href="pinUrl" />
         </g>
       </g>
     </g>
@@ -63,6 +63,9 @@ import { Aim, useAimNetwork } from '../stores/aim-network'
 import { useMap } from '../stores/map';
 import { useUi} from '../stores/ui';
 
+import pinnedUrl from '../assets/pinned.svg';
+import pinUrl from '../assets/pin.svg';
+
 export default defineComponent({
   name: 'AimSVG',
   data() {
@@ -70,7 +73,7 @@ export default defineComponent({
       aimNetwork: useAimNetwork(),
       ui: useUi(), 
       map: useMap(),
-      hint: undefined as string | undefined
+      hint: undefined as string | undefined, 
     }
   },
   props: {
@@ -80,6 +83,9 @@ export default defineComponent({
     }
   }, 
   computed: {
+    pinUrl() {
+      return this.aim.pinned ? pinnedUrl : pinUrl;
+    },
     transform() : string {
       let aim = this.aim
       return `translate(${aim.pos[0]}px, ${aim.pos[1]}px)`
