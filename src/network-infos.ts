@@ -25,7 +25,7 @@ export default {
     }
   }, 
   80001: {
-    addr: '825b11Fd4bc6F185c87C145fdDa032216a7Bdd2c', 
+    addr: '834d7FF1eb181852D9bdCBB151Af03aaB3B7F20c', 
     nativeCurrency: {
       name: 'MumbaiMatic',
       symbol: 'MATIC',
