@@ -10,7 +10,7 @@
       <linearGradient v-for="color, key in summitColors" :key="key" 
         :id="'summit-gradient-' + key"
         gradientTransform="rotate(90)">
-        <stop offset="0%"  :stop-color="color + '1e'" />
+        <stop offset="0%"  :stop-color="color + '27'" />
         <stop offset="100%" :stop-color="color + '00'" />
       </linearGradient>
       <pattern v-for="y, i in summitYs" :id="'range-'+i" 
