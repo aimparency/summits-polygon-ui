@@ -1,6 +1,5 @@
 <template>
   <div class="local-list"> 
-    <h2 class="sidebar-heading">find aims</h2>
     <input type="text" placeholder="search" :value="search" @input="updateSearch"/>
     <div v-if="searchResults.length > 0" class="results">
       <AimLi tabindex="0"
@@ -18,14 +17,17 @@
     <div class="buttonList">
       <div tabindex="0" class="button" 
         @keypress.enter="addAim"
+        @keypress.space="addAim"
         @click.stop="addAim">
         add aim
       </div>
-      <div tabindex="0" class="button" 
+      <!--div tabindex="0" class="button" 
         @keyup.enter="switchToGlobalSearch"
+        @keypress.space="switchToGlobalSearch"
+        @keypress.enter="switchToGlobalSearch"
         @click.stop="switchToGlobalSearch">
         search globally
-      </div>
+      </div-->
     </div>
   </div>
 </template>
@@ -38,6 +40,9 @@ import { useUi } from "../stores/ui"
 import { Aim, useAimNetwork } from "../stores/aim-network"
 
 import AimLi from "./AimLi.vue"
+import { useMap } from "../stores/map"
+
+import * as vec2 from '../vec2'
 
 export default defineComponent({
   name: "LocalList",
@@ -50,7 +55,8 @@ export default defineComponent({
   setup() {
     return { 
       aimNetwork: useAimNetwork(),
-      ui: useUi()
+      ui: useUi(), 
+      map: useMap(),
     }
   }, 
   data() {
@@ -73,10 +79,17 @@ export default defineComponent({
       //TBD
     }, 
     addAim() {
-      this.aimNetwork.createAndSelectAim()
+      let map = useMap()
+      this.aimNetwork.createAndSelectAim(aim => {
+        aim.pos = vec2.crNegate(map.offset) 
+        let tR = BigInt(Math.trunc(1000 * 150 / map.scale))
+        tR *= tR
+        aim.setTokens(tR) 
+        aim.tokensOnChain = 0n
+      })
     }, 
     selectAim(aim: Aim) {
-      this.aimNetwork.selectAim(aim)
+      this.aimNetwork.focusAim(aim)
     },
     updateSearch(event: any) {
       this.search = event.target.value
@@ -96,6 +109,7 @@ export default defineComponent({
     margin: 0.5rem; 
   }
   .results {
+    text-align: left; 
     background-color: #0008; 
     box-shadow: 0 0 1rem #0008; 
     margin: 1rem; 

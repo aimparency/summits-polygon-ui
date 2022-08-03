@@ -2,7 +2,6 @@
   <div class="back"
     tabindes="0"
     @click.stop="$emit('click')">
-    &#129144;
   </div>
 </template>
 
@@ -10,7 +9,7 @@
 import { defineComponent } from "vue"
 
 export default defineComponent({
-  name: "AimLi",
+  name: "BackButton",
   emits: ['click'],
 });
 </script>
@@ -22,14 +21,18 @@ export default defineComponent({
   .button();
   margin:0; 
   padding: 0; 
-  left: 0.5rem;
-  top: 0.5rem; 
-  font-size: 1.8rem; 
+  left: 1rem;
+  top: 1rem; 
   width: @size; 
   height: @size; 
+  border-radius: @secondaryradius; 
   line-height: @size; 
   font-weight: bold; 
   text-align: center; 
   position: absolute; 
+  background-image: url(../../assets/main-menu.svg); 
+  background-repeat: no-repeat; 
+  background-position: center; 
+  background-size: 65%; 
 }
 </style>

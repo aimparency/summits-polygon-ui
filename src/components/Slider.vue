@@ -9,8 +9,11 @@
     <div class="right">{{right}}</div>
     <div class="bar" ref="bar">
       <div class="dot"
+        tabindex="0"
         :style="{left: `${(value - from) / (to - from) * 100}%`}"
         :class="{dragging}"
+        @keydown.stop.prevent.right="increase"
+        @keydown.stop.prevent.left="decrease"
         @mousedown.prevent="startDrag"
         @touchstart.prevent="startDrag">
       </div>
@@ -134,6 +137,21 @@ export default defineComponent({
       document.removeEventListener('touchend', this.endDrag)
       document.removeEventListener('touchcancel', this.endDrag)
       document.removeEventListener('touchmove', this.drag)
+    }, 
+    increase() {
+      this.clampAndSend(this.value + (this.to - this.from) * 0.0625)
+    }, 
+    decrease() {
+      this.clampAndSend(this.value - (this.to - this.from) * 0.0625)
+    }, 
+    clampAndSend(v: number) {
+      if(v > this.to) {
+        v = this.to
+      } else if(v < this.from) {
+        v = this.from
+      }
+      this.$emit('update', v) 
+      this.$emit('drag-end') 
     }
   }
 })

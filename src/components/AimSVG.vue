@@ -49,7 +49,7 @@
             class="icon"
             x="-1" y="-1" 
             width="2" height="2" 
-            :href="aim.pinned ? 'pinned.svg' : 'pin.svg'" />
+            :href="pinUrl" />
         </g>
       </g>
     </g>
@@ -63,13 +63,17 @@ import { Aim, useAimNetwork } from '../stores/aim-network'
 import { useMap } from '../stores/map';
 import { useUi} from '../stores/ui';
 
+import pinnedUrl from '../assets/pinned.svg';
+import pinUrl from '../assets/pin.svg';
+
 export default defineComponent({
   name: 'AimSVG',
   data() {
     return {
       aimNetwork: useAimNetwork(),
       ui: useUi(), 
-      map: useMap()
+      map: useMap(),
+      hint: undefined as string | undefined, 
     }
   },
   props: {
@@ -79,6 +83,9 @@ export default defineComponent({
     }
   }, 
   computed: {
+    pinUrl() {
+      return this.aim.pinned ? pinnedUrl : pinUrl;
+    },
     transform() : string {
       let aim = this.aim
       return `translate(${aim.pos[0]}px, ${aim.pos[1]}px)`
@@ -97,7 +104,7 @@ export default defineComponent({
       return this.aimNetwork.selectedAim == this.aim; 
     }, 
     loading() : boolean {
-      return this.aim.pendingTransactions > 0 
+      return this.aim.anyTransactionPending()
     }, 
     published() : boolean {
       return this.aim.address !== undefined
@@ -110,7 +117,7 @@ export default defineComponent({
     select() {
       if(this.aimNetwork.selectedAim === this.aim) {
         this.ui.sideMenuOpen = true
-      } else if(!this.map.preventReleaseClick) {
+      } else if(!this.map.cursorMoved) {
         this.aimNetwork.selectAim(this.aim)
       }
     }, 
@@ -123,27 +130,31 @@ export default defineComponent({
     }, 
     mouseUp() {
       if(this.map.connectFrom && this.map.connecting) {
-        this.aimNetwork.createAndSelectFlow(this.map.connectFrom, this.aim) 
+        this.callCreateFlow(this.map.connectFrom, this.aim) 
       }
     }, 
     touchend(e: TouchEvent) {
-      console.log("touch end") 
       if(this.map.connectFrom && this.map.connecting) {
         var changedTouches = e.changedTouches;
         const el = document.elementFromPoint(changedTouches[0].clientX, changedTouches[0].clientY)
-        console.log("end el", el) 
         if(el && el.classList.contains("aim-circle")) {
           let aimIdString = (el as SVGCircleElement).dataset.aimid
-          console.log("aim id string", aimIdString) 
           if(aimIdString) {
             let connectTo = this.aimNetwork.aims[parseInt(aimIdString)]
             if(connectTo) {
-              this.aimNetwork.createAndSelectFlow(this.map.connectFrom, connectTo) 
+              this.callCreateFlow(this.map.connectFrom, connectTo)
             }
           }
         }
       }
     },
+    callCreateFlow(from: Aim, to: Aim) {
+      try {
+        this.aimNetwork.createAndSelectFlow(from, to) 
+      } catch(err: any) {
+        this.ui.log(err.toString(), "error")
+      }
+    }, 
     togglePin() {
       this.aimNetwork.togglePin(this.aim) 
     }
@@ -157,13 +168,18 @@ export default defineComponent({
   font-family: monospace; 
   .aim-circle {
     cursor: pointer; 
-    transition: stroke-dasharray;  
+    transition: stroke 0.2s ease-in-out;  
     stroke-width: 0.075;
+    stroke: #ccc0;
+    &:hover {
+      stroke: #cccf; 
+    }
     &.selected {
-      stroke: #ccc; 
+      transition: none; 
+      stroke: #cccf; 
     }
     &.loading {
-      stroke: #ccc; 
+      stroke: #cccf; 
       animation: dash 1.5s linear infinite;
       stroke-linecap: round;
     }

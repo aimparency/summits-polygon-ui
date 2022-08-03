@@ -5,7 +5,113 @@ There are always more ideas than time to realize them.
 Always go for the most exiting one. 
 The order is reversed chronological. Newer ideas on top: 
 
+#features left
+
 #far future
+- neighbor guard
+  - only how confirmed aims 
+    - if they really have a connection from the stating aim
+  - only load contributing aims 
+    - when a certain token * share threshold is reached
+
+#2022-08-02
+- don't allow flow layouting when not mayNetwork
+- click on handle may select aim
+
+#2022-08-01
+- D: when changin self member: update "permission" field at aim as well.
+- D: errors
+  - V: oben Mitte 
+  - D: unten rechts, wie counterstrike log.
+    - max width 100vw - (side menu width + 3 rem (links) + 2rem rechts) 
+  - D: statt console.error
+- uncommitted changes
+  - lupe>back symbol
+- console.logs loeschen
+- make aims default tab
+
+
+#2022-07-31
+- D: UI Price negatives Vorzeichen raus
+- D: confirmations als Set am aim
+  - D: outflow computed
+- D: flow commit delta
+  - D: calc M on the flow such that handle stays under cursor
+- D: commitment seriality enforcement per commit type
+- feature: list uncommitted changes
+  - maybe in sidebar? 
+  - tabs: 
+    - local search 
+    (- global search )
+    - uncommited changes
+- A: pinned aims should also load fringe (maybe 1 instead of 2?) 
+- A: force should not feel quadratic for aim size
+
+#2022-07-29
+- Towards V0.2 release
+  - outflows computed list
+    - confirmed based on set at aim
+    - compute share (in absolute terms? in ETH?) 
+  - flows position aendern
+    - einzelner flow
+    - weisse handles zeigen 
+      - (unausgefuellte kreise) stroke
+      - linie dazwischen
+  - ongoing transaction indicators
+    - for every area (data, members, loopWeight, ...)  
+  - P(other repo): finance tests
+  - uncommited list 
+    - button with number
+    - on tab close => show dialogue
+      - button discard
+      - links to aims and flows
+      - if dialogue shown close
+
+#2022-07-27
+- Saubere Implementierung vom rekursiven Laden. 
+  - Load
+    - laedt contributors und contributions
+      - um sauber connecten zu koennen
+      - aber laed nicht die neighbor aims
+  - RaiseLevel
+    - laedt die neighbor aims
+
+#2022-07-19
+- edit member button
+  => loads addr and checkings into the form
+  => button reads "change member"
+- button for changing loop weight
+  - extra smart contract function for it 
+- raiseLevel etc. 
+- confirmAims
+  - combine addresses from local knowledge and lazy load indexer info
+
+#2022-07-12
+- check network, lookup contract id. 
+  - If no contract id is present
+    - Confront user, suggest networks that work 
+      - Switch to it
+- If no network info - hint user to change the network
+
+#2022-07-11
+- D: Feedback von David
+  - D(was partially done already): show ETH price when investing or devesting
+  - D: rejection explanation, when trying creating a flow without permissions
+    - Hint, div
+      - position fixed, 
+      - where the mouse pointer 
+        - position left / right, top / button depending on location
+      - width 33%
+      - height variable
+  - D: Auto fill TokenName and Symbol
+    - "can't be changed!"
+- GraphQL auf Polygon
+
+- D: Details
+  - D: Add aim in the middle of the screen 
+  - D: Icon for going back to the List 
+
+#far future backlog
 - next version
   - git... stuff in git repos packen
     - git läuft im browser
@@ -27,18 +133,17 @@ The order is reversed chronological. Newer ideas on top:
           - git als decentral storage so to say
     - possibilities are huge. There is enough space for all of us. 
 
-- check network, lookup contract id. 
-  - If no contract id is present
-    - Confront user, suggest networks that work 
-      - Switch to it
-
-#2022-07-07
-
 #2022-07-06
 - The Graph in neuem branch
   - load benefitting aims (threshold 2 % eigene Size oder so) 
   - Full text search 
     - search in all fields
+- Permissions
+  - Add User
+    - by address
+    - specify role (or..  well a permission 8 bits) 
+  - contract setter
+  - lazy load when selecting 
 
 #2022-07-05
 - remove flows from chain
@@ -56,6 +161,8 @@ The order is reversed chronological. Newer ideas on top:
 - There is a Bug, that the layout becomes "faster" after "a while" 
   - It's maybe due to multiple strands of layout functions being executed 
     - Due to vite hot reloading
+
+
 
 #2022-07-02
 - Connections zwischen gepinnten nodes

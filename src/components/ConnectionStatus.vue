@@ -2,9 +2,11 @@
   <div 
     @click="click"
     class="connection-status">
-    <h3>eth-connection</h3>
-    <p> network: {{ web3Connection.network }} </p>
-    <p> address: {{ address }} </p>
+    <h4>web3 connection</h4>
+    <p v-if="web3Connection.network"> network: {{ web3Connection.network.name }} </p>
+    <p v-else class="warning">no connection</p>
+    <p v-if="web3Connection.address"> address: {{ address }} </p>
+    <p v-else class="warning">no signer</p>
   </div>
 </template>
 
@@ -18,6 +20,9 @@ export default defineComponent({
     msg: String,
   },
   computed: {
+    connected() {
+      return this.web3Connection.network
+    }, 
     address() {
       let full = this.web3Connection.address
       return full.slice(0,4) + "..." + full.slice(-4) 

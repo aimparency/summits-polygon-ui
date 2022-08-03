@@ -1,61 +1,88 @@
 <template>
   <div 
+    @keydown.esc="aimNetwork.deselect"
     class="flow-details"> 
-    <h2 class="sidebar-heading">flow details</h2>
-    <!-- TBD details (cid) -->
-    <div class='aims'>
-      <div
-        tabindex="0"
-        @click='aimNetwork.selectAim(flow.from)'
-        class='button'> 
-        {{ flow.from.title || "<unnamed>" }} 
-      </div>
-      contributes to
-      <div
-        tabindex="0"
-        @click='aimNetwork.selectAim(flow.into)'
-        class='button'> 
-        {{ flow.into.title || "<unnamed>"}} 
-      </div>
+    <h2>flow</h2>
+    <div
+      tabindex="0"
+      @keypress.enter.prevent.stop="aimNetwork.selectAim(flow.from)"
+      @keypress.space.prevent.stop="aimNetwork.selectAim(flow.from)"
+      @click='aimNetwork.selectAim(flow.from)'
+      class='button aim'> 
+      {{ flow.from.title || "<unnamed>" }} 
     </div>
-    <textarea
-      ref='explanation'
-      rows="9"
-      placeholder="flow explanation"
-      :value="flow.explanation"
-      @input="updateExplanation"></textarea>
-    <Slider
-      name='weight'
-      left='0'
-      right='100'
-      :factor="100/0xffff"
-      :decimalPlaces='2'
-      :from='0'
-      :to='0xffff'
-      :value='flow.weight'
-      @update='updateWeight'/>
-    <div v-if="flow.pendingTransactions"> 
-      <div class="spinner"></div>
+    contributes to
+    <div
+      tabindex="0"
+      @keypress.enter.prevent.stop="aimNetwork.selectAim(flow.into)"
+      @keypress.space.prevent.stop="aimNetwork.selectAim(flow.into)"
+      @click='aimNetwork.selectAim(flow.into)'
+      class='button aim'> 
+      {{ flow.into.title || "<unnamed>"}} 
     </div>
-    <div v-else>
-      <span v-if='!flow.published'>
-        <p v-if='flow.into.address == undefined || flow.from.address == undefined'>
-          Before creating this flow on chain, both involved aims have to be created on chain</p>
-        <div v-else class='button' tabindex="0" @click="create">create flow on chain</div>
-      </span>
-      <span v-else-if='dirty'>
-        <div class='button' tabindex="0" v-if='dirty' @click="reset">reset</div>
-        <div class='button' tabindex="0" v-if='dirty' @click="commit">commit changes</div>
-      </span>
-      <div
-        tabindex="0"  
-        class='button' 
-        :class='{confirm: confirmRemove}'
-        @blur='confirmRemove = false'
-        @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+    <div class="block">
+      <textarea
+        ref='explanation'
+        rows="9"
+        placeholder="flow explanation"
+        :disabled="!flow.into.mayNetwork()"
+        :value="flow.explanation"
+        @input="updateExplanation"></textarea>
+      <Slider
+        v-if="flow.into.mayNetwork()"
+        name='weight'
+        left='0'
+        right='100'
+        :disabled="!flow.into.mayNetwork()"
+        :factor="100/0xffff"
+        :decimalPlaces='2'
+        :from='0'
+        :to='0xffff'
+        :value='flow.weight'
+        @update='updateWeight'/>
+      <p v-else> weight: {{ Math.round(100 * flow.weight / 0xffff) }}% </p>
+      <div class="relativePositionHint" v-if="flow.origin.relativeDelta != undefined">
+        <p>relative positioning changed</p>
+      </div>
+      <div>
+        <span v-if='!flow.published'>
+          <p class=hint v-if='flow.into.address == undefined || flow.from.address == undefined'>
+            Before creating this flow on chain, both involved aims have to be created on chain</p>
+          <div v-else class='button' tabindex="0" 
+            @keypress.enter.prevent.stop="create"
+            @keypress.space.prevent.stop="create"
+            @click="create">create flow on chain</div>
+        </span>
+        <span v-else-if='dirty'>
+          <div class='button' tabindex="0" v-if='dirty' 
+            @keypress.enter.prevent.stop="reset"
+            @keypress.space.prevent.stop="reset"
+            @click="reset">reset</div>
+          <div class='button' tabindex="0" v-if='dirty' 
+            @keypress.enter.prevent.stop="commit"
+            @keypress.space.prevent.stop="commit"
+            @click="commit">commit changes</div>
+        </span>
+        <div
+          v-if="!flow.published"
+          class='button' 
+          :class='{confirm: confirmRemove}'
+          @blur='confirmRemove = false'
+          tabindex="0"  
+          @keypress.enter.prevent.stop="remove"
+          @keypress.space.prevent.stop="remove"
+          @click="remove">{{ confirmRemove ? "confirm removal" : "remove" }}</div>
+      </div>
+      <div 
+        :class="{deactivated: !flow.transactionPending}"
+        class=overlay />
     </div>
     <div class="scrollspace"></div>
-    <BackButton @click="aimNetwork.deselect"/>
+    <BackButton 
+      tabindex="0"  
+      @keypress.enter.prevent.stop="aimNetwork.deselect"
+      @keypress.space.prevent.stop="aimNetwork.deselect"
+      @click="aimNetwork.deselect"/>
   </div>
 </template>
 
@@ -93,6 +120,17 @@ export default defineComponent({
       confirmRemove: false, 
     }
   }, 
+  mounted() {
+    this.init()
+  },
+  watch: {
+    flow: {
+      handler(_new, _old) {
+        this.init()
+      },
+      deep: false
+    }
+  },
   computed: {
     dirty() : boolean {
       return ( 
@@ -101,6 +139,9 @@ export default defineComponent({
     }, 
   }, 
   methods: {
+    init() {
+      (<HTMLInputElement>this.$refs.explanation).focus();
+    }, 
     updateWeight(v: number) {
       this.flow.updateWeight(v)
     }, 
@@ -142,6 +183,17 @@ export default defineComponent({
     &.confirm {
       background-color: @danger; 
     }
+    &.aim {
+      text-align: left; 
+      display: block; 
+      margin: 1rem; 
+    }
+  }
+  .relativePositionHint {
+    background-color: #0004; 
+    margin: 1rem; 
+    padding: 0.5rem;
+    border-radius: 0.2rem; 
   }
   textarea {
     height: 10em; 

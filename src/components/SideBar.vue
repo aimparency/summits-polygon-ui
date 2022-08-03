@@ -3,7 +3,7 @@
     class="side-bar" 
     :class="{closed: !open}" 
     :style="style"> 
-    <div class="container">
+    <div class="container" v-if="open || keepOpen">
       <AimDetails 
         v-if="aimNetwork.selectedAim"
         :aim="aimNetwork.selectedAim"
@@ -12,7 +12,7 @@
         v-else-if="aimNetwork.selectedFlow"
         :flow="aimNetwork.selectedFlow"
         />
-      <LocalList v-else/>
+      <TabbedMenu v-else/>
     </div>
     <div class="toggle"
       tabindes="0"
@@ -33,14 +33,14 @@ import { defineComponent } from "vue"
 import { useUi } from "../stores/ui"
 import { useAimNetwork } from "../stores/aim-network"
 
-import LocalList from "./LocalList.vue"
+import TabbedMenu from "./TabbedMenu.vue"
 import AimDetails from "./AimDetails.vue"
 import FlowDetails from "./FlowDetails.vue"
 
 export default defineComponent({
   name: "SideBar",
   components: {
-    LocalList, 
+    TabbedMenu, 
     AimDetails, 
     FlowDetails, 
   },
@@ -50,7 +50,8 @@ export default defineComponent({
   setup() {
     return { 
       ui: useUi(),
-      aimNetwork: useAimNetwork()
+      aimNetwork: useAimNetwork(), 
+      keepOpen: false, 
     }
   }, 
   data() {
@@ -104,27 +105,31 @@ export default defineComponent({
     transform: translate(-100%, 0); 
     .toggle {
       box-shadow: 0 0 2rem black; 
-      left: 100%; 
+      left: calc(100% + 1rem); 
     }
   }
   .container {
     overflow-y: auto;
     overflow-y: overlay;
     height: 100%; 
+    text-align: center; 
   }
   .toggle {
-    left: calc(100% - @size);
+    top: 1rem; 
+    left: calc(100% - @size - 1rem);
     font-size: 1.8rem; 
     .clickable(); 
     background-color: @mid2; 
-    border-bottom-right-radius: @secondaryradius; 
+    &:hover {
+      background-color: shade(@c2, 30%);  
+    }
+    border-radius: @secondaryradius; 
     width: @size; 
     height: @size; 
     line-height: @size; 
     font-weight: bold; 
     text-align: center; 
     position: absolute; 
-    top: 0; 
     transition: left 0.2s ease-out; 
   }
   transition: transform 0.2s ease-out;
