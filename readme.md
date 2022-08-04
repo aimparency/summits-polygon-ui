@@ -1,4 +1,4 @@
-# Summits 
+#Summits 
 
 ## Tech overview
 This project uses 
@@ -12,8 +12,6 @@ This project uses
 
 ## Local dev setup
 After cloning the repository, run `yarn` to install dependencies. 
-
-Then copy `./src/config.ts.example` to `./src/config.ts` and adapt its contents. 
 
 Also copy the `Summit.json` and `Aim.json` contract artifact from the contract repo's `/artifacts/contracts/*.sol/` into `./src/`. You might want to symlink in case you are working on the contracts as well. 
 

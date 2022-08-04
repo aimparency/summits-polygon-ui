@@ -11,6 +11,12 @@ export function create() {
   return [0, 0] as T
 }
 
+/* comparison */
+
+export function eq(a: T, b: T) {
+  return a[0] === b[0] && a[1] === b[1]
+}
+
 /* most operators work inplace */
 
 export function add(out: T, a: T, b: T) {
@@ -73,6 +79,16 @@ export function isZero(a: T) {
   return a[0] == 0 && a[1] == 0
 }
 
+export function negate(out: T, a: T) {
+  out[0] = -a[0]
+  out[1] = -a[1]
+}
+
+export function mix(out: T, a: T, b: T, aWeight: number) {
+  out[0] = a[0] * aWeight + b[0] * (1 - aWeight)
+  out[1] = a[1] * aWeight + b[1] * (1 - aWeight)
+}
+
 /* the following cr-helpers create a vector for the operator result */
 
 export function crAdd(a: T, b: T) {
@@ -96,5 +112,18 @@ export function crScale(a: T, s: number) {
 export function crNormalize(a: T) {
   const r = [0, 0] as T
   normalize(r, a)
+  return r
+}
+
+export function crNegate(a: T) {
+  const r: T = [0, 0]
+  negate(r, a) 
+  return r
+}
+
+export function crMix(a: T, b: T, aWeight: number) {
+  const r: T = [0, 0]
+  r[0] = a[0] * aWeight + b[0] * (1 - aWeight)
+  r[1] = a[1] * aWeight + b[1] * (1 - aWeight)
   return r
 }

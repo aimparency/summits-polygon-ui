@@ -1,16 +1,23 @@
 import { defineStore } from 'pinia'
 
 import * as vec2 from '../vec2'
-import { Aim } from './aim-network'
+import { Aim, Flow } from './aim-network'
 
 type maybeAim = undefined | Aim
 
 export const LOGICAL_HALF_SIDE = 1000
 
+export interface LayoutCandidate {
+  fromWeight: number, 
+  start: vec2.T, 
+  dScale: number,
+  flow: Flow
+}
+
 export const useMap = defineStore('map', {
   state() {
     return {
-      scale: 1, 
+      scale: 0, 
       offset: vec2.fromValues(0,0),
       mouse: {
         logical: vec2.fromValues(0,0), 
@@ -19,13 +26,21 @@ export const useMap = defineStore('map', {
       halfSide: 0, 
       xratio: 1, 
       yratio: 1, 
-      panBeginning: undefined as undefined | { page: vec2.T, offset: vec2.T },
-      dragBeginning: undefined as undefined | { page: vec2.T, pos: vec2.T },
+      mousePhysBegin: vec2.create(), // start physical coordinates of mouse for drag actions
+      panBeginning: undefined as undefined | { offset: vec2.T },
+      dragBeginning: undefined as undefined | { pos: vec2.T },
+      layouting: false,
       connecting: false, 
-      preventReleaseClick: false,
+      cursorMoved: false,
       clientOffset: vec2.create(),
       connectFrom: undefined as maybeAim,
       dragCandidate: undefined as maybeAim, 
+      layoutCandidate: undefined as undefined | LayoutCandidate,
+      anim: {
+        duration: 0.5, 
+        t0: 0, 
+        update: undefined as undefined | (() => void),
+      }
     }
   }, 
   actions: {
@@ -54,6 +69,31 @@ export const useMap = defineStore('map', {
     }, 
     startDragging(aim: Aim) {
       this.dragCandidate = aim
+    }, 
+    startLayouting(c: LayoutCandidate) {
+      this.layoutCandidate = c
+    }, 
+    stopAnim() {
+      this.anim.update = undefined
+    }, 
+    centerOnAim(aim: Aim, duration = 1000) {
+      // Gleichung: 
+      // 100 = scale * home.r
+      // scale = 100 / home.r
+      const offset0 = vec2.clone(this.offset) 
+      const scale0 = this.scale
+      this.anim.t0 = Date.now()
+      this.anim.update = () => {
+        let progress = (Date.now() - this.anim.t0) / duration / this.anim.duration 
+        if(progress >= 1) {
+          progress = 1
+          this.anim.update = undefined
+        } else {
+          progress = (1 - Math.cos(progress * Math.PI)) / 2
+        }
+        vec2.add(this.offset, vec2.crScale(offset0, 1 - progress), vec2.crScale(aim.pos, -progress))
+        this.scale = scale0 * (1 - progress) + 200 / aim.r * progress 
+      }
     }
   }
 })

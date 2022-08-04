@@ -10,7 +10,7 @@
       <linearGradient v-for="color, key in summitColors" :key="key" 
         :id="'summit-gradient-' + key"
         gradientTransform="rotate(90)">
-        <stop offset="0%"  :stop-color="color + '3e'" />
+        <stop offset="0%"  :stop-color="color + '27'" />
         <stop offset="100%" :stop-color="color + '00'" />
       </linearGradient>
       <pattern v-for="y, i in summitYs" :id="'range-'+i" 
@@ -29,11 +29,13 @@
         :key="`${flow.from.id}x${flow.into.id}`"
         :flow="flow"/>
       <Connector 
-        v-if="map.connectFrom !== undefined"
+        v-if="map.connecting && map.connectFrom !== undefined"
         :connectFrom="map.connectFrom"/>
       <AimSVG v-for="aim in aims" 
         :key="aim.id"
         :aim="aim"/>
+      <FlowHandle v-if="showLayoutHandles"
+        :flow="aimNetwork.selectedFlow!"/>
       <!--rect
         :x="- map.offset[0] - LOGICAL_HALF_SIDE * map.xratio * 0.5 / map.scale"
         :y="- map.offset[1] - LOGICAL_HALF_SIDE * map.yratio * 0.5 / map.scale"
@@ -47,11 +49,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, toRaw } from "vue";
+import { defineComponent, markRaw, toRaw } from "vue";
 
 import AimSVG from './AimSVG.vue';
 import FlowSVG from './FlowSVG.vue';
 import Connector from './Connector.vue';
+import FlowHandle from './FlowHandleSVG.vue';
 
 import { Aim, Flow, useAimNetwork, randomAimColor, toHexColor } from '../stores/aim-network'
 import { useMap, LOGICAL_HALF_SIDE } from '../stores/map'
@@ -83,7 +86,8 @@ export default defineComponent({
   components: {
     AimSVG, 
     FlowSVG, 
-    Connector
+    Connector, 
+    FlowHandle, 
   },
   data() {
     return {
@@ -93,6 +97,13 @@ export default defineComponent({
       logicalHalfSide: LOGICAL_HALF_SIDE,
       aimNetwork: useAimNetwork(),
       map: useMap(), 
+      breakFromAnimLoop: false,
+      layoutingHandlePos: vec2.create(),
+      reusableLayoutCalcArrays: markRaw({
+        r: new Array<number>(),
+        pos: new Array<vec2.T>(), 
+        boxes: new Array<number[]>(),
+      })
     }
   }, 
   props: {
@@ -123,69 +134,84 @@ export default defineComponent({
     window.addEventListener("resize", updateHalfSide)
     updateHalfSide()
 
-    const updatePan = (mouse: vec2.T) => {
+    const updatePan = (d: vec2.T) => {
       const pb = this.map.panBeginning; 
       if(pb !== undefined) {
-        const d = vec2.crSub(pb.page, mouse)
-        if(vec2.len2(d) > 25) {
-          this.map.preventReleaseClick = true
-          vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
-          const offset = vec2.clone(pb.offset)
-          vec2.sub(offset, offset, d)
-          this.map.offset = offset  
-        }
+        vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
+        const offset = vec2.clone(pb.offset)
+        vec2.sub(offset, offset, d)
+        this.map.offset = offset  
       }
     }
 
-    const updateDrag = (mouse: vec2.T) => {
+    const updateDrag = (d: vec2.T) => {
       const db = this.map.dragBeginning;
       const aim = this.map.dragCandidate; 
       if(db && aim) {
-        const d = vec2.clone(db.page)
-        vec2.sub(d, d, mouse) 
-        if(vec2.len2(d) > 25) {
-          this.map.preventReleaseClick = true
-          vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
-          const pos = vec2.clone(db.pos)
-          vec2.sub(pos, pos, d) 
-          aim.pos = pos
-        }
+        vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
+        const pos = vec2.clone(db.pos)
+        vec2.sub(pos, pos, d) 
+        aim.pos = pos
       }
     }
 
+    const updateLayout = (d: vec2.T) => {
+      const lc = this.map.layoutCandidate
+      if(lc) {
+        vec2.scale(d, d, LOGICAL_HALF_SIDE / (this.map.halfSide * this.map.scale)) 
+        vec2.sub(this.layoutingHandlePos, lc.start, d)
+
+        this.updateRelativeDeltaWhileLayouting()
+      }
+    }
+
+    // I think it's not nice that mousedown etc. events have to reach the map component. 
     const beginWhatever = (mouse: vec2.T) => {
-      if(this.map.connectFrom) {
-        this.map.connecting = true
-        this.map.preventReleaseClick = true
-      } else if(this.map.dragCandidate) {
-        beginDrag(this.map.dragCandidate, mouse)
+      this.map.updateMouse(mouse) 
+      this.map.mousePhysBegin = vec2.clone(mouse)
+      if(this.map.dragCandidate) {
+        beginDrag(this.map.dragCandidate)
+      } else if(this.map.layoutCandidate) {
+        beginLayout()
+        updateLayout(vec2.create())
+      } else if(this.map.connectFrom) {
+        beginConnect()
       } else {
-        beginPan(mouse) 
-      }
+        beginPan() 
+      } 
     }
 
-    const beginPan = (mouse: vec2.T) => {
+    const beginPan = () => {
       this.map.panBeginning = {
-        page: vec2.clone(mouse), 
         offset: vec2.clone(this.map.offset)
       }
     }
-    const beginDrag = (aim: Aim, mouse:vec2.T) => {
-      this.map.updateMouse(mouse)
+
+    const beginDrag = (aim: Aim) => {
       this.map.dragBeginning = {
-        page: vec2.clone(mouse),
         pos: vec2.clone(aim.pos) 
       }
     }
 
+    const beginLayout = () => {
+      this.map.layouting = true
+    }
+
+    const beginConnect = () => {
+      this.map.connecting = true
+    }
+
     const endWhatever = () : void => {
-      this.map.connectFrom = undefined
       if(this.map.panBeginning) {
         endPan(); 
       } else if (this.map.dragBeginning) {
         endDrag();
+      } else if(this.map.layouting) {
+        endLayout();
+      } else if(this.map.connecting) {
+        endConnect(); 
       }
-      setTimeout(() => { this.map.preventReleaseClick = false })
+      setTimeout(() => { this.map.cursorMoved = false })
     }
 
     const endPan = () => {
@@ -193,19 +219,40 @@ export default defineComponent({
     }
 
     const endDrag = () => {
-      if(this.map.preventReleaseClick && this.map.dragCandidate) {
-        //TBD: this.aimNetwork.relocate()
-      }
       delete this.map.dragBeginning; 
       delete this.map.dragCandidate; 
     }
 
+    const endLayout = () => {
+      this.map.layouting = false; 
+      delete this.map.layoutCandidate;
+    }
+
+    const endConnect = () => {
+      delete this.map.connectFrom 
+      this.map.connecting = false; 
+    }
+
     const updateWhatever = (mouse: vec2.T) : void => {
       this.map.updateMouse(mouse)
-      if(this.map.panBeginning) {
-        updatePan(mouse); 
-      } else if (this.map.dragBeginning) {
-        updateDrag(mouse); 
+      const d = vec2.crSub(this.map.mousePhysBegin, mouse)
+      if(vec2.len2(d) > 25 || this.map.cursorMoved) {
+        let actionOngoing = true
+        if(this.map.panBeginning) {
+          updatePan(d); 
+        } else if (this.map.dragBeginning) {
+          updateDrag(d); 
+        } else if (this.map.layouting) {
+          updateLayout(d); 
+        } else if (this.map.connecting) {
+          // nothing but important for else branch
+        } else {
+          actionOngoing = false
+        }
+        if(actionOngoing) {
+          this.map.cursorMoved = true
+          this.map.stopAnim()
+        }
       }
     }
 
@@ -324,7 +371,7 @@ export default defineComponent({
     canvas.addEventListener("touchcancel", finishTouch) 
 
     canvas.addEventListener("click", () => {
-      if(!this.map.preventReleaseClick) {
+      if(!this.map.cursorMoved) {
         if(this.aimNetwork.selectedAim || this.aimNetwork.selectedFlow) {
           this.aimNetwork.deselect()
         } else {
@@ -345,14 +392,18 @@ export default defineComponent({
       }
     });
   
-    this.layout()
+    this.transformAnim() 
 
-    // DEBUG
-    // for(let i = 0; i < 19; i++) {
-    //   setTimeout(this.aimNetwork.createAndSelectAim.bind(this), i * 3000)
-    // }
+    this.layout()
   }, 
+  beforeUnmount() {
+    this.breakFromAnimLoop = true
+  },
   computed: {
+    showLayoutHandles() {
+      let selectedFlow = this.aimNetwork.selectedFlow
+      return selectedFlow && selectedFlow.into.mayNetwork() && !selectedFlow.transactionPending
+    }, 
     viewBox() : string {
       return [-1,-1,2,2].map((v: number) => v * LOGICAL_HALF_SIDE).join(' ')
     }, 
@@ -395,91 +446,110 @@ export default defineComponent({
     }, 
   },
   methods: {
+    transformAnim() {
+      if(this.map.anim.update !== undefined) {
+        this.map.anim.update()
+      }
+      if(!this.breakFromAnimLoop) {
+        requestAnimationFrame(() => {
+          this.transformAnim()
+        })
+      }
+    },
     layout() {
-      let aims = toRaw(this.aimNetwork.aims) // expecting slight performance boost from toRaw
+      const flowForce = 0.5
+
+      const globalForce = 0.14
+
+      let aims = this.aimNetwork.aims
+      let aimIds = Object.keys(aims) as unknown as number[]
+
       let map = this.map
 
-      /* there is 
-        - aimId: the string
-        - aimIndex: the index of an aim in all the following arrays like r[]
-        - boxIndex: the index of an aim in the boxes array */
+      let shifts = []
 
-      let aimIdToIndex: {[aimId: number]: number} = {}
-      let aimIndexToId: number[] = []
-      let r: number[] = []
-      let tr
-      let pos: vec2.T[] = []
-      let shifts :vec2.T[] = []
+      let r = this.reusableLayoutCalcArrays.r
+      let positions = this.reusableLayoutCalcArrays.pos
 
-      let boxes: number[][] = []
-      const boxToAimIndex: number[] = []
-      const relevantAims = new Set()
+      let boxes = this.reusableLayoutCalcArrays.boxes
+      boxes.length = aimIds.length
 
       let aim
-      let left, right, top, bottom
+      let br, pos
 
-      let mapWidth = LOGICAL_HALF_SIDE * map.xratio * 2 / map.scale
-      let mapHeight = LOGICAL_HALF_SIDE * map.yratio * 2 / map.scale
+      let boxIndexToAimId: number[] = []
+      let boxIndex = 0
 
-      const sLeft = (-map.offset[0] - mapWidth) 
-      const sRight = (-map.offset[0] + mapWidth) 
-      const sTop = (-map.offset[1] - mapHeight) 
-      const sBottom = (-map.offset[1] + mapHeight) 
-
-      let aimIndex, boxIndex
-
-      for(let aimIdString in aims) {
-        let aimId = parseInt(aimIdString) // has to be a number
-        aimIndex = aimIndexToId.length
-
+      for(let aimId of aimIds) {
         aim = aims[aimId]
-        tr = aim.r
 
-        left = aim.pos[0] - tr
-        right = aim.pos[0] + tr
-        top = aim.pos[1] - tr
-        bottom = aim.pos[1] + tr
+        r[aimId] = br = aim.r
+        positions[aimId] = pos = aim.pos
+        shifts[aimId] = vec2.create()
 
-        if(
-          left < sRight &&
-          right > sLeft &&
-          top < sBottom &&
-          bottom > sTop
-        ) {
-          boxIndex = boxes.length
-          relevantAims.add(aimIndex) 
-          boxToAimIndex[boxIndex] = aimIndex
-          tr *= outerMarginFactor
-          boxes.push([aim.pos[0] - tr, aim.pos[1] - tr, aim.pos[0] + tr, aim.pos[1] + tr])
-        }
+        br *= outerMarginFactor
+        boxes[boxIndex++] = [pos[0] - br, pos[1] - br, pos[0] + br, pos[1] + br]
 
-        aimIdToIndex[aimId] = aimIndex
-        aimIndexToId[aimIndex] = aimId 
-        shifts.push(vec2.create())
-        r.push(aim.r)
-        pos.push(aim.pos)
+        boxIndexToAimId.push(aimId)
       }
 
+      // handle connected aims
+      let flows = this.aimNetwork.flows
 
+      let delta = vec2.create()
+      let rSum
+      let targetPos = vec2.create()
+      let targetShift = vec2.create()
+      for(let fromId of Object.keys(flows) as unknown as number[]) {
+        let bucket = flows[fromId]
+        for(let intoId of Object.keys(bucket) as unknown as number[]) {
+          let flow = bucket[intoId]
+
+          let rSum = flow.from.r + flow.into.r
+
+          vec2.scale(delta, flow.relativeDelta, rSum) 
+
+          // into aim
+          vec2.add(targetPos, flow.from.pos, delta)
+          vec2.sub(targetShift, targetPos, flow.into.pos)
+
+          vec2.scale(targetShift, targetShift, flow.from.r / rSum)
+
+          vec2.add(shifts[intoId], shifts[intoId], targetShift)
+          
+          // from aim
+          vec2.sub(targetPos, flow.into.pos, delta)
+          vec2.sub(targetShift, targetPos, flow.from.pos)
+
+          vec2.scale(targetShift, targetShift, flow.into.r / rSum)
+
+          vec2.add(shifts[fromId], shifts[fromId], targetShift)
+        }
+      }
+
+      for(let aimId of aimIds) {
+        vec2.scale(shifts[aimId], shifts[aimId], flowForce)
+      }
+
+      // handle close aims
       let intersections = boxIntersect(boxes) 
       let iA, shiftA, rA, posA
       let iB, shiftB, rB, posB
-      let ab, rSum, d
+      let ab, d
 
       for(let intersection of intersections) {
-        iA = boxToAimIndex[intersection[0]]
-        iB = boxToAimIndex[intersection[1]]
+        iA = boxIndexToAimId[intersection[0]]
+        iB = boxIndexToAimId[intersection[1]]
         shiftA = shifts[iA]
         rA = r[iA] 
-        posA = pos[iA]
+        posA = positions[iA]
         shiftB = shifts[iB]
         rB = r[iB] 
-        posB = pos[iB]
+        posB = positions[iB]
 
         ab = vec2.crSub(posB, posA) 
         rSum = rA + rB
         d = vec2.len(ab)
-
 
         if(d == 0) {
           const x = Math.random() * 2 - 1
@@ -488,7 +558,7 @@ export default defineComponent({
         }
         if(d < rSum) {
           this.calcShiftAndApply(
-            1, 0.9, 
+            1, 
             d, ab, 
             rA, rB, rSum, 
             shiftA, shiftB
@@ -496,7 +566,7 @@ export default defineComponent({
         } 
         if (d < rSum * outerMarginFactor) {
           this.calcShiftAndApply(
-            outerMarginFactor, 0.09,
+            outerMarginFactor, 
             d, ab, 
             rA, rB, rSum, 
             shiftA, shiftB
@@ -504,66 +574,46 @@ export default defineComponent({
         } 
       }
 
-      let flows = toRaw(this.aimNetwork.flows) // benchmark proof this performance optimization
-
-      for(let fromId in flows) {
-        let bucket = flows[fromId]
-        for(let intoId in bucket) {
-          let flow = bucket[intoId]
-          iA = aimIdToIndex[flow.from.id]
-          iB = aimIdToIndex[flow.into.id]
-
-          if(relevantAims.has(iA) || relevantAims.has(iB)) {
-            shiftA = shifts[iA]
-            rA = r[iA] 
-            posA = pos[iA]
-            shiftB = shifts[iB]
-            rB = r[iB] 
-            posB = pos[iB]
-
-            ab = vec2.crSub(posB, posA) 
-            rSum = rA + rB
-            d = vec2.len(ab)
-
-            // vec2.scale(ab, ab, 1 - rSum * outerMarginFactor / d) 
-
-            if(d > rSum * outerMarginFactor * 1) {
-              this.calcShiftAndApply(
-                outerMarginFactor, 0.02,
-                d - outerMarginFactor, ab, 
-                rA, rB, rSum, 
-                shiftA, shiftB
-              )
-            }
-          }
-        }
-      }
-
-      let minShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
-      let i
-      for(let aimId in aims) {
-        i = aimIdToIndex[aimId]
-        const shift = shifts[i]
+      let viewMinShift = 0.1 * (LOGICAL_HALF_SIDE / map.halfSide) / map.scale
+      let shift, minShift = 0
+      let standstill = true
+      for(let aimId of aimIds) {
+        shift = shifts[aimId]
+        vec2.scale(shift, shift, globalForce)
+        minShift = Math.max(viewMinShift, r[aimId] * 0.001)
+        // TBD minShift = max(minShift, flow aim distance order radius)
         if(shift[0] < -minShift ||
           shift[0] > minShift ||
           shift[1] < -minShift ||
           shift[1] > minShift) {
-          aim = this.aimNetwork.aims[aimIndexToId[i]]
+          aim = this.aimNetwork.aims[aimId]
           if(
             !(aim == this.aimNetwork.selectedAim) &&
             !(aim == map.dragCandidate && map.dragBeginning)
           ) {
             aim.pos = vec2.crAdd(aim.pos, shift)
+            standstill = false
           }
         } 
       }
-      requestAnimationFrame(() => {
-        this.layout()
-      })
+      if(!this.breakFromAnimLoop) {
+        if(standstill) {
+          setTimeout(() => {
+            requestAnimationFrame(() => {
+              this.layout()
+            })
+          }, 200)
+        } else {
+          requestAnimationFrame(() => {
+            this.layout()
+          })
+        }
+      }
+      this.updateRelativeDeltaWhileLayouting()
     },
+
     calcShiftAndApply(
       marginFactor: number, 
-      force: number, 
       d: number, 
       ab: vec2.T, 
       rA: number, 
@@ -572,7 +622,7 @@ export default defineComponent({
       shiftA: vec2.T, 
       shiftB: vec2.T
     ) {
-      const amount = (marginFactor - d / rSum) * force / rSum 
+      const amount = (marginFactor - d / rSum) / rSum 
 
       vec2.scale(hShift, ab, -rB * amount) 
       vec2.add(shiftA, shiftA, hShift)
@@ -580,6 +630,19 @@ export default defineComponent({
       vec2.scale(hShift, ab, +rA * amount) 
       vec2.add(shiftB, shiftB, hShift)
       
+    }, 
+    updateRelativeDeltaWhileLayouting() {
+      let lc = this.map.layoutCandidate
+      if(this.map.layouting && lc) {
+        const M = vec2.crMix(
+          lc.flow.from.pos, 
+          lc.flow.into.pos, 
+          lc.fromWeight
+        )
+        const arm = vec2.crSub(this.layoutingHandlePos, M) 
+        lc.flow.backupRelativeData()
+        vec2.scale(lc.flow.relativeDelta, arm, lc.dScale)
+      }
     }
   }
 });

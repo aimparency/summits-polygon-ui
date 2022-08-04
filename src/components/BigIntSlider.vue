@@ -11,6 +11,9 @@
       <div class="dot"
         :style="style"
         :class="{dragging}"
+        tabindex="0"
+        @keydown.stop.prevent.right="increase"
+        @keydown.stop.prevent.left="decrease"
         @mousedown.prevent="startDrag"
         @touchstart.prevent="startDrag">
       </div>
@@ -135,6 +138,21 @@ export default defineComponent({
       document.removeEventListener('touchend', this.endDrag)
       document.removeEventListener('touchcancel', this.endDrag)
       document.removeEventListener('touchmove', this.drag)
+    }, 
+    increase() {
+      this.clampAndSend(this.value + (this.to - this.from) / 10n)
+    }, 
+    decrease() {
+      this.clampAndSend(this.value - (this.to - this.from) / 10n)
+    }, 
+    clampAndSend(v: bigint) {
+      if(v > this.to) {
+        v = this.to
+      } else if(v < this.from) {
+        v = this.from
+      }
+      this.$emit('update', v) 
+      this.$emit('drag-end') 
     }
   }
 })

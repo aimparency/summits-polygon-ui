@@ -1,13 +1,12 @@
 import { defineStore } from 'pinia'
 
 import { Contract, ethers } from "ethers";
-import { Web3Provider, JsonRpcSigner } from '@ethersproject/providers'
+import { Web3Provider, JsonRpcSigner, Network } from '@ethersproject/providers'
 
-import config from '../config'
 import Summits from '../Summits.json'
 import Aim from '../Aim.json'
 
-let network = config.networks[config.network]
+import networkInfos, { Currency } from '../network-infos'
 
 let provider: Web3Provider
 let signer: JsonRpcSigner
@@ -18,9 +17,9 @@ let aimContracts: {[address: string]: Contract} = {}
 export const useWeb3Connection = defineStore('web3-connection', {
   state() {
     return {
-      connected: false, 
-      network: "", 
-      address: "", 
+      network: undefined as Network | undefined,
+      nativeCurrency: undefined as Currency | undefined,
+      address: ""
     }
   }, 
   actions: {
@@ -29,49 +28,35 @@ export const useWeb3Connection = defineStore('web3-connection', {
     ) {
       let ethereum = (window as any).ethereum
 
-      if(ethereum.networkVersion !== network.chainId) {
-        try {
-          await ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x' + network.chainId.toString(16) }]
-          });
-        } catch (err: any) {
-            // This error code indicates that the chain has not been added to MetaMask
-          if (err.code === 4902) {
-            await ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [
-                {
-                  chainName: network.name,
-                  chainId: '0x' + network.chainId.toString(16),
-                  nativeCurrency: Object.assign({}, network.nativeCurrency), 
-                  rpcUrls: [network.url]
-                }
-              ]
-            });
-          }
-        }
-      }
+      // reload 
+      ethereum.on('chainChanged', () => {
+        window.location.reload();
+      });
+      ethereum.on('accountsChanged', () => {
+        window.location.reload();
+      });
 
       provider = new ethers.providers.Web3Provider(ethereum) 
       await provider.send("eth_requestAccounts", [])
       signer = provider.getSigner()
 
-      provider.getNetwork().then((network) => {
-        this.network = network.name
-      })
-      
       signer.getAddress().then((address) => {
         this.address = address
       }) 
 
-      summitsContract = new ethers.Contract(
-        network.contractAddress, 
-        Summits.abi, 
-        signer 
-      );
+      provider.getNetwork().then((network) => {
+        this.network = network
+        let networkInfo = networkInfos[network.chainId]
+        this.nativeCurrency = networkInfo.nativeCurrency
+        summitsContract = new ethers.Contract(
+          networkInfo.addr, 
+          Summits.abi, 
+          signer 
+        );
+        onConnect()
+      })
+      
 
-      onConnect()
     },
     getSummitsContract() {
       return summitsContract

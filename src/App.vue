@@ -2,6 +2,7 @@
   <Map/>
   <ConnectionStatus/>
   <SideBar/>
+  <Log/>
 </template>
 
 <script lang="ts">
@@ -14,6 +15,7 @@ import { useUi } from "./stores/ui";
 import ConnectionStatus from "./components/ConnectionStatus.vue";
 import Map from "./components/Map.vue";
 import SideBar from "./components/SideBar.vue";
+import Log from "./components/Log.vue";
 
 export default defineComponent({
   name: "App",
@@ -21,24 +23,38 @@ export default defineComponent({
     ConnectionStatus, 
     Map,
     SideBar,
+    Log
   },
-  setup() {
-    useWeb3Connection().connect(() => {
-      useAimNetwork().loadInitial()
+  data() {
+    return {
+      web3Connection: useWeb3Connection(),
+      aimNetwork: useAimNetwork(),
+      ui: useUi(),
+    }
+  },
+  mounted() {
+    this.web3Connection.connect(() => {
+        this.aimNetwork.loadInitial()
     }) 
-    let ui = useUi()
     const onResize = () => {
-      ui.setScreenSize(
+      this.ui.setScreenSize(
         window.innerWidth, 
         window.innerHeight
       )
     }
     window.addEventListener('resize', onResize)
     onResize()
+    window.addEventListener("beforeunload", (e) => {
+      if(this.aimNetwork.allChanges.length > 0) {
+        e.preventDefault()
+        this.ui.promtOnExit()
+        this.aimNetwork.deselect()
+        e.returnValue = "There are uncommmitted changes, that will be lost if you leave this page."
+        return "There are uncommmitted changes, that will be lost if you leave this page."
+      }
+      return null
+    }, true);
   }, 
-  data() {
-    return {}
-  },
   methods: {
   },
 });
@@ -110,7 +126,52 @@ p {
   margin: 1rem; 
 }
 
+h3 {
+  margin: 1rem auto; 
+  padding-top: 2rem; 
+}
+
+h2 {
+  line-height: 2rem; 
+  margin: 1.5rem auto ; 
+}
+
 .nowrap {
   white-space: nowrap; 
 }
+
+/* overlay loading animation */
+.block {
+  position: relative; 
+  .overlay {
+    animation: loading 2s ease infinite; 
+    position: absolute;
+    left: 0.5rem; 
+    top: -0.5rem; 
+    border-radius: 0.5rem; 
+    width: calc(100% - 1rem); 
+    height: calc(100% + 1rem);
+    background: linear-gradient(100deg, fade(@c2, 10%), #fff6);
+    background-size: 200% 100%;
+    opacity: 1; 
+    transition: opacity 0.2s ease-in-out;
+    &.deactivated {
+      opacity: 0; 
+      pointer-events: none;
+    }
+  }
+}
+@keyframes loading {
+  0% {
+    background-position: 0% 0%; 
+  }
+  100% {
+    background-position: -200% 0%; 
+  }
+}
+
+.hint{
+  color: @c1; 
+}
+
 </style>

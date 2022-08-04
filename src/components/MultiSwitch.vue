@@ -4,7 +4,7 @@
     <div 
       v-for="option, i in options"
       :key="i"
-      tabindex="0"
+      :tabindex="disabled ? -1 : 0"
       :style="{backgroundColor: option.color}"
       class="option"
       :class="{ selected: option.value == value}"
@@ -37,11 +37,17 @@ export default defineComponent({
     value: {
       type: String, 
       required: true
+    }, 
+    disabled: {
+      type: Boolean, 
+      default: false
     }
   },
   methods: {
     select(i: number) {
-      this.$emit('change', this.options[i].value) 
+      if(!this.disabled) {
+        this.$emit('change', this.options[i].value) 
+      }
     },
   }
 })
@@ -53,16 +59,21 @@ export default defineComponent({
 .multi-switch {
   margin: 1rem 0.5rem; 
   .option {
+    user-select:none; 
     margin: 0.25rem;
     display: inline-block; 
     opacity: 0.9; 
     cursor: pointer;        
     padding: 0.5rem; 
+    color: #fff; 
     border-radius: 0.2rem; 
     box-shadow: 0 0 0.5rem #0008; 
+    &:focus {
+      outline: 0.2rem solid #fff8; 
+    }
     &.selected {
       opacity: 1; 
-      outline: 0.2rem solid #fff8; 
+      outline: 0.2rem solid #ffff;
     }
   }
 }

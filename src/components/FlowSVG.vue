@@ -70,15 +70,21 @@ export default defineComponent({
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="less">
 .flow {
-  stroke: none;
+  transition: stroke 0.2s ease, opacity 0.2s ease;
+  stroke: #8880;
   opacity: 0.5; 
   mix-blend-mode: lighten; 
+  &:hover {
+    stroke: #ffff; 
+    opacity: 0.75; 
+  }
   &.selected {
-    stroke: #fff; 
-    opacity: 0.8; 
+    transition: none; 
+    stroke: #ffff; 
+    opacity: 0.75; 
   }
   &.aimSelected {
-    opacity: 0.8; 
+    opacity: 0.75; 
   }
   cursor: pointer; 
 }
