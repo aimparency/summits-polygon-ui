@@ -11,7 +11,7 @@ export interface NetworkInfo {
 
 export default {
   5: {
-    addr: '0x0baBF216a5815F0567f400bAF94b72F57eeF07B9', 
+    addr: '0x834d7FF1eb181852D9bdCBB151Af03aaB3B7F20c', 
     nativeCurrency: {
       name: 'GoerliEthereum',
       symbol: 'ETH',
