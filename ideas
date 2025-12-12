@@ -14,6 +14,14 @@ The order is reversed chronological. Newer ideas on top:
   - only load contributing aims 
     - when a certain token * share threshold is reached
 
+#2022-08-22
+- aim list ordering
+
+#2022-08-21
+- delete connections on chain
+- weight connections by into.r * share when layouting
+- min size of side menu: additionally in rem 
+
 #2022-08-02
 - don't allow flow layouting when not mayNetwork
 - click on handle may select aim
